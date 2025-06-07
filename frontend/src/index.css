@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #6b7280;
+  --color-text-accent: #111827;
+  --color-bg-primary: #fcfcfc;
+  --color-bg-secondary: #f3f4f6;
+  --color-bg-accent: #e5e7eb;
+  --color-border-primary: #d1d5db;
+  --color-border-secondary: #e5e7eb;
+  --color-shadow-primary: #000000;
+}
+
+[data-theme="dark"] {
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a1a1aa;
+  --color-text-accent: #f3f4f6;
+  --color-bg-primary: #18181b;
+  --color-bg-secondary: #27272a;
+  --color-bg-accent: #3f3f46;
+  --color-border-primary: #27272a;
+  --color-border-secondary: #3f3f46;
+  --color-shadow-primary: #000000;
+}
+
+@layer utilities {
+  /* Text color */
+  .text-primary { color: var(--color-text-primary); }
+  .text-secondary { color: var(--color-text-secondary); }
+  .text-accent { color: var(--color-text-accent); }
+
+  /* Background color */
+  .bg-primary { background-color: var(--color-bg-primary); }
+  .bg-secondary { background-color: var(--color-bg-secondary); }
+  .bg-accent { background-color: var(--color-bg-accent); }
+
+  /* Border color */
+  .border-primary { border-color: var(--color-border-primary); }
+  .border-secondary { border-color: var(--color-border-secondary); }
+
+  /* Shadow color (use with box-shadow) */
+  .shadow-primary { --tw-shadow-color: var(--color-shadow-primary); }
+}
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light dark;
+  font-synthesis: none;
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  -moz-osx-font-smoothing: grayscale;
+}
