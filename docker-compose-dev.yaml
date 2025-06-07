@@ -1,0 +1,22 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    volumes:
+      - ./frontend:/app
+    environment:
+      - NODE_ENV=development
+      - TZ=${TIMEZONE}
+      - SITE_URL=${SITE_URL}
+    user: root
+    command: ["sh", "./init-dev.sh"]
+    ports:
+      - "${FRONTEND_PORT}:3000"
+    networks:
+      - frontend-network
+    restart: unless-stopped
+
+networks:
+  frontend-network:
+    driver: bridge

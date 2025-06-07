@@ -1,0 +1,20 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    environment:
+      - NODE_ENV=production
+      - TZ=${TIMEZONE}
+      - SITE_URL=${SITE_URL}
+    user: root
+    command: ["sh", "./init-prod.sh"]
+    ports:
+      - "${FRONTEND_PORT}:3000"
+    networks:
+      - frontend-network
+    restart: unless-stopped
+
+networks:
+  frontend-network:
+    driver: bridge

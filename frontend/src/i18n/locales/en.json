@@ -1,0 +1,6 @@
+{
+  "Home": {
+    "title": "Docker Fullstack Template",
+    "description": "A ready-to-use fullstack Docker template combining <bold>Nginx</bold>, <bold>React</bold>, <bold>FastAPI</bold>, and <bold>MariaDB</bold> for modern web application development."
+  }
+}
