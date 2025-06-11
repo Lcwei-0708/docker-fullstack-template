@@ -1,0 +1,28 @@
+# This is a FastAPI Pipfile example
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+# Development packages
+[dev-packages]
+pytest = "*"           # Unit testing framework
+httpx = "*"            # HTTP client for API testing
+
+# Production packages
+[packages]
+fastapi = {extras = ["all"], version = "*"}   # Main FastAPI framework with all optional dependencies
+sqlalchemy = "*"         # ORM for database operations
+alembic = "*"            # Database migration tool
+uvicorn = "*"            # ASGI server for running FastAPI
+gunicorn = "*"           # WSGI/ASGI server for production deployment
+pydantic = "*"           # Data validation and settings management
+pydantic-settings = "*"  # Settings management for Pydantic v2+
+mysqlclient = "*"        # MySQL/MariaDB driver for SQLAlchemy (sync)
+python-dotenv = "*"      # Environment variable management
+python-jose = "*"        # JWT authentication and cryptography
+passlib = "*"            # Password hashing utilities
+requests = "*"           # HTTP client for making requests
+
+[requires]
+python_version = "3.11"

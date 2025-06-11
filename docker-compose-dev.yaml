@@ -15,8 +15,80 @@ services:
       - "${FRONTEND_PORT}:3000"
     networks:
       - frontend-network
-    restart: unless-stopped
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:3000 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: backend
+    volumes:
+      - ./backend:/app
+    environment:
+      - TZ=${TIMEZONE}
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=mysql://${DB_USER}:${DB_PASSWORD}@mariadb/${DB_DATABASE}
+    user: root
+    command: ["sh", "./init-dev.sh"]
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT}:5000"
+    networks:
+      - backend-network
+    restart: always    
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:5000 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  mariadb:
+    image: mariadb:11.3
+    container_name: mariadb
+    environment:
+      - TZ=${TIMEZONE}
+      - MYSQL_DATABASE=${DB_DATABASE}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - backend-network
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin --user=$${MYSQL_USER} --password=$${MYSQL_PASSWORD} --host=localhost ping"]
+      start_period: 10s
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    ports:
+      - '${PMA_PORT:-8030}:80'
+    environment:
+      PMA_HOST: mariadb
+      PMA_USER: root
+      PMA_PASSWORD: ${DB_ROOT_PASSWORD}
+    depends_on:
+      - mariadb
+    networks:
+      - backend-network
+    restart: always
+
+volumes:
+  db_data:
 
 networks:
   frontend-network:
+    driver: bridge
+  backend-network:
     driver: bridge
