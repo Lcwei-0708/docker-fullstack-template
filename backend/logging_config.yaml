@@ -1,0 +1,49 @@
+version: 1
+disable_existing_loggers: False
+formatters:
+  default:
+    format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+handlers:
+  file:
+    class: logging.handlers.TimedRotatingFileHandler
+    formatter: default
+    filename: logs/app.log
+    when: midnight
+    backupCount: 7
+    encoding: utf-8
+    utc: false
+  console:
+    class: logging.StreamHandler
+    formatter: default
+loggers:
+  uvicorn:
+    handlers: [console]
+    level: WARNING
+    propagate: no
+  uvicorn.error:
+    handlers: [console]
+    level: WARNING
+    propagate: no
+  uvicorn.access:
+    handlers: [console]
+    level: WARNING
+    propagate: no
+  watchfiles:
+    handlers: [console]
+    level: WARNING
+    propagate: no
+  watchfiles.main:
+    handlers: [console]
+    level: WARNING
+    propagate: no
+  sqlalchemy.engine:
+    handlers: [console]
+    level: WARNING
+    propagate: no
+  passlib:
+    handlers: [console]
+    level: WARNING
+    propagate: no
+root:
+  handlers: [file, console]
+  level: DEBUG

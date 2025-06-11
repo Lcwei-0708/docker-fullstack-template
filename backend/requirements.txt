@@ -1,0 +1,15 @@
+fastapi[all]
+sqlalchemy
+alembic
+uvicorn
+gunicorn
+pydantic
+pydantic-settings
+mysqlclient
+python-dotenv
+python-jose
+passlib
+requests
+bcrypt
+pytest
+httpx
