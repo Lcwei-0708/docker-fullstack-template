@@ -2,4 +2,6 @@
 npm install --include=dev
 npm run generate-sitemap
 npm run build
-npm run preview
+
+# Keep container running
+tail -f /dev/null

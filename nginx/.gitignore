@@ -1,0 +1,11 @@
+# Whitelist
+whitelist.conf
+
+# SSL
+*.pem
+*.key
+*.crt
+*.csr
+
+# Custom Configurations
+custom.d/*.conf
