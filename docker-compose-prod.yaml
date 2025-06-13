@@ -1,4 +1,43 @@
 services:
+  nginx:
+    build:
+      context: ./nginx
+    container_name: nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/templates:/etc/nginx/templates
+      - ./nginx/custom.d:/etc/nginx/custom.d
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/logs:/var/log/nginx
+      - ./nginx/whitelist.conf:/etc/nginx/whitelist.conf
+      - ./frontend/dist:/usr/share/nginx/html
+    environment:
+      - NODE_ENV=production
+      - TZ=${TIMEZONE}
+      - FRONTEND_PORT=${FRONTEND_PORT}
+      - BACKEND_PORT=${BACKEND_PORT}
+      - PMA_PORT=${PMA_PORT}
+      - HOSTNAME=${HOSTNAME}
+    user: root
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+      - '${PMA_PORT}:${PMA_PORT}'
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    networks:
+      - frontend-network
+      - backend-network
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "nginx -t || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   frontend:
     build:
       context: ./frontend
@@ -11,13 +50,14 @@ services:
       - SITE_URL=${SITE_URL}
     user: root
     command: ["sh", "./init-prod.sh"]
-    ports:
-      - "${FRONTEND_PORT}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
     networks:
       - frontend-network
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "curl --silent --fail localhost:3000 || exit 1"]
+      test: ["CMD-SHELL", "test -f /app/dist/index.html || exit 1"]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -37,8 +77,6 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy
-    ports:
-      - "${BACKEND_PORT}:5000"
     networks:
       - backend-network
     restart: always    
@@ -72,14 +110,13 @@ services:
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: phpmyadmin
-    ports:
-      - '${PMA_PORT:-8030}:80'
     environment:
       PMA_HOST: mariadb
       PMA_USER: root
       PMA_PASSWORD: ${DB_ROOT_PASSWORD}
-    depends_on:
-      - mariadb
+    depends_on:      
+      mariadb:
+        condition: service_healthy
     networks:
       - backend-network
     restart: always

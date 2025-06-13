@@ -1,0 +1,8 @@
+# Allow all IPs by default
+0.0.0.0/0 1;
+
+# Allow specific subnet
+192.168.1.0/24 1;
+
+# Allow specific IP
+192.168.0.1 1;
