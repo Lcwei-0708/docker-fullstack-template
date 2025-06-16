@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-load_dotenv()  # Load.env
+load_dotenv()  # Load .env
 
 import os
 import yaml
@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     ALGORITHM: str = "RS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # Logging settings
+    LOG_LEVEL: str = "INFO"
+
     # Other settings
     DEBUG: bool = True
 
@@ -30,4 +33,12 @@ def setup_logging(yaml_path="logging_config.yaml"):
     os.makedirs("logs", exist_ok=True)
     with open(yaml_path, "r") as f:
         config = yaml.safe_load(f)
-        logging.config.dictConfig(config)
+    # Override the root logger or specified logger's level with LOG_LEVEL from environment
+    log_level = settings.LOG_LEVEL
+    if "root" in config:
+        config["root"]["level"] = log_level
+    # If there are multiple loggers, override their levels as well
+    if "loggers" in config:
+        for logger in config["loggers"].values():
+            logger["level"] = log_level
+    logging.config.dictConfig(config)
