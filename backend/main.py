@@ -6,20 +6,24 @@ from contextlib import asynccontextmanager
 from extensions import register_extensions
 from middleware import register_middlewares
 from core.config import settings, setup_logging
+from schedule import scheduler, register_schedules
 
 # Lifespan event handler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging("logging_config.yaml")
     init_db()
+    register_schedules()
+    scheduler.start()
     yield
+    scheduler.shutdown()
 
 # Create FastAPI app instance
 app = FastAPI(
-    title = settings.PROJECT_NAME,
-    description = settings.PROJECT_DESCRIPTION,
-    version = settings.PROJECT_VERSION,
-    lifespan=lifespan
+    title=settings.PROJECT_NAME,
+    description=settings.PROJECT_DESCRIPTION,
+    version=settings.PROJECT_VERSION,
+    lifespan=lifespan,
 )
 
 # Register all extensions
