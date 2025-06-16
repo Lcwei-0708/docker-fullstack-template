@@ -1,22 +1,17 @@
 from pydantic import BaseModel, RootModel
-from typing import Any, Dict, Optional, Type, TypeVar, Generic
+from typing import Any, Dict, Optional, Type, TypeVar, Generic, List
 
 T = TypeVar("T")
 
 class APIResponse(BaseModel, Generic[T]):
     code: int
     message: str
-    data: Optional[T]
+    data: Optional[T] = None
 
 class ValidationErrorData(RootModel[dict[str, str]]):
     pass
 
-def make_response_doc(
-    code: int,
-    description: str,
-    model: Optional[Type] = None,
-    example: Optional[dict] = None
-) -> dict:
+def make_response_doc(description: str, model: Optional[Type] = None, example: Optional[dict] = None) -> dict:
     doc = {
         "description": description,
     }
@@ -49,27 +44,21 @@ def parse_responses(custom: dict, default: dict = None) -> dict:
     result = {}
     for code, val in merged.items():
         if isinstance(val, tuple):
-            # (description, model, example)
             if len(val) == 2:
                 desc, model = val
-                example = {
-                    "code": code,
-                    "message": desc,
-                    "data": None
-                }
-                result[code] = make_response_doc(code, desc, model, example)
+                result[code] = make_response_doc(desc, model)
             elif len(val) == 3:
                 desc, model, example = val
                 if "code" not in example:
                     example["code"] = code
-                result[code] = make_response_doc(code, desc, model, example)
+                result[code] = make_response_doc(desc, model, example)
         elif isinstance(val, str):
             example = {
                 "code": code,
                 "message": val,
                 "data": None
             }
-            result[code] = make_response_doc(code, val, None, example)
+            result[code] = make_response_doc(val, None, example)
         else:
             # direct dict
             result[code] = val

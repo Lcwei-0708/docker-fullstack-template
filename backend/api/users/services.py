@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from core.security import hash_password
 from .schema import UserCreate, UserUpdate, UserSortField
 
-def get_user(db: Session, user_id: int):
+def get_user(db: Session, user_id: str):
     return db.query(User).filter(User.id == user_id).first()
 
 def get_users(
@@ -65,7 +65,7 @@ def create_user(db: Session, user_in: UserCreate):
     db.refresh(user)
     return user
 
-def update_user(db: Session, user_id: int, user_in: UserUpdate):
+def update_user(db: Session, user_id: str, user_in: UserUpdate):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         return None
@@ -82,7 +82,7 @@ def update_user(db: Session, user_id: int, user_in: UserUpdate):
     db.refresh(user)
     return user
 
-def delete_user(db: Session, user_id: int):
+def delete_user(db: Session, user_id: str):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         return None

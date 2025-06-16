@@ -22,7 +22,7 @@ services:
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
       - "${BACKEND_PORT}:${BACKEND_PORT}"
-      - '${PMA_PORT}:${PMA_PORT}'
+      - "${PMA_PORT}:${PMA_PORT}"
     depends_on:
       frontend:
         condition: service_healthy
