@@ -66,6 +66,6 @@ def test_delete_user():
     assert create_resp.status_code == 201
     user_id = create_resp.json()["data"]["id"]
     response = client.delete(f"/api/users/{user_id}")
-    assert response.status_code == 200
+    assert response.status_code == 204
     response = client.get(f"/api/users/{user_id}")
     assert response.status_code == 404

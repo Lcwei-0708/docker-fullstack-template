@@ -55,7 +55,7 @@ async def read_users(
     }, default=common_responses)
 )
 async def read_user(
-    user_id: int = Path(..., ge=1, description="The ID of the user to retrieve"),
+    user_id: str = Path(..., description="The ID of the user to retrieve"),
     db: Session = Depends(get_db)
 ):
     """
@@ -101,7 +101,7 @@ async def create_new_user(
     }, default=common_responses)
 )
 async def update_existing_user(
-    user_id: int = Path(..., ge=1, description="The ID of the user to update"),
+    user_id: str = Path(..., description="The ID of the user to update"),
     user_in: UserUpdate = ...,
     db: Session = Depends(get_db)
 ):
@@ -118,15 +118,15 @@ async def update_existing_user(
 
 @router.delete(
     "/{user_id}",
-    status_code=200,
+    status_code=204,
     summary="Delete a user",
     responses=parse_responses({
-        200: ("User deleted successfully", APIResponse[UserRead]),
+        204: ("User deleted successfully"),
         404: ("User not found", APIResponse[None]),
     }, default=common_responses)
 )
 async def delete_existing_user(
-    user_id: int = Path(..., ge=1, description="The ID of the user to delete"),
+    user_id: str = Path(..., description="The ID of the user to delete"),
     db: Session = Depends(get_db)
 ):
     """
@@ -135,4 +135,4 @@ async def delete_existing_user(
     user = delete_user(db, user_id)
     if not user:
         return APIResponse(message="User not found", code=404)
-    return APIResponse(code=200, message="User deleted successfully", data=UserRead.model_validate(user))
+    return APIResponse(code=204, message="User deleted successfully")

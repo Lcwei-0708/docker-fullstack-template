@@ -19,7 +19,7 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = Field(None, description="Is active")
 
 class UserRead(BaseModel):
-    id: int
+    id: str
     first_name: str
     last_name: str
     email: EmailStr
