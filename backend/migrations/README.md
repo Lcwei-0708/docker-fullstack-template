@@ -1,5 +1,3 @@
-Generic single-database configuration.
-
 # Alembic Migration Guide
 
 This document describes how to manage database schema migrations using Alembic.

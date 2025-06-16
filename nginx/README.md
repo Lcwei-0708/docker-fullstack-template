@@ -9,6 +9,7 @@ This Nginx configuration provides a secure, high-performance reverse proxy servi
 - **Docker**: Containerization for development and deployment.
 - **HTTP/2**: Modern protocol for improved performance.
 - **WebSocket**: Support for real-time communication.
+- **Templated Configuration**: Easily customizable Nginx configuration using environment variables and templates.
 
 ## Features
 
@@ -18,6 +19,7 @@ This Nginx configuration provides a secure, high-performance reverse proxy servi
 - 🛡️ IP whitelisting for enhanced security
 - 📦 Static file serving in production mode
 - 🔌 WebSocket support for real-time features
+- 📝 Templated configuration for flexible and dynamic setup
 
 ## Quick Setup
 
