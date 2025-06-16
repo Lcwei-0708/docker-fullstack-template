@@ -20,7 +20,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
 
         if path not in HEALTH_CHECK_PATHS:
-            logger.info(f"API Response: method={method} path={path} ip={client_ip} user-agent=\"{user_agent}\" status_code={response.status_code}")
+            logger.info(f"API Response: method={method} path={path} ipAddress={client_ip} user-agent=\"{user_agent}\" status_code={response.status_code}")
 
         return response
 

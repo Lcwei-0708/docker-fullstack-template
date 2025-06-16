@@ -15,6 +15,7 @@ handlers:
   console:
     class: logging.StreamHandler
     formatter: default
+    level: INFO
 loggers:
   uvicorn:
     handlers: [console]

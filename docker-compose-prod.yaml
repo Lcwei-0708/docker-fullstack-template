@@ -72,6 +72,7 @@ services:
       - TZ=${TIMEZONE}
       - FLASK_ENV=production
       - SECRET_KEY=${SECRET_KEY}
+      - LOG_LEVEL=${LOG_LEVEL}
       - DATABASE_URL=mysql://${DB_USER}:${DB_PASSWORD}@mariadb/${DB_DATABASE}
     user: root
     command: ["sh", "./init-prod.sh"]
