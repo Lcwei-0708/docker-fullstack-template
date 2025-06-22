@@ -14,6 +14,13 @@ class Settings(BaseSettings):
 
     # Database settings
     DATABASE_URL: str
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 20
+    DB_POOL_TIMEOUT: int = 30
+    DB_POOL_RECYCLE: int = 3600
+    DB_CONNECT_TIMEOUT: int = 60
+    DB_READ_TIMEOUT: int = 30
+    DB_WRITE_TIMEOUT: int = 30
 
     # JWT settings
     SECRET_KEY: str
