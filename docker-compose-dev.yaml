@@ -71,7 +71,15 @@ services:
       - TZ=${TIMEZONE}
       - SECRET_KEY=${SECRET_KEY}
       - LOG_LEVEL=${LOG_LEVEL}
+      # Database settings
       - DATABASE_URL=mysql://${DB_USER}:${DB_PASSWORD}@mariadb/${DB_DATABASE}
+      - DB_POOL_SIZE=${DB_POOL_SIZE}
+      - DB_POOL_TIMEOUT=${DB_POOL_TIMEOUT}
+      - DB_POOL_RECYCLE=${DB_POOL_RECYCLE}
+      - DB_MAX_OVERFLOW=${DB_MAX_OVERFLOW}
+      - DB_CONNECT_TIMEOUT=${DB_CONNECT_TIMEOUT}
+      - DB_READ_TIMEOUT=${DB_READ_TIMEOUT}
+      - DB_WRITE_TIMEOUT=${DB_WRITE_TIMEOUT}
     user: root
     command: ["sh", "./init-dev.sh"]
     depends_on:
@@ -97,6 +105,7 @@ services:
       - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
     volumes:
       - db_data:/var/lib/mysql
+      - ./db/custom.cnf:/etc/mysql/conf.d/custom.cnf
     networks:
       - backend-network
     restart: always
