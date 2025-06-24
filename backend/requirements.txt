@@ -1,16 +1,36 @@
+# Web framework & server
 fastapi[all]
-sqlalchemy
-alembic
 uvicorn
 gunicorn
+asgi-lifespan
+
+# Database & ORM
+sqlalchemy[asyncio]
+alembic
+
+# Async drivers
+aiomysql
+pymysql
+
+# Config & env
+python-dotenv
 pydantic
 pydantic-settings
-mysqlclient
-python-dotenv
+
+# Security & auth
 python-jose
 passlib
-requests
 bcrypt
-pytest
+
+# HTTP client
+requests
 httpx
+
+# Testing
+pytest
+pytest-asyncio
+coverage 
+pytest-cov
+
+# Scheduler/Task
 apscheduler

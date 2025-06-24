@@ -72,7 +72,7 @@ common_responses = {
             "code": 422,
             "message": "Validation Error",
             "data": {
-                "body.username": "field required"
+                "body.params": "field required"
             }
         }
     ),

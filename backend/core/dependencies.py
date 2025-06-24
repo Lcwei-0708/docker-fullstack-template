@@ -1,10 +1,21 @@
 import logging
-from sqlalchemy.orm import Session
-from core.database import SessionLocal
+from sqlalchemy.ext.asyncio import AsyncSession
+from core.database import AsyncSessionLocal, SessionLocal
 
 logger = logging.getLogger(__name__)
 
-def get_db() -> Session:
+# Async DB dependency
+async def get_db() -> AsyncSession:
+    async with AsyncSessionLocal() as db:
+        try:
+            yield db
+        except Exception as e:
+            logger.error(f"Database error: {e}")
+            await db.rollback()
+            raise e
+
+# Sync DB dependency (for migration/schedule)
+def get_sync_db():
     db = SessionLocal()
     try:
         yield db

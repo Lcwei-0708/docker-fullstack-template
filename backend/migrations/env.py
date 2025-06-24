@@ -32,7 +32,7 @@ target_metadata = Base.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
-from core.config import settings  # 這裡會自動抓到 .env 的 DATABASE_URL
+from core.config import settings
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
