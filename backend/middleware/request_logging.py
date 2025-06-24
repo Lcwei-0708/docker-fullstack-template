@@ -1,5 +1,6 @@
 import logging
 from fastapi import FastAPI, Request
+from .real_ip import get_real_ip
 from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = logging.getLogger("api_logger")
@@ -10,7 +11,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         method = request.method
         path = request.url.path
-        client_ip = request.client.host if request.client else "unknown"
+        client_ip = get_real_ip(request)
         user_agent = request.headers.get("user-agent", "unknown")
 
         # Skip logging for health check and docs
