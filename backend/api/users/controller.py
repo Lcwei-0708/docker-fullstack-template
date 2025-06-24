@@ -31,7 +31,7 @@ async def read_users(
     """
     Query users by conditions (pagination, keyword, status, role, sorting)
     """    
-    result = get_users(
+    result = await get_users(
         db=db,
         page=page,
         per_page=per_page,
@@ -41,7 +41,7 @@ async def read_users(
     )
 
     if not result["users"]:
-        return APIResponse(code=404, message="No users found", data=None)
+        raise HTTPException(status_code=404, detail="No users found")
 
     return APIResponse(code=200, message="Users retrieved successfully", data=result)
 
@@ -61,7 +61,7 @@ async def read_user(
     """
     Retrieve a user by their ID.
     """
-    user = get_user(db, user_id)
+    user = await get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     user_data = UserRead.model_validate(user)
@@ -85,10 +85,10 @@ async def create_new_user(
     Create a new user with a unique username and email.
     """
     try:
-        user = create_user(db, user_in)
+        user = await create_user(db, user_in)
         return APIResponse(code=201, message="User created successfully", data=UserRead.model_validate(user))
     except ValueError as e:
-        return APIResponse(message=str(e), code=409, data=None)
+        raise HTTPException(status_code=409, detail=str(e))
 
 @router.put(
     "/{user_id}",
@@ -109,12 +109,12 @@ async def update_existing_user(
     Update an existing user's information.
     """
     try:
-        user = update_user(db, user_id, user_in)
+        user = await update_user(db, user_id, user_in)
         if not user:
-            return APIResponse(message="User not found", code=404)
+            raise HTTPException(status_code=404, detail="User not found")
         return APIResponse(code=200, message="User updated successfully", data=UserRead.model_validate(user))
     except ValueError as e:
-        return APIResponse(message=str(e), code=409)
+        raise HTTPException(status_code=409, detail=str(e))
 
 @router.delete(
     "/{user_id}",
@@ -132,7 +132,7 @@ async def delete_existing_user(
     """
     Delete a user by their ID.
     """
-    user = delete_user(db, user_id)
+    user = await delete_user(db, user_id)
     if not user:
-        return APIResponse(message="User not found", code=404)
+        raise HTTPException(status_code=404, detail="User not found")
     return APIResponse(code=204, message="User deleted successfully")
