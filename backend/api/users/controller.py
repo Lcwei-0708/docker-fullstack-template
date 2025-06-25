@@ -16,8 +16,8 @@ router = APIRouter(tags=["users"])
     response_model=APIResponse[UserPagination],
     summary="Get all users",
     responses=parse_responses({
-        200: ("Users retrieved successfully", APIResponse[UserPagination]),
-        404: ("No users found", APIResponse[None]),
+        200: ("Users retrieved successfully", UserPagination),
+        404: ("No users found", None),
     }, default=common_responses)
 )
 async def read_users(
@@ -50,8 +50,8 @@ async def read_users(
     response_model=APIResponse[UserRead],
     summary="Get a user by ID",
     responses=parse_responses({
-        200: ("User retrieved successfully", APIResponse[UserRead]),
-        404: ("User not found", APIResponse[None]),
+        200: ("User retrieved successfully", UserRead),
+        404: ("User not found", None),
     }, default=common_responses)
 )
 async def read_user(
@@ -73,8 +73,8 @@ async def read_user(
     status_code=status.HTTP_201_CREATED,
     summary="Create a new user",
     responses=parse_responses({
-        201: ("User created successfully", APIResponse[UserRead]),
-        409: ("User already exists", APIResponse[None]),
+        201: ("User created successfully", UserRead),
+        409: ("User already exists", None),
     }, default=common_responses)
 )
 async def create_new_user(
@@ -95,9 +95,9 @@ async def create_new_user(
     response_model=APIResponse[UserRead],
     summary="Update a user",
     responses=parse_responses({
-        200: ("User updated successfully", APIResponse[UserRead]),
-        404: ("User not found", APIResponse[None]),
-        409: ("Email already exists", APIResponse[None]),
+        200: ("User updated successfully", UserRead),
+        404: ("User not found", None),
+        409: ("Email already exists", None),
     }, default=common_responses)
 )
 async def update_existing_user(
@@ -122,8 +122,8 @@ async def update_existing_user(
     summary="Delete a user",
     responses=parse_responses({
         204: ("User deleted successfully"),
-        404: ("User not found", APIResponse[None]),
-    }, default=common_responses)
+        404: ("User not found", None),
+    }, default=common_responses )
 )
 async def delete_existing_user(
     user_id: str = Path(..., description="The ID of the user to delete"),
