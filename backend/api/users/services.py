@@ -1,12 +1,11 @@
 from math import ceil
-from sqlalchemy import or_, select, func
 from models.user import User
-from sqlalchemy.ext.asyncio import AsyncSession
 from core.security import hash_password
+from sqlalchemy import or_, select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 from .schema import UserCreate, UserUpdate, UserSortField
 
 async def get_user(db: AsyncSession, user_id: str):
-    from sqlalchemy import select
     result = await db.execute(select(User).where(User.id == user_id))
     return result.scalar_one_or_none()
 
@@ -51,7 +50,6 @@ async def get_users(
     }
 
 async def create_user(db: AsyncSession, user_in: UserCreate):
-    from sqlalchemy import select
     result = await db.execute(select(User).where(User.email == user_in.email))
     if result.scalar():
         raise ValueError("Email already exists")
@@ -68,7 +66,6 @@ async def create_user(db: AsyncSession, user_in: UserCreate):
     return user
 
 async def update_user(db: AsyncSession, user_id: str, user_in: UserUpdate):
-    from sqlalchemy import select
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
@@ -88,7 +85,6 @@ async def update_user(db: AsyncSession, user_id: str, user_in: UserUpdate):
     return user
 
 async def delete_user(db: AsyncSession, user_id: str):
-    from sqlalchemy import select
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:

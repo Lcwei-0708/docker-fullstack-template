@@ -3,6 +3,7 @@ fastapi[all]
 uvicorn
 gunicorn
 asgi-lifespan
+fastapi-limiter
 
 # Database & ORM
 sqlalchemy[asyncio]
@@ -34,3 +35,6 @@ pytest-cov
 
 # Scheduler/Task
 apscheduler
+
+# Redis
+redis

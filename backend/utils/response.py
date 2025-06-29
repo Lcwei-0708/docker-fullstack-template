@@ -162,6 +162,15 @@ common_responses = {
             "data": {"body.params": "field required"}
         }
     ),
+    429: (
+        "Too Many Requests",
+        APIResponse[None],
+        {
+            "code": 429,
+            "message": "Too Many Requests",
+            "data": None
+        }
+    ),
     500: (
         "Internal Server Error",
         APIResponse[None],
