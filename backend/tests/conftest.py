@@ -1,13 +1,31 @@
 import pytest
 import asyncio
 import pytest_asyncio
+import fastapi_limiter
 from main import app
 from core.config import settings
 from core.dependencies import get_db
 from sqlalchemy.pool import StaticPool
 from httpx import AsyncClient, ASGITransport
 from core.database import Base, make_async_url
+from unittest.mock import AsyncMock, patch, MagicMock
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+
+mock_redis = AsyncMock()
+mock_redis.evalsha.return_value = 1000  # Indicates 1000ms remaining
+
+async def fake_http_callback(request, response, pexpire):
+    return
+
+async def fake_identifier(request):
+    return "test"
+
+fastapi_limiter.FastAPILimiter.redis = mock_redis
+fastapi_limiter.FastAPILimiter.prefix = "fastapi-limiter"
+fastapi_limiter.FastAPILimiter.lua_sha = "dummy_sha"
+fastapi_limiter.FastAPILimiter.identifier = fake_identifier
+fastapi_limiter.FastAPILimiter.http_callback = fake_http_callback
+
 
 @pytest_asyncio.fixture(scope="function")
 async def test_engine():
@@ -60,12 +78,10 @@ async def test_db_session(test_engine):
         try:
             yield session
         finally:
-            # Check if transaction is still active before rollback
             try:
                 if transaction.is_active:
                     await transaction.rollback()
             except Exception:
-                # Transaction might already be closed, ignore the error
                 pass
 
 
@@ -76,13 +92,12 @@ async def client(test_db_session):
     Ensures each test uses its isolated database session.
     """
     
-    # Override the database dependency to use test session
     async def override_get_db():
         yield test_db_session
     
     # Apply the dependency override
     app.dependency_overrides[get_db] = override_get_db
-    
+
     try:
         # Create HTTP client using ASGI transport
         transport = ASGITransport(app=app)
@@ -111,18 +126,30 @@ def event_loop():
 
 
 @pytest.fixture(autouse=True)
-async def cleanup_app_state():
-    """
-    Automatically cleanup application state after each test.
-    This fixture runs before and after every test.
-    """
-    # Pre-test cleanup
-    app.dependency_overrides.clear()
-    
-    yield
-    
-    # Post-test cleanup
-    app.dependency_overrides.clear()
+def mock_other_components():
+    """Mock startup components that are not needed for testing"""
+    with patch("schedule.register_schedules"), \
+         patch("schedule.scheduler.start"), \
+         patch("schedule.scheduler.shutdown"), \
+         patch("core.redis.init_redis", new=AsyncMock()), \
+         patch("core.config.setup_logging"), \
+         patch("core.redis.get_redis", return_value=MagicMock()):
+        yield
+
+
+# Mock RateLimiter to always allow requests
+@pytest.fixture(autouse=True)
+def mock_rate_limiter():
+    """Mock RateLimiter to always allow requests"""    
+    class MockRateLimiter:
+        def __init__(self, *args, **kwargs):
+            pass        
+        
+        def __call__(self, *args, **kwargs):
+            return None
+            
+    with patch("fastapi_limiter.depends.RateLimiter", MockRateLimiter):
+        yield
 
 
 # Optional: Add database utility fixtures for advanced testing scenarios

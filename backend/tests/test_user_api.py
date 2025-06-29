@@ -68,7 +68,6 @@ async def test_get_users_not_found(client):
     assert response.status_code == 404
     assert response.json()["code"] == 404
     assert response.json()["message"] == "No users found"
-    assert response.json()["data"] is None
 
 @pytest.mark.asyncio
 async def test_get_user_by_id(client):

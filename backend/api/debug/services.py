@@ -1,5 +1,5 @@
 from fastapi import Request
-from middleware.real_ip import get_real_ip
+from utils import get_real_ip
 from .schema import IPDebugResponse
 
 async def get_ip_debug_info(request: Request) -> IPDebugResponse:
