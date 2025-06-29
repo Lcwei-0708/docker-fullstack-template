@@ -1,6 +1,6 @@
-import redis.asyncio as aioredis
 from api import api_router
 from fastapi import FastAPI
+from core.redis import init_redis, get_redis
 from core.database import init_db
 from fastapi_limiter import FastAPILimiter
 from contextlib import asynccontextmanager
@@ -17,8 +17,8 @@ async def lifespan(app: FastAPI):
     init_db()
     register_schedules()
     scheduler.start()
-    redis = await aioredis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
-    await FastAPILimiter.init(redis)
+    await init_redis()
+    await FastAPILimiter.init(get_redis())
     yield
     scheduler.shutdown()
 
