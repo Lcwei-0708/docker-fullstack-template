@@ -1,7 +1,8 @@
 import logging
-from typing import Optional, List
+from typing import Optional
 from sqlalchemy.orm import Session
 from core.dependencies import get_db
+from fastapi_limiter.depends import RateLimiter
 from utils import APIResponse, parse_responses, common_responses
 from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
 from .services import get_user, get_users, create_user, update_user, delete_user
@@ -18,7 +19,8 @@ router = APIRouter(tags=["users"])
     responses=parse_responses({
         200: ("Users retrieved successfully", UserPagination),
         404: ("No users found", None),
-    }, default=common_responses)
+    }, default=common_responses),
+    dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 )
 async def read_users(
     page: int = Query(1, ge=1, description="Page number (default is 1)"),
@@ -52,7 +54,8 @@ async def read_users(
     responses=parse_responses({
         200: ("User retrieved successfully", UserRead),
         404: ("User not found", None),
-    }, default=common_responses)
+    }, default=common_responses),
+    dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 )
 async def read_user(
     user_id: str = Path(..., description="The ID of the user to retrieve"),
@@ -75,7 +78,8 @@ async def read_user(
     responses=parse_responses({
         201: ("User created successfully", UserRead),
         409: ("User already exists", None),
-    }, default=common_responses)
+    }, default=common_responses),
+    dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def create_new_user(
     user_in: UserCreate,
@@ -98,7 +102,8 @@ async def create_new_user(
         200: ("User updated successfully", UserRead),
         404: ("User not found", None),
         409: ("Email already exists", None),
-    }, default=common_responses)
+    }, default=common_responses),
+    dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def update_existing_user(
     user_id: str = Path(..., description="The ID of the user to update"),
@@ -123,7 +128,8 @@ async def update_existing_user(
     responses=parse_responses({
         204: ("User deleted successfully"),
         404: ("User not found", None),
-    }, default=common_responses )
+    }, default=common_responses ),
+    dependencies=[Depends(RateLimiter(times=5, seconds=60))]
 )
 async def delete_existing_user(
     user_id: str = Path(..., description="The ID of the user to delete"),

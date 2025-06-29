@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     DB_READ_TIMEOUT: int = 30
     DB_WRITE_TIMEOUT: int = 30
 
+    # Redis settings
+    REDIS_URL: str
+
     # JWT settings
     SECRET_KEY: str
     ALGORITHM: str = "RS256"

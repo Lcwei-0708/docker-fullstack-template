@@ -9,6 +9,7 @@ This backend project is built with modern Python technologies to provide a robus
 - **Alembic**: Database migrations tool for SQLAlchemy.  
   _See [Migration Docs](./migrations/README.md) for details._
 - **Pydantic**: Data validation and settings management using Python type annotations.
+- **Redis (Async)**: Used for rate limiting, integrated via `redis.asyncio`.
 - **Uvicorn**: Lightning-fast ASGI server for running FastAPI applications.
 - **Docker**: Containerization for development and deployment.
 - **Asyncio**: Native Python async event loop for high concurrency and performance.
@@ -23,5 +24,6 @@ This backend project is built with modern Python technologies to provide a robus
 - 🔒 Middleware support (CORS, custom middlewares)
 - 📝 Data validation with Pydantic
 - ⚡ Full async/await support for endpoints and database operations
+- 🧠 Redis integration for caching, rate limiting, and fast in-memory operations
 - 🐳 Easy containerization with Docker
 - ✅ Async Testing & coverage with a fully isolated test environment

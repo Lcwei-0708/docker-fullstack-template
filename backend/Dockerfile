@@ -24,4 +24,4 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Run the application
-CMD ["gunicorn", "main:app", "--host", "0.0.0.0", "--port", "5000", "--log-level", "info"]
+CMD ["gunicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]

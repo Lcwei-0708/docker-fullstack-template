@@ -2,12 +2,10 @@
     daily
     missingok
     rotate 7
-    compress
-    delaycompress
     notifempty
     dateext
     dateformat .%Y-%m-%d
-    create 0640 nginx nginx
+    create 0644 root root
     sharedscripts
     postrotate
         [ -f /var/run/nginx.pid ] && kill -USR1 `cat /var/run/nginx.pid`

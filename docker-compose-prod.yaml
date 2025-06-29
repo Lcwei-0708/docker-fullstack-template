@@ -79,6 +79,8 @@ services:
       - DB_CONNECT_TIMEOUT=${DB_CONNECT_TIMEOUT}
       - DB_READ_TIMEOUT=${DB_READ_TIMEOUT}
       - DB_WRITE_TIMEOUT=${DB_WRITE_TIMEOUT}
+      # Redis settings
+      - REDIS_URL=redis://${REDIS_PASSWORD}@redis
     user: root
     command: ["sh", "./init-prod.sh"]
     depends_on:
@@ -118,15 +120,35 @@ services:
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     environment:
-      PMA_HOST: mariadb
-      PMA_USER: root
-      PMA_PASSWORD: ${DB_ROOT_PASSWORD}
-    depends_on:      
+      - TZ=${TIMEZONE}
+      - PMA_HOST=mariadb
+      - PMA_USER=root
+      - PMA_PASSWORD=${DB_ROOT_PASSWORD}
+    depends_on:
       mariadb:
         condition: service_healthy
     networks:
       - backend-network
     restart: always
+
+  redis:
+    image: redis:latest
+    environment:
+      - TZ=${TIMEZONE}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - backend-network
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping"]
+      start_period: 10s
+      interval: 30s
+      timeout: 5s
+      retries: 5
 
 volumes:
   db_data:

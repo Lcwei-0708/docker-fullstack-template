@@ -9,8 +9,7 @@ def add_exception_handlers(app: FastAPI):
             status_code=exc.status_code,
             content={
                 "code": exc.status_code,
-                "message": exc.detail if exc.detail else "HTTP Error",
-                "data": None
+                "message": exc.detail if exc.detail else "HTTP Error"
             }
         )
 
