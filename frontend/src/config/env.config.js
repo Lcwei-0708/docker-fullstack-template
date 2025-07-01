@@ -3,5 +3,7 @@
 
 // Vite
 export const ENV = {
-    
+  
 };
+
+export default ENV;
