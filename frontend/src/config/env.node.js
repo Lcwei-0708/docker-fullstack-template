@@ -7,3 +7,5 @@ export const ENV_NODE = {
   TIMEZONE: process.env.TIMEZONE || 'UTC', // Timezone setting (e.g. Asia/Taipei)
   SITE_URL: process.env.SITE_URL || 'http://localhost:3000', // Website base URL (e.g. http://localhost:3000)
 };
+
+export default ENV_NODE;

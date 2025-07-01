@@ -1,0 +1,6 @@
+{
+  "Home": {
+    "title": "Docker Fullstack Template",
+    "description": "一個開箱即用的全端 Docker 範本，結合了 <bold>Nginx</bold>、<bold>React</bold>、<bold>FastAPI</bold> 和 <bold>MariaDB</bold>，適用於現代網頁應用程式開發。"
+  }
+}
