@@ -9,6 +9,8 @@ services:
       - ./nginx/ssl:/etc/nginx/ssl
       - ./nginx/logs:/var/log/nginx
       - ./nginx/whitelist.conf:/etc/nginx/whitelist.conf
+      - ./nginx/logrotate/nginx:/etc/logrotate.d/nginx
+      - ./nginx/docker-entrypoint.sh:/docker-entrypoint.sh
       - ./frontend/dist:/usr/share/nginx/html
     environment:
       - NODE_ENV=production
@@ -18,6 +20,7 @@ services:
       - PMA_PORT=${PMA_PORT}
       - HOSTNAME=${HOSTNAME}
     user: root
+    entrypoint: ["/docker-entrypoint.sh"]
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
       - "${BACKEND_PORT}:${BACKEND_PORT}"
