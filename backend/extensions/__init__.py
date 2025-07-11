@@ -1,4 +1,4 @@
-from .exception import add_exception_handlers
+from .exception_handler import add_exception_handlers
 
 def register_extensions(app):
     # Add new extensions imports below.

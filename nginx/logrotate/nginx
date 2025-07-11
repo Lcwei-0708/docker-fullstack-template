@@ -12,5 +12,10 @@
         if [ -f /var/run/nginx.pid ]; then
             kill -USR1 $(cat /var/run/nginx.pid)
         fi
+        for f in /var/log/nginx/*.log.$(date +%Y-%m-%d); do
+          if [ -e "$f" ]; then
+            mv "$f" "/var/log/nginx/$(basename "$f" | sed "s/$(date +%Y-%m-%d)/$(date -d 'yesterday' +%Y-%m-%d)/")"
+          fi
+        done
     endscript
 }
