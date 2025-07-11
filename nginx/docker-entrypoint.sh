@@ -1,5 +1,15 @@
 #!/bin/sh
 
+# Set timezone
+if [ -n "$TZ" ]; then
+  ln -sf "/usr/share/zoneinfo/$TZ" /etc/localtime
+  echo "$TZ" > /etc/timezone
+else
+  # Default timezone
+  ln -sf "/usr/share/zoneinfo/UTC" /etc/localtime
+  echo "UTC" > /etc/timezone
+fi
+
 # Create log directory if it doesn't exist
 mkdir -p /var/log/nginx
 
@@ -20,6 +30,7 @@ chmod 644 /etc/logrotate.d/nginx
 cat > /etc/crontab <<EOF
 SHELL=/bin/sh
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+TZ=${TZ}
 
 0 0 * * * root /usr/sbin/logrotate -f -v /etc/logrotate.conf > /tmp/logrotate_cron.log 2>&1
 EOF
