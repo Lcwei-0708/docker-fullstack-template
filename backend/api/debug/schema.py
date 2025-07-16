@@ -6,5 +6,3 @@ class IPDebugResponse(BaseModel):
     x_forwarded_for: Optional[str]
     x_real_ip: Optional[str]
     detected_real_ip: Optional[str]
-    middleware_processed: bool
-    note: str
