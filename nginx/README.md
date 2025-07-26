@@ -23,16 +23,7 @@ This Nginx configuration provides a secure, high-performance reverse proxy servi
 
 ## Quick Setup
 
-### 1. SSL Certificates Setup
-
-Place your SSL certificates in the `ssl` directory:
-```bash
-nginx/ssl/
-├── cert.pem
-└── privkey.pem
-```
-
-### 2. IP Whitelist Setup
+### 1. IP Whitelist Setup
 
 Copy the example whitelist configuration:
 ```bash
@@ -45,4 +36,22 @@ Edit the whitelist.conf file to add your allowed IPs:
 0.0.0.0/0 1;         # Allow all IPs
 192.168.1.0/24 1;    # Allow specific subnet
 192.168.0.1 1;       # Allow specific IP
+```
+
+### 2. SSL Certificates Setup
+
+To enable SSL (HTTPS), you need to configure SSL settings in your `.env` file and place your SSL certificates.
+
+**Basic setup:**
+```env
+SSL_ENABLE=true
+SSL_CERT_FILE=cert.pem
+SSL_KEY_FILE=privkey.pem
+```
+
+Place your certificates in the `nginx/ssl` directory:
+```bash
+nginx/ssl/
+├── cert.pem         # Your SSL certificate
+└── privkey.pem      # Your private key
 ```

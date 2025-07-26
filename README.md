@@ -14,19 +14,19 @@ This project is a ready-to-use fullstack template that leverages Docker Compose 
 
 ## How to Use
 
-1. **Clone the repository**
+#### 1. **Clone the repository**
 
    ```bash
    git clone https://github.com/Lcwei-0708/docker-fullstack-template.git
    ```
 
-2. **Move to project**
+#### 2. **Move to project**
 
    ```bash
    cd docker-fullstack-template
    ```
 
-3. **Configure environment variables**
+#### 3. **Configure environment variables**
 
    Copy `.env.example` to `.env` and edit as needed.
 
@@ -36,24 +36,46 @@ This project is a ready-to-use fullstack template that leverages Docker Compose 
 
    > Set the `COMPOSE_FILE` environment variable to switch between development and production modes.
 
-4. **Set up Nginx SSL certificates and IP whitelist**
+#### 4. **Set up Nginx IP whitelist and SSL certificates**
 
-   - Place your SSL certificates in the `nginx/ssl` directory
    - Copy `whitelist.conf.example` to `whitelist.conf` and edit as needed.
 
       ```bash
       cp nginx/whitelist.conf.example nginx/whitelist.conf
       ```
   
+   - To enable SSL (HTTPS), you need to configure SSL settings in your `.env` file and place your SSL certificates in the `nginx/ssl` directory.
+      - Env setting: 
+         ```bash
+         SSL_ENABLE=true
+         SSL_CERT_FILE=cert.pem
+         SSL_KEY_FILE=privkey.pem
+         ```
+
+      - Place your certificates in the `nginx/ssl` directory:
+         ```bash
+         nginx/ssl/
+         ├── cert.pem       # Your SSL certificate
+         └── privkey.pem    # Your private key
+         ```
+   
    > See [Nginx Docs](./nginx/README.md) for more details.
 
-5. **Start the services**
+#### 5. **Start the services**
+
+   First run or after code changes:
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+   Subsequent runs (no code changes):
 
    ```bash
    docker compose up -d
    ```
 
-6. **Stop the services**
+#### 6. **Stop the services**
 
    ```bash
    docker compose down
