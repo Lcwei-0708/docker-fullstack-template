@@ -15,10 +15,15 @@ services:
     environment:
       - NODE_ENV=production
       - TZ=${TIMEZONE}
+      - HOSTNAME=${HOSTNAME}
+      # SSL settings
+      - SSL_ENABLE=${SSL_ENABLE}
+      - SSL_CERT_FILE=${SSL_CERT_FILE}
+      - SSL_KEY_FILE=${SSL_KEY_FILE}
+      # Port settings
       - FRONTEND_PORT=${FRONTEND_PORT}
       - BACKEND_PORT=${BACKEND_PORT}
-      - PMA_PORT=${PMA_PORT}
-      - HOSTNAME=${HOSTNAME}
+      - PMA_PORT=${PMA_PORT}      
     user: root
     entrypoint: ["/docker-entrypoint.sh"]
     ports:
@@ -83,7 +88,7 @@ services:
       - DB_READ_TIMEOUT=${DB_READ_TIMEOUT}
       - DB_WRITE_TIMEOUT=${DB_WRITE_TIMEOUT}
       # Redis settings
-      - REDIS_URL=redis://${REDIS_PASSWORD}@redis
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
     user: root
     command: ["sh", "./init-prod.sh"]
     depends_on:
