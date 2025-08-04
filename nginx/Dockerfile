@@ -20,9 +20,6 @@ RUN chmod +x /docker-entrypoint.sh
 # Set working directory
 WORKDIR /etc/nginx
 
-# Use root user to allow environment variable substitution and file operations
-USER root
-
 # Set entrypoint and default command
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
