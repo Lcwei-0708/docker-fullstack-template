@@ -13,18 +13,14 @@ fi
 # Create log directory if it doesn't exist
 mkdir -p /var/log/nginx
 
-# Set correct permissions and ownership for log directory
-chown -R root:root /var/log/nginx
-chmod 755 /var/log/nginx
+# Set correct permissions and ownership for all nginx-related directories and files
+chown -R root:root /var/log/nginx /etc/logrotate.d /var/lib/logrotate
+chmod 755 /var/log/nginx /etc/logrotate.d /var/lib/logrotate
 
 # Ensure log files exist with correct permissions
-touch /var/log/nginx/nginx.log
-touch /var/log/nginx/error.log
-chown root:root /var/log/nginx/*.log
-chmod 644 /var/log/nginx/*.log
-
-# Set correct permissions for logrotate configuration
-chmod 644 /etc/logrotate.d/nginx
+touch /var/log/nginx/nginx.log /var/log/nginx/error.log
+chown root:root /var/log/nginx/*.log /etc/logrotate.d/nginx
+chmod 644 /var/log/nginx/*.log /etc/logrotate.d/nginx
 
 # Overwrite /etc/crontab with correct content and logrotate job
 cat > /etc/crontab <<EOF

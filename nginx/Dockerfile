@@ -1,4 +1,4 @@
-FROM nginx:latest
+FROM nginx:1.29.1
 
 # Install required tools: logrotate for log management, cron for scheduling, curl for downloading gomplate, gomplate for template processing
 RUN apt-get update && apt-get install -y logrotate cron curl procps \
@@ -19,9 +19,6 @@ RUN chmod +x /docker-entrypoint.sh
 
 # Set working directory
 WORKDIR /etc/nginx
-
-# Use root user to allow environment variable substitution and file operations
-USER root
 
 # Set entrypoint and default command
 ENTRYPOINT ["/docker-entrypoint.sh"]

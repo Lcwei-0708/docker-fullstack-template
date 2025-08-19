@@ -1,3 +1,5 @@
+from core.config import settings, setup_logging
+setup_logging("logging_config.yaml")
 from api import api_router
 from fastapi import FastAPI
 from core.redis import init_redis, get_redis
@@ -7,13 +9,11 @@ from contextlib import asynccontextmanager
 from extensions import register_extensions
 from middleware import register_middlewares
 from fastapi.responses import RedirectResponse
-from core.config import settings, setup_logging
 from schedule import scheduler, register_schedules
 
 # Lifespan event handler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    setup_logging("logging_config.yaml")
     init_db()
     register_schedules()
     scheduler.start()
