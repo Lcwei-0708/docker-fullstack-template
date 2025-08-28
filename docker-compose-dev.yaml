@@ -52,6 +52,9 @@ services:
       - NODE_ENV=development
       - TZ=${TIMEZONE}
       - SITE_URL=${SITE_URL}
+      - VITE_PROJECT_NAME=${PROJECT_NAME}
+      - VITE_PROJECT_VERSION=${PROJECT_VERSION}
+      - VITE_PROJECT_DESCRIPTION=${PROJECT_DESCRIPTION}
     command: ["sh", "./init-dev.sh"]
     depends_on:
       backend:
@@ -74,6 +77,9 @@ services:
       - TZ=${TIMEZONE}
       - SECRET_KEY=${SECRET_KEY}
       - LOG_LEVEL=${LOG_LEVEL}
+      - PROJECT_NAME=${PROJECT_NAME}
+      - PROJECT_VERSION=${PROJECT_VERSION}
+      - PROJECT_DESCRIPTION=${PROJECT_DESCRIPTION}
       # Database settings
       - DATABASE_URL=mysql+pymysql://${DB_USER}:${DB_PASSWORD}@mariadb/${DB_DATABASE}
       - DATABASE_URL_TEST=mysql+pymysql://${DB_USER}:${DB_PASSWORD}@mariadb/test_${DB_DATABASE}

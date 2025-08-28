@@ -8,9 +8,9 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Project settings
-    PROJECT_NAME: str = "My FastAPI Project"
+    PROJECT_NAME: str = "Backend API Docs"
     PROJECT_VERSION: str = "1.0.0"
-    PROJECT_DESCRIPTION: str = "A fullstack template with FastAPI backend"
+    PROJECT_DESCRIPTION: str = "Backend API Docs"
 
     # Database settings
     DATABASE_URL: str
