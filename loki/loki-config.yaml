@@ -1,0 +1,88 @@
+auth_enabled: false
+target: all
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  grpc_server_max_recv_msg_size: 5368709120
+  grpc_server_max_send_msg_size: 5368709120
+
+ingester:
+  lifecycler:
+    address: 0.0.0.0
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    final_sleep: 0s
+    join_after: 10s
+    min_ready_duration: 1m
+  chunk_idle_period: 1h
+  chunk_retain_period: 30s
+  max_chunk_age: 720h
+  wal:
+    enabled: true
+    dir: /loki/wal
+    replay_memory_ceiling: 512MB
+
+# TSDB schema configuration
+schema_config:
+  configs:
+    - from: 2020-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+# Storage configuration for TSDB
+storage_config:
+  tsdb_shipper:
+    active_index_directory: /loki/tsdb-index
+    cache_location: /loki/tsdb-cache
+    cache_ttl: 24h
+
+# Limits and rate limiting configuration
+limits_config:
+  allow_structured_metadata: true
+  reject_old_samples: true
+  reject_old_samples_max_age: 720h
+  max_global_streams_per_user: 10000000
+  
+  ingestion_rate_mb: 640
+  ingestion_burst_size_mb: 1280
+  ingestion_rate_strategy: global
+  max_label_name_length: 102400000
+  max_label_value_length: 102400000
+  
+  per_stream_rate_limit: 10MB
+  per_stream_rate_limit_burst: 20MB
+
+  max_query_lookback: 720h
+  max_query_length: 720h
+  max_entries_limit_per_query: 50000
+
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+
+chunk_store_config:
+
+table_manager:
+  retention_deletes_enabled: true
+  retention_period: 744h
+
+compactor:
+  working_directory: /loki/compactor
+  compaction_interval: 10m
+
+common:
+  ring:
+    instance_addr: 0.0.0.0
+    instance_id: loki-1
+    kvstore:
+      store: inmemory
