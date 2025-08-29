@@ -1,0 +1,17 @@
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    uid: c73ec8de-9edd-441b-b947-383087fcfc06
+    jsonData:
+      maxLines: 1000
+      derivedFields:
+        - datasourceUid: c73ec8de-9edd-441b-b947-383087fcfc06
+          matcherRegex: "traceID=(\\w+)"
+          name: TraceID
+          url: "$${__value.raw}"
+    editable: true
+    version: 1 

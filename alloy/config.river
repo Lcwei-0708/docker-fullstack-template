@@ -1,0 +1,108 @@
+local.file_match "backend_logs" {
+	path_targets = [{
+		__address__  = "localhost",
+		__path__     = "/var/log/backend/*.log*",
+		job          = "backend_logs",
+		service = "backend_logs",
+	}]
+}
+
+loki.process "backend_logs" {
+	forward_to = [loki.write.default.receiver]
+
+	stage.regex {
+		expression = "^(?P<timestamp>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2},\\d{3}) \\[(?P<level>\\w+)\\] (?P<logger>[^:]+): (?P<message>.*)$"
+	}
+
+	stage.timestamp {
+		source = "timestamp"
+		format = "2006-01-02 15:04:05,000"
+		location = "Asia/Taipei"
+	}
+
+	stage.labels {
+		values = {
+			level = "level",
+			logger = "logger",
+		}
+	}
+
+	stage.regex {
+		expression = "API Request: method=(?P<method>\\w+) path=(?P<path>[^ ]+) ipAddress=(?P<ip_address>[^ ]+) user-agent=\"(?P<user_agent>[^\"]*)\""
+		source = "message"
+	}
+	stage.labels {
+		values = {
+			event_type = "api_request",
+			method = "method",
+			path = "path",
+			ip_address = "ip_address",
+		}
+	}
+
+	stage.regex {
+		expression = "API Response: method=(?P<method>\\w+) path=(?P<path>[^ ]+) ipAddress=(?P<ip_address>[^ ]+) user-agent=\"(?P<user_agent>[^\"]*)\" status_code=(?P<status_code>\\d+)"
+		source = "message"
+	}
+	stage.labels {
+		values = {
+			event_type = "api_response",
+			method = "method",
+			path = "path",
+			ip_address = "ip_address",
+			status_code = "status_code",
+		}
+	}
+
+	stage.regex {
+		expression = "\\[(?P<error_code>[A-Z_]+)\\] \\| (?P<error_message>.*)"
+		source = "message"
+	}
+	stage.labels {
+		values = {
+			event_type = "error",
+			error_code = "error_code",
+		}
+	}
+
+	stage.label_drop {
+		values = ["filename", "logstream"]
+	}
+
+	stage.structured_metadata {
+		values = {
+			level = "level",
+			logger = "logger",
+			message = "message",
+			timestamp = "timestamp",
+			method = "method",
+			path = "path",
+			ip_address = "ip_address",
+			user_agent = "user_agent",
+			status_code = "status_code",
+			error_code = "error_code",
+			error_message = "error_message",
+		}
+	}
+}
+
+loki.source.file "backend_logs" {
+	targets               = local.file_match.backend_logs.targets
+	forward_to            = [loki.process.backend_logs.receiver]
+	legacy_positions_file = "/tmp/positions.yaml"
+	tail_from_end         = false
+	encoding              = "UTF-8"
+}
+
+loki.write "default" {
+	endpoint {
+		url                = "http://loki:3100/loki/api/v1/push"
+		tenant_id          = "default"
+		batch_size    	   = "102KiB"
+		batch_wait         = "3s"
+		queue_config {
+			capacity       = "100MiB"
+		}
+	}
+	external_labels = {}
+}

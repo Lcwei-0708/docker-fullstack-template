@@ -24,11 +24,13 @@ services:
       - FRONTEND_PORT=${FRONTEND_PORT}
       - BACKEND_PORT=${BACKEND_PORT}
       - PMA_PORT=${PMA_PORT}
+      - GRAFANA_PORT=${GRAFANA_PORT}
     entrypoint: ["/docker-entrypoint.sh"]
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
       - "${BACKEND_PORT}:${BACKEND_PORT}"
       - "${PMA_PORT}:${PMA_PORT}"
+      - "${GRAFANA_PORT}:${GRAFANA_PORT}"
     depends_on:
       frontend:
         condition: service_healthy
@@ -168,9 +170,83 @@ services:
       timeout: 5s
       retries: 5
 
+  loki:
+    image: grafana/loki:3.5.3
+    environment:
+      - TZ=${TIMEZONE}
+    volumes:
+      - loki-data:/loki
+      - loki-wal-data:/wal
+      - loki-tsdb-data:/loki/tsdb
+      - loki-tsdb-index-data:/loki/tsdb-index
+      - loki-tsdb-cache-data:/loki/tsdb-cache
+      - ./loki/loki-config.yaml:/etc/loki/local-config.yaml
+    user: root
+    command: ["-config.file=/etc/loki/local-config.yaml", "-config.expand-env=true"]
+    networks:
+      - backend-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  alloy:
+    image: grafana/alloy:v1.10.0
+    environment:
+      - TZ=${TIMEZONE}
+    volumes:
+      - alloy-data:/data
+      - ./backend/logs:/var/log/backend
+      - ./nginx/logs:/var/log/nginx
+      - ./alloy/config.river:/etc/alloy/config.river
+    command: ["run", "--storage.path=/data", "/etc/alloy/config.river"]
+    networks:
+      - backend-network
+    restart: always
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:12.2.0-16557133545
+    environment:
+      - TZ=${TIMEZONE}
+      - SSL_ENABLE=${SSL_ENABLE}
+      - GRAFANA_HOST=${GRAFANA_HOST}
+      - GRAFANA_PORT=${GRAFANA_PORT}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_PANELS_DISABLE_SANITIZE_HTML=true
+      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=*
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_FEATURE_TOGGLES_LOGSINFINITESCROLLING=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/entrypoint.sh:/entrypoint.sh
+    entrypoint: ["/entrypoint.sh"]
+    user: root
+    depends_on:
+      - loki
+    networks:
+      - backend-network
+      - frontend-network
+    restart: always
+
 volumes:
   db-data:
   redis-data:
+  alloy-data:
+  loki-data:
+  loki-wal-data:
+  loki-tsdb-data:
+  loki-tsdb-index-data:
+  loki-tsdb-cache-data:
+  grafana-data:
 
 networks:
   frontend-network:
