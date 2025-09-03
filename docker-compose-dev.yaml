@@ -141,6 +141,8 @@ services:
       - PMA_HOST=mariadb
       - PMA_USER=root
       - PMA_PASSWORD=${DB_ROOT_PASSWORD}
+    volumes:
+      - ./phpmyadmin/config.user.inc.php:/etc/phpmyadmin/config.user.inc.php
     depends_on:
       mariadb:
         condition: service_healthy
