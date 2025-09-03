@@ -8,8 +8,10 @@ This project is a ready-to-use fullstack template that leverages Docker Compose 
 - ⚛️ **Frontend**: Built with React, offering a fast and modern user interface.
 - 🚀 **Backend**: Powered by FastAPI, providing a robust and flexible API layer.
 - 🛢️ **Database**: Uses MariaDB for reliable and high-performance data storage.
+- 🗄️ **Database Management**: phpMyAdmin provides an intuitive web-based interface for managing MariaDB databases.
 - 🔀 **Reverse Proxy**: Nginx serves as a reverse proxy, efficiently routing traffic to the appropriate services.
-- 🐳 **Dockerized**: All services are containerized and orchestrated with Docker Compose, ensuring easy setup and consistent environments across development and production.
+- 📊 **Log Management**: Grafana provides log visualization and monitoring dashboards.
+- 🐳 **Dockerized**: All services are containerized with Docker Compose for easy deployment.
 
 
 ## How to Use
