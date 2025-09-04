@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Boolean, DateTime, Text
-from sqlalchemy.orm import relationship
 from core.database import Base
+from sqlalchemy.orm import relationship
+from sqlalchemy import Column, String, Boolean, DateTime
 
 class Users(Base):
     __tablename__ = "users"
@@ -19,3 +19,4 @@ class Users(Base):
     # Relationships
     login_logs = relationship("LoginLogs", back_populates="user")
     user_sessions = relationship("UserSessions", back_populates="user")
+    role_mappings = relationship("RoleMapper", back_populates="user")
