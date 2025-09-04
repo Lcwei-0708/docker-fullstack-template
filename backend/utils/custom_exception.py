@@ -34,3 +34,33 @@ class ServerException(BaseServiceException):
     """Server exception"""
     def __init__(self, message: str = "Server error", status_code: int = 500, details: Dict[str, Any] = None):
         super().__init__(message=message, error_code="SERVER_ERROR", details=details, status_code=status_code, log_level="error")
+
+class AuthenticationException(BaseServiceException):
+    """Authentication related exceptions"""
+    def __init__(self, message: str = "Authentication failed", details: Dict[str, Any] = None):
+        super().__init__(message=message, error_code="AUTH_ERROR", details=details, status_code=401, log_level="warning")
+
+class AuthorizationException(BaseServiceException):
+    """Authorization related exceptions"""
+    def __init__(self, message: str = "Permission denied", details: Dict[str, Any] = None):
+        super().__init__(message=message, error_code="PERMISSION_ERROR", details=details, status_code=403, log_level="warning")
+
+class ValidationException(BaseServiceException):
+    """Validation related exceptions"""
+    def __init__(self, message: str = "Validation failed", details: Dict[str, Any] = None):
+        super().__init__(message=message, error_code="VALIDATION_ERROR", details=details, status_code=400, log_level="warning")
+
+class NotFoundException(BaseServiceException):
+    """Resource not found exceptions"""
+    def __init__(self, message: str = "Resource not found", details: Dict[str, Any] = None):
+        super().__init__(message=message, error_code="NOT_FOUND", details=details, status_code=404, log_level="warning")
+
+class ConflictException(BaseServiceException):
+    """Resource conflict exceptions"""
+    def __init__(self, message: str = "Resource conflict", details: Dict[str, Any] = None):
+        super().__init__(message=message, error_code="CONFLICT", details=details, status_code=409, log_level="warning")
+
+class TokenException(BaseServiceException):
+    """Token related exceptions"""
+    def __init__(self, message: str = "Token error", details: Dict[str, Any] = None):
+        super().__init__(message=message, error_code="TOKEN_ERROR", details=details, status_code=401, log_level="warning")

@@ -12,6 +12,11 @@ class Settings(BaseSettings):
     PROJECT_VERSION: str = "1.0.0"
     PROJECT_DESCRIPTION: str = "Backend API Docs"
 
+    # Basic settings
+    DEBUG: bool = True
+    LOG_LEVEL: str = "INFO"
+    SSL_ENABLE: bool = False
+
     # Database settings
     DATABASE_URL: str
     DATABASE_URL_TEST: str
@@ -26,16 +31,29 @@ class Settings(BaseSettings):
     # Redis settings
     REDIS_URL: str
 
+    # CORS settings
+    HOSTNAME: str
+    BACKEND_PORT: str
+    FRONTEND_PORT: str
+
     # JWT settings
     SECRET_KEY: str
-    ALGORITHM: str = "RS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 1 day
 
-    # Logging settings
-    LOG_LEVEL: str = "INFO"
+    # Session settings
+    SESSION_EXPIRE_MINUTES: int = 10080  # 7 days
+    
+    # Cookie settings
+    COOKIE_SECURE: bool = SSL_ENABLE
+    COOKIE_HTTPONLY: bool = True
+    COOKIE_SAMESITE: str = "lax"  # "strict", "lax", "none"
 
-    # Other settings
-    DEBUG: bool = True
+    # Security settings
+    PASSWORD_MIN_LENGTH: int = 6
+    FAIL_LIMIT: int = 5
+    FAIL_WINDOW_SECONDS: int = 300  # 5 minutes
+    BLOCK_TIME_SECONDS: int = 900  # 15 minutes
 
 # Create a settings instance to be imported elsewhere
 settings = Settings()
