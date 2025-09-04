@@ -80,6 +80,13 @@ def generate_example_from_schema(schema: dict) -> dict:
 
 def generate_property_example(prop: dict, key: str = "", full_schema: dict = None):
     """Generate example value for a single property based on its type and field name"""
+    # Handle $ref references first (for nested objects)
+    if prop.get("$ref"):
+        referenced_schema = resolve_ref(prop["$ref"], full_schema)
+        if referenced_schema:
+            return generate_example_from_schema(referenced_schema)
+        return None
+    
     prop_type = prop.get("type")
     
     if prop_type == "string":
@@ -90,9 +97,11 @@ def generate_property_example(prop: dict, key: str = "", full_schema: dict = Non
         elif key == "phone":
             return "123456789"
         elif key == "created_at":
-            return datetime.now().isoformat() + "Z"
+            return datetime.now().astimezone().isoformat()
         elif key == "updated_at":
-            return datetime.now().isoformat() + "Z"
+            return datetime.now().astimezone().isoformat()
+        elif key == "expires_at":
+            return datetime.now().astimezone().isoformat()
         else:
             return f"Example {key.replace('_', ' ').title()}"
     elif prop_type == "integer":
@@ -118,7 +127,7 @@ def generate_property_example(prop: dict, key: str = "", full_schema: dict = Non
     elif prop_type == "object":
         return generate_example_from_schema(prop)
     elif prop.get("format") == "date-time":
-        return datetime.now().isoformat() + "Z"
+        return datetime.now().astimezone().isoformat()
     elif prop.get("anyOf"):
         options = prop.get("anyOf", [])
         for option in options:
@@ -153,6 +162,24 @@ def resolve_ref(ref_path: str, schema: dict) -> dict:
         return None
 
 common_responses = {
+    401: (
+        "Invalid or expired token",
+        APIResponse[None],
+        {
+            "code": 401,
+            "message": "Invalid or expired token",
+            "data": None
+        }
+    ),
+    403: (
+        "Permission denied",
+        APIResponse[None],
+        {
+            "code": 403,
+            "message": "Permission denied",
+            "data": None
+        }
+    ),
     422: (
         "Validation Error",
         APIResponse[ValidationErrorData],
@@ -163,11 +190,11 @@ common_responses = {
         }
     ),
     429: (
-        "Too Many Requests",
+        "Too many failed attempts. Try again later.",
         APIResponse[None],
         {
             "code": 429,
-            "message": "Too Many Requests",
+            "message": "Too many failed attempts. Try again later.",
             "data": None
         }
     ),
