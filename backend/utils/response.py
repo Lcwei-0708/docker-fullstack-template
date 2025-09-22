@@ -105,10 +105,10 @@ def generate_property_example(prop: dict, key: str = "", full_schema: dict = Non
         else:
             return f"Example {key.replace('_', ' ').title()}"
     elif prop_type == "integer":
-        if "page" in key.lower():
-            return 1
-        elif "per_page" in key.lower():
+        if key in  ["per_page", "total_pages"]:
             return 10
+        elif key == "page":
+            return 1
         else:
             return 100
     elif prop_type == "number":

@@ -56,6 +56,14 @@ class Settings(BaseSettings):
     FAIL_WINDOW_SECONDS: int = 300  # 5 minutes
     BLOCK_TIME_SECONDS: int = 900  # 15 minutes
 
+    # Default admin user settings
+    DEFAULT_ADMIN_EMAIL: str = "admin@example.com"
+    DEFAULT_ADMIN_PASSWORD: str = "admin123"
+    DEFAULT_ADMIN_FIRST_NAME: str = "Admin"
+    DEFAULT_ADMIN_LAST_NAME: str = "User"
+    DEFAULT_ADMIN_PHONE: str = "0000000000"
+    DEFAULT_SUPER_ADMIN_ROLE: str = "admin"
+
 # Create a settings instance to be imported elsewhere
 settings = Settings()
 
