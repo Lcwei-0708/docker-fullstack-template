@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 1 day
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes
 
     # Session settings
     SESSION_EXPIRE_MINUTES: int = 10080  # 7 days
