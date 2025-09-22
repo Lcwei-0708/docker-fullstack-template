@@ -14,9 +14,12 @@ class Users(Base):
     phone = Column(String(20), nullable=False)
     hash_password = Column(String(255), nullable=True)
     status = Column(Boolean, nullable=False, default=True)
+    password_reset_required = Column(Boolean, nullable=False, default=False, server_default='false')
     created_at = Column(DateTime, nullable=False, default=datetime.now)
+    updated_at = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
     
     # Relationships
     login_logs = relationship("LoginLogs", back_populates="user")
     user_sessions = relationship("UserSessions", back_populates="user")
     role_mappings = relationship("RoleMapper", back_populates="user")
+    password_reset_tokens = relationship("PasswordResetTokens", back_populates="user")
