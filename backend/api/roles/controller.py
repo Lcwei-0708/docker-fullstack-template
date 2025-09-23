@@ -1,6 +1,7 @@
 from core.dependencies import get_db
 from core.security import verify_token
 from core.rbac import require_permission
+from core.permissions import Permission
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, HTTPException, Request, Path
 from utils.response import APIResponse, parse_responses, common_responses
@@ -27,7 +28,7 @@ router = APIRouter(tags=["Roles"])
         200: ("Successfully retrieved roles", RolesListResponse)
     }, common_responses)
 )
-@require_permission(["role-management"])
+@require_permission([Permission.VIEW_ROLES, Permission.MANAGE_ROLES])
 async def get_roles(
     request: Request,
     token: dict = Depends(verify_token),
@@ -50,7 +51,7 @@ async def get_roles(
         409: ("Role name already exists", None)
     }, common_responses)
 )
-@require_permission(["role-management"])
+@require_permission([Permission.MANAGE_ROLES])
 async def create_role_api(
     role_data: RoleCreate,
     request: Request,
@@ -77,7 +78,7 @@ async def create_role_api(
         409: ("Role name already exists", None)
     }, common_responses)
 )
-@require_permission(["role-management"])
+@require_permission([Permission.MANAGE_ROLES])
 async def update_role_api(
     role_id: str = Path(..., description="Role ID"),
     role_data: RoleUpdate = None,
@@ -107,7 +108,7 @@ async def update_role_api(
         409: ("Cannot delete role that is assigned to users", None)
     }, common_responses)
 )
-@require_permission(["role-management"])
+@require_permission([Permission.MANAGE_ROLES])
 async def delete_role_api(
     role_id: str = Path(..., description="Role ID"),
     request: Request = None,
@@ -134,7 +135,7 @@ async def delete_role_api(
         200: ("Successfully retrieved role attributes", RoleAttributesListResponse)
     }, common_responses)
 )
-@require_permission(["role-management"])
+@require_permission([Permission.VIEW_ROLES, Permission.MANAGE_ROLES])
 async def get_role_attributes_api(
     request: Request,
     token: dict = Depends(verify_token),
@@ -157,7 +158,7 @@ async def get_role_attributes_api(
         409: ("Attribute name already exists", None)
     }, common_responses)
 )
-@require_permission(["role-management"])
+@require_permission([Permission.MANAGE_ROLES])
 async def create_role_attribute_api(
     attribute_data: RoleAttributeCreate,
     request: Request,
@@ -184,7 +185,7 @@ async def create_role_attribute_api(
         409: ("Attribute name already exists", None)
     }, common_responses)
 )
-@require_permission(["role-management"])
+@require_permission([Permission.MANAGE_ROLES])
 async def update_role_attribute_api(
     attribute_id: str = Path(..., description="Attribute ID"),
     attribute_data: RoleAttributeUpdate = None,
@@ -214,7 +215,7 @@ async def update_role_attribute_api(
         409: ("Cannot delete attribute that is assigned to roles", None)
     }, common_responses)
 )
-@require_permission(["role-management"])
+@require_permission([Permission.MANAGE_ROLES])
 async def delete_role_attribute_api(
     attribute_id: str = Path(..., description="Attribute ID"),
     request: Request = None,
@@ -242,7 +243,7 @@ async def delete_role_attribute_api(
         404: ("Role not found", None)
     }, common_responses)
 )
-@require_permission(["role-management"])
+@require_permission([Permission.VIEW_ROLES, Permission.MANAGE_ROLES])
 async def get_role_attribute_mapping_api(
     role_id: str = Path(..., description="Role ID"),
     request: Request = None,
@@ -273,7 +274,7 @@ async def get_role_attribute_mapping_api(
         400: ("All role attributes failed to process", RoleAttributeMappingBatchResponse)
     }, common_responses)
 )
-@require_permission(["role-management"])
+@require_permission([Permission.MANAGE_ROLES])
 async def update_role_attribute_mapping_api(
     role_id: str = Path(..., description="Role ID"),
     attributes_data: RoleAttributesMapping = None,

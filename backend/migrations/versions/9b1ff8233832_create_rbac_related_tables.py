@@ -25,6 +25,8 @@ def upgrade() -> None:
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('created_at', sa.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+    sa.Column('updated_at', sa.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name', name='uq_role_attributes_name')
     )
@@ -34,6 +36,8 @@ def upgrade() -> None:
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('created_at', sa.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+    sa.Column('updated_at', sa.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name', name='uq_roles_name')
     )
@@ -43,6 +47,8 @@ def upgrade() -> None:
     sa.Column('role_id', sa.String(length=36), nullable=False),
     sa.Column('attributes_id', sa.String(length=36), nullable=False),
     sa.Column('value', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+    sa.Column('updated_at', sa.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
     sa.ForeignKeyConstraint(['attributes_id'], ['role_attributes.id'], ),
     sa.ForeignKeyConstraint(['role_id'], ['roles.id'], ),
     sa.PrimaryKeyConstraint('role_id', 'attributes_id')
@@ -50,6 +56,8 @@ def upgrade() -> None:
     op.create_table('role_mapper',
     sa.Column('user_id', sa.String(length=36), nullable=False),
     sa.Column('role_id', sa.String(length=36), nullable=False),
+    sa.Column('created_at', sa.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+    sa.Column('updated_at', sa.TIMESTAMP(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
     sa.ForeignKeyConstraint(['role_id'], ['roles.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('user_id', 'role_id')

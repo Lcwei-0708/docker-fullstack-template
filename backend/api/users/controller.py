@@ -3,6 +3,7 @@ from typing import Optional
 from core.redis import get_redis
 from core.dependencies import get_db
 from core.security import verify_token
+from core.permissions import Permission
 from core.rbac import require_permission
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.response import APIResponse, parse_responses, common_responses
@@ -21,7 +22,7 @@ router = APIRouter(tags=["Users"])
         200: ("Successfully retrieved users", UserPagination)
     }, common_responses)
 )
-@require_permission(["user-management"])
+@require_permission([Permission.VIEW_USERS, Permission.MANAGE_USERS])
 async def get_users(
     request: Request,
     token: dict = Depends(verify_token),
@@ -58,7 +59,7 @@ async def get_users(
         200: ("User created successfully", UserResponse)
     }, common_responses)
 )
-@require_permission(["user-management"])
+@require_permission([Permission.MANAGE_USERS])
 async def create_user_api(
     user_data: UserCreate,
     request: Request,
@@ -83,7 +84,7 @@ async def create_user_api(
         200: ("User updated successfully", UserResponse)
     }, common_responses)
 )
-@require_permission(["user-management"])
+@require_permission([Permission.MANAGE_USERS])
 async def update_user_api(
     request: Request = None,
     token: dict = Depends(verify_token),
@@ -111,7 +112,7 @@ async def update_user_api(
         200: ("Users deleted successfully", dict)
     }, common_responses)
 )
-@require_permission(["user-management"])
+@require_permission([Permission.MANAGE_USERS])
 async def delete_users_api(
     delete_data: UserDelete,
     request: Request,
@@ -136,7 +137,7 @@ async def delete_users_api(
         200: ("Password reset successfully", dict)
     }, common_responses)
 )
-@require_permission(["user-management"])
+@require_permission([Permission.MANAGE_USERS])
 async def reset_user_password_api(
     user_id: str = Path(..., description="User ID"),
     password_data: PasswordReset = None,
