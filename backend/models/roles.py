@@ -7,7 +7,7 @@ class Roles(Base):
     __tablename__ = "roles"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), unique=True, index=True)
-    name = Column(String(100), nullable=False)
+    name = Column(String(100), nullable=False, unique=True, index=True)
     description = Column(Text, nullable=True)
     
     # Relationships

@@ -1,8 +1,9 @@
 from fastapi import APIRouter
 from core.config import settings
 from .auth.controller import router as auth_router
-from .user.controller import router as user_router
-from .admin.controller import router as admin_router
+from .account.controller import router as account_router
+from .users.controller import router as users_router
+from .roles.controller import router as roles_router
 
 api_router = APIRouter()
 
@@ -12,5 +13,6 @@ if settings.DEBUG:
 
 # Add new API modules below.
 api_router.include_router(auth_router, prefix="/auth")
-api_router.include_router(user_router, prefix="/user")
-api_router.include_router(admin_router, prefix="/admin")
+api_router.include_router(account_router, prefix="/account")
+api_router.include_router(users_router, prefix="/users")
+api_router.include_router(roles_router, prefix="/roles")

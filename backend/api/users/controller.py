@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Path
 from .services import get_all_users, create_user, update_user, delete_users, reset_user_password
 from .schema import UserPagination, UserSortBy, UserCreate, UserUpdate, UserDelete, PasswordReset, UserResponse
 
-router = APIRouter(tags=["Admin"])
+router = APIRouter(tags=["Users"])
 
 @router.get(
     "/users",
@@ -21,7 +21,7 @@ router = APIRouter(tags=["Admin"])
         200: ("Successfully retrieved users", UserPagination)
     }, common_responses)
 )
-@require_permission(["admin"])
+@require_permission(["user-management"])
 async def get_users(
     request: Request,
     token: dict = Depends(verify_token),
@@ -58,7 +58,7 @@ async def get_users(
         200: ("User created successfully", UserResponse)
     }, common_responses)
 )
-@require_permission(["admin"])
+@require_permission(["user-management"])
 async def create_user_api(
     user_data: UserCreate,
     request: Request,
@@ -83,7 +83,7 @@ async def create_user_api(
         200: ("User updated successfully", UserResponse)
     }, common_responses)
 )
-@require_permission(["admin"])
+@require_permission(["user-management"])
 async def update_user_api(
     request: Request = None,
     token: dict = Depends(verify_token),
@@ -111,7 +111,7 @@ async def update_user_api(
         200: ("Users deleted successfully", dict)
     }, common_responses)
 )
-@require_permission(["admin"])
+@require_permission(["user-management"])
 async def delete_users_api(
     delete_data: UserDelete,
     request: Request,
@@ -136,7 +136,7 @@ async def delete_users_api(
         200: ("Password reset successfully", dict)
     }, common_responses)
 )
-@require_permission(["admin"])
+@require_permission(["user-management"])
 async def reset_user_password_api(
     user_id: str = Path(..., description="User ID"),
     password_data: PasswordReset = None,
