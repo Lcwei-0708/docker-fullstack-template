@@ -31,6 +31,28 @@ async def create_access_token(data: Dict[str, Any]) -> str:
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
+async def create_password_reset_token(user_id: str, email: str) -> str:
+    """Create password reset token"""
+    try:
+        now = datetime.now().astimezone()
+        expire = now + timedelta(minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES)
+        
+        payload = {
+            "sub": user_id,
+            "email": email,
+            "token_type": "password_reset",
+            "force_change_password": True,
+            "iat": now,
+            "exp": expire
+        }
+        
+        token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+        
+        return token
+        
+    except Exception as e:
+        raise ServerException(f"Failed to create password reset token: {str(e)}")
+
 async def get_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))) -> str:
     if not credentials:
         raise HTTPException(
@@ -90,6 +112,50 @@ async def verify_token(token: str = Depends(get_token), redis_client = Depends(g
         )
     except ValueError as e:
         logger.warning(f"Token validation error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+async def verify_password_reset_token(token: str = Depends(get_token)) -> Dict[str, Any]:
+    """Verify password reset token"""
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        
+        if payload.get("token_type") != "password_reset":
+            raise ValueError("Invalid token type")
+        
+        # Check if force change password
+        if not payload.get("force_change_password"):
+            raise ValueError("Token not authorized for password reset")
+
+        if payload.get("exp") < datetime.now().astimezone().timestamp():
+            raise ValueError("Token expired")
+        
+        user_id = payload.get("sub")
+        email = payload.get("email")
+        
+        if not user_id or not email:
+            raise ValueError("Invalid token payload")
+        
+        return {
+            "token": token,
+            "sub": user_id,
+            "email": email,
+            "exp": payload.get("exp"),
+            "iat": payload.get("iat")
+        }
+        
+    except JWTError as e:
+        logger.warning(f"JWT validation failed: {type(e).__name__}: {str(e)}")        
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    except ValueError as e:
+        logger.error(f"Failed to verify password reset token: {str(e)}")        
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",

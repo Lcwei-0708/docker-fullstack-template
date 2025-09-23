@@ -1,22 +1,19 @@
 import logging
-from typing import List, Dict, Any
 from functools import wraps
-from fastapi import Depends, HTTPException, status
+from typing import List, Dict
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from core.dependencies import get_db
-from core.security import verify_token
-from models.users import Users
+from models.roles import Roles
+from core.config import settings
+from fastapi import HTTPException, status
 from models.role_mapper import RoleMapper
-from models.role_attributes_mapper import RoleAttributesMapper
+from sqlalchemy.ext.asyncio import AsyncSession
 from models.role_attributes import RoleAttributes
+from utils.custom_exception import ServerException
+from models.role_attributes_mapper import RoleAttributesMapper
 
 logger = logging.getLogger(__name__)
 
-async def get_user_attributes(
-    user_id: str,
-    db: AsyncSession
-) -> Dict[str, bool]:
+async def get_user_attributes(user_id: str, db: AsyncSession) -> Dict[str, bool]:
     """Get user attributes"""
     try:
         result = await db.execute(
@@ -41,8 +38,23 @@ async def get_user_attributes(
         
         return attributes
     except Exception as e:
-        logger.error(f"Failed to get user attributes: {e}")
+        ServerException(f"Failed to get user attributes: {e}")
         return {}
+
+async def check_user_has_super_role(user_id: str, db: AsyncSession) -> bool:
+    """Check if user has super admin role"""
+    try:
+        result = await db.execute(
+            select(Roles.name)
+            .join(RoleMapper, Roles.id == RoleMapper.role_id)
+            .where(RoleMapper.user_id == user_id)
+        )
+        
+        user_roles = [row.name for row in result]
+        return settings.DEFAULT_SUPER_ADMIN_ROLE in user_roles
+    except Exception as e:
+        logger.error(f"Failed to check super role: {e}")
+        return False
 
 def require_permission(required_attributes: List[str]):
     """Permission check decorator"""
@@ -57,7 +69,13 @@ def require_permission(required_attributes: List[str]):
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
             
-            user_id = token.get("sub")            
+            user_id = token.get("sub")
+            
+            # Check if user has super admin role first
+            if await check_user_has_super_role(user_id, db):
+                return await func(*args, **kwargs)
+            
+            # If not super admin, check specific permissions
             user_attributes = await get_user_attributes(user_id, db)
 
             # Check if the user has all the required permissions
@@ -69,7 +87,7 @@ def require_permission(required_attributes: List[str]):
             if missing_permissions:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Permission denied"
+                    detail="Permission denied"
                 )
             
             return await func(*args, **kwargs)

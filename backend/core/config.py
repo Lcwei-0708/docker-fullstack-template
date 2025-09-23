@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 1 day
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes
 
     # Session settings
     SESSION_EXPIRE_MINUTES: int = 10080  # 7 days
@@ -54,6 +55,14 @@ class Settings(BaseSettings):
     FAIL_LIMIT: int = 5
     FAIL_WINDOW_SECONDS: int = 300  # 5 minutes
     BLOCK_TIME_SECONDS: int = 900  # 15 minutes
+
+    # Default admin user settings
+    DEFAULT_ADMIN_EMAIL: str = "admin@example.com"
+    DEFAULT_ADMIN_PASSWORD: str = "admin123"
+    DEFAULT_ADMIN_FIRST_NAME: str = "Admin"
+    DEFAULT_ADMIN_LAST_NAME: str = "User"
+    DEFAULT_ADMIN_PHONE: str = "0000000000"
+    DEFAULT_SUPER_ADMIN_ROLE: str = "admin"
 
 # Create a settings instance to be imported elsewhere
 settings = Settings()

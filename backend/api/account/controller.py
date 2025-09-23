@@ -1,4 +1,3 @@
-import logging
 from core.redis import get_redis
 from core.dependencies import get_db
 from core.security import verify_token
@@ -9,8 +8,7 @@ from utils.response import APIResponse, parse_responses, common_responses
 from .services import get_user_by_id, update_user_profile, change_password
 from utils.custom_exception import AuthenticationException, NotFoundException
 
-logger = logging.getLogger(__name__)
-router = APIRouter(tags=["User"])
+router = APIRouter(tags=["Account"])
 
 @router.get(
     "/profile",

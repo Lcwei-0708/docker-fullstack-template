@@ -45,6 +45,8 @@ async def change_password(db: AsyncSession, user_id: str, password_change: Passw
             raise AuthenticationException("Current password is incorrect")
         
         user.hash_password = await hash_password(password_change.new_password)
+        user.password_reset_required = False
+        
         if password_change.logout_all_devices and redis_client:
             await clear_user_all_sessions(db, redis_client, user_id)
         

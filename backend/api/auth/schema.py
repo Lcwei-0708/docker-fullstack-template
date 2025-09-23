@@ -37,3 +37,13 @@ class UserLoginResponse(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     expires_at: datetime
+
+class PasswordResetRequiredResponse(BaseModel):
+    reset_token: str
+    expires_at: str
+
+class ResetPasswordRequest(BaseModel):
+    new_password: str
+
+class TokenValidationResponse(BaseModel):
+    is_valid: bool

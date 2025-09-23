@@ -40,6 +40,11 @@ class AuthenticationException(BaseServiceException):
     def __init__(self, message: str = "Authentication failed", details: Dict[str, Any] = None):
         super().__init__(message=message, error_code="AUTH_ERROR", details=details, status_code=401, log_level="warning")
 
+class PasswordResetRequiredException(BaseServiceException):
+    """Password reset required exception"""
+    def __init__(self, message: str = "Password reset required", details: Dict[str, Any] = None):
+        super().__init__(message=message, error_code="PASSWORD_RESET_REQUIRED", details=details, status_code=202, log_level="warning")
+
 class AuthorizationException(BaseServiceException):
     """Authorization related exceptions"""
     def __init__(self, message: str = "Permission denied", details: Dict[str, Any] = None):

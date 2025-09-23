@@ -1,6 +1,6 @@
 import ast
 import redis
-from typing import Optional
+from typing import Optional, Dict, Any
 from sqlalchemy import select
 from models.users import Users
 from core.config import settings
@@ -8,22 +8,27 @@ from models.login_logs import LoginLogs
 from datetime import datetime, timedelta
 from models.user_sessions import UserSessions
 from sqlalchemy.ext.asyncio import AsyncSession
+from models.password_reset_tokens import PasswordResetTokens
 from .schema import (
     UserRegister, 
     UserLogin, 
     LoginResult, 
-    SessionResult
+    SessionResult,
+    TokenValidationResponse,
+    PasswordResetRequiredResponse
 )
 from core.security import (
     verify_password, 
     create_access_token,
     hash_password,
     extend_session_ttl,
-    clear_user_all_sessions
+    clear_user_all_sessions,
+    create_password_reset_token
 )
 from utils.custom_exception import (
     ConflictException,
     AuthenticationException,
+    PasswordResetRequiredException,
     ServerException,
     NotFoundException
 )
@@ -71,6 +76,34 @@ async def login(
             failure_reason="Invalid credentials"
         )
         raise AuthenticationException("Invalid email or password")
+    
+    # Check if password reset is required
+    if user.password_reset_required:
+        reset_token = await create_password_reset_token(user.id, user.email)
+        
+        reset_token_record = PasswordResetTokens(
+            user_id=user.id,
+            token=reset_token,
+            expires_at=datetime.now().astimezone() + timedelta(minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES)
+        )
+        db.add(reset_token_record)
+        await db.commit()
+        
+        await _log_login_attempt(
+            db, email=user.email,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            is_success=True,
+            user_id=user.id
+        )
+        
+        raise PasswordResetRequiredException(
+            message="Password reset required",
+            details=PasswordResetRequiredResponse(
+                reset_token=reset_token,
+                expires_at=reset_token_record.expires_at.isoformat()
+            )
+        )
     
     session_result = await _create_user_session(
         db, redis_client, user, ip_address, user_agent
@@ -159,6 +192,109 @@ async def token(
     await _update_session_expiry(db, session_id)
     
     return new_access_token
+
+async def reset_password(
+    db: AsyncSession,
+    redis_client: redis.Redis,
+    token: dict,
+    new_password: str,
+    ip_address: str,
+    user_agent: str
+) -> LoginResult:
+    """Reset password using token"""
+    try:
+        user_id = token.get("sub")
+        token_string = token.get("token")
+        
+        result = await db.execute(
+            select(PasswordResetTokens).where(
+                PasswordResetTokens.token == token_string,
+                PasswordResetTokens.user_id == user_id,
+                PasswordResetTokens.is_used == False,
+                PasswordResetTokens.expires_at > datetime.now().astimezone()
+            )
+        )
+        token_record = result.scalar_one_or_none()
+        
+        if not token_record:
+            raise AuthenticationException("Invalid or expired token")
+        
+        result = await db.execute(
+            select(Users).where(Users.id == user_id)
+        )
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            raise NotFoundException("User not found")
+        
+        if not user.password_reset_required:
+            raise AuthenticationException("Password reset not required for this user")
+        
+        user.hash_password = await hash_password(new_password)
+        user.password_reset_required = False
+        
+        token_record.is_used = True
+        token_record.updated_at = datetime.now().astimezone()
+        
+        # Force logout all devices
+        await clear_user_all_sessions(db, redis_client, user_id)
+        
+        # Create new session
+        session_result = await _create_user_session(
+            db, redis_client, user, ip_address, user_agent
+        )
+        
+        await db.commit()
+        
+        return {
+            "user": user,
+            "session_id": session_result["session_id"],
+            "access_token": session_result["access_token"]
+        }
+        
+    except (AuthenticationException, NotFoundException):
+        raise
+    except Exception as e:
+        raise ServerException(f"Failed to reset password: {str(e)}")
+
+async def validate_password_reset_token(
+    db: AsyncSession,
+    token: dict
+) -> TokenValidationResponse:
+    """Validate password reset token without consuming it"""
+    try:
+        user_id = token.get("sub")
+        token_string = token.get("token")
+        
+        result = await db.execute(
+            select(PasswordResetTokens).where(
+                PasswordResetTokens.token == token_string,
+                PasswordResetTokens.user_id == user_id,
+                PasswordResetTokens.is_used == False,
+                PasswordResetTokens.expires_at > datetime.now().astimezone()
+            )
+        )
+        token_record = result.scalar_one_or_none()
+        
+        if not token_record:
+            raise AuthenticationException("Invalid or expired token")
+        
+        result = await db.execute(
+            select(Users).where(Users.id == user_id)
+        )
+        user = result.scalar_one_or_none()
+        
+        if not user or not user.password_reset_required:
+            raise AuthenticationException("User not found or password reset not required")
+        
+        return TokenValidationResponse(
+            is_valid=True
+        )
+        
+    except AuthenticationException:
+        raise
+    except Exception as e:
+        raise ServerException(f"Token validation failed: {str(e)}")
 
 async def _update_session_expiry(db: AsyncSession, session_id: str) -> None:
     """Update session expiry time in database"""
