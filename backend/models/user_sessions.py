@@ -1,7 +1,7 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, TIMESTAMP, Text, ForeignKey
-from sqlalchemy.orm import relationship
 from core.database import Base
+from sqlalchemy.orm import relationship
+from sqlalchemy import Column, String, Boolean, TIMESTAMP, Text, ForeignKey, text
 
 class UserSessions(Base):
     __tablename__ = "user_sessions"
@@ -12,8 +12,8 @@ class UserSessions(Base):
     ip_address = Column(String(45), nullable=False)
     user_agent = Column(Text, nullable=False)
     is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(TIMESTAMP, nullable=False, server_default='CURRENT_TIMESTAMP')
-    updated_at = Column(TIMESTAMP, nullable=False, server_default='CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')
+    created_at = Column(TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    updated_at = Column(TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     expires_at = Column(TIMESTAMP, nullable=False)
     
     # Relationships

@@ -1,7 +1,7 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, TIMESTAMP, Text, ForeignKey
-from sqlalchemy.orm import relationship
 from core.database import Base
+from sqlalchemy.orm import relationship
+from sqlalchemy import Column, String, Boolean, TIMESTAMP, Text, ForeignKey, text
 
 class LoginLogs(Base):
     __tablename__ = "login_logs"
@@ -13,8 +13,8 @@ class LoginLogs(Base):
     user_agent = Column(Text, nullable=False)
     is_success = Column(Boolean, nullable=False)
     failure_reason = Column(String(255), nullable=True)
-    created_at = Column(TIMESTAMP, nullable=False, server_default='CURRENT_TIMESTAMP')
-    updated_at = Column(TIMESTAMP, nullable=False, server_default='CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')
+    created_at = Column(TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    updated_at = Column(TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     
     # Relationships
     user = relationship("Users", back_populates="login_logs") 
