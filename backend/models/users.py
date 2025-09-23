@@ -1,8 +1,7 @@
 import uuid
-from datetime import datetime
 from core.database import Base
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column, String, Boolean, DateTime
+from sqlalchemy import Column, String, Boolean, TIMESTAMP
 
 class Users(Base):
     __tablename__ = "users"
@@ -15,8 +14,8 @@ class Users(Base):
     hash_password = Column(String(255), nullable=True)
     status = Column(Boolean, nullable=False, default=True)
     password_reset_required = Column(Boolean, nullable=False, default=False, server_default='false')
-    created_at = Column(DateTime, nullable=False, default=datetime.now)
-    updated_at = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
+    created_at = Column(TIMESTAMP, nullable=False, server_default='CURRENT_TIMESTAMP')
+    updated_at = Column(TIMESTAMP, nullable=False, server_default='CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')
     
     # Relationships
     login_logs = relationship("LoginLogs", back_populates="user")

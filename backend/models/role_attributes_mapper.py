@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, ForeignKey
+from sqlalchemy import Column, String, Boolean, ForeignKey, TIMESTAMP
 from sqlalchemy.orm import relationship
 from core.database import Base
 
@@ -8,6 +8,8 @@ class RoleAttributesMapper(Base):
     role_id = Column(String(36), ForeignKey("roles.id"), primary_key=True)
     attributes_id = Column(String(36), ForeignKey("role_attributes.id"), primary_key=True)
     value = Column(Boolean, nullable=False)
+    created_at = Column(TIMESTAMP, nullable=False, server_default='CURRENT_TIMESTAMP')
+    updated_at = Column(TIMESTAMP, nullable=False, server_default='CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')
     
     # Relationships
     role = relationship("Roles", back_populates="attribute_mappings")

@@ -234,7 +234,6 @@ async def reset_password(
         user.password_reset_required = False
         
         token_record.is_used = True
-        token_record.updated_at = datetime.now().astimezone()
         
         # Force logout all devices
         await clear_user_all_sessions(db, redis_client, user_id)
@@ -305,7 +304,6 @@ async def _update_session_expiry(db: AsyncSession, session_id: str) -> None:
         session = result.scalar_one_or_none()
         if session:
             session.expires_at = datetime.now().astimezone() + timedelta(minutes=settings.SESSION_EXPIRE_MINUTES)
-            session.updated_at = datetime.now().astimezone()
             await db.commit()
     except Exception as e:
         raise ServerException(f"Failed to update session expiry in database: {e}")
