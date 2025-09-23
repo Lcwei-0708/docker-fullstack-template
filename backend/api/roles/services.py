@@ -6,12 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.role_attributes_mapper import RoleAttributesMapper
 from utils.custom_exception import ServerException, ConflictException, NotFoundException
 from .schema import (
-    RoleResponse, RoleCreate, RoleUpdate, 
-    RoleAttributeResponse, RoleAttributeCreate, RoleAttributeUpdate,
+    RoleResponse, RoleCreate, RoleUpdate, RolesListResponse,
+    RoleAttributeResponse, RoleAttributeCreate, RoleAttributeUpdate, RoleAttributesListResponse,
     RoleAttributesMapping, RoleAttributeMappingBatchResponse, AttributeMappingResult
 )
 
-async def get_all_roles(db: AsyncSession) -> List[RoleResponse]:
+async def get_all_roles(db: AsyncSession) -> RolesListResponse:
     """Get all roles"""
     try:
         roles_query = select(Roles)
@@ -27,7 +27,7 @@ async def get_all_roles(db: AsyncSession) -> List[RoleResponse]:
             )
             role_responses.append(role_response)
         
-        return role_responses
+        return RolesListResponse(roles=role_responses)
         
     except Exception as e:
         raise ServerException(f"Failed to retrieve roles: {str(e)}")
@@ -128,14 +128,14 @@ async def delete_role(db: AsyncSession, role_id: str) -> bool:
     except Exception as e:
         raise ServerException(f"Failed to delete role: {str(e)}")
 
-async def get_all_role_attributes(db: AsyncSession) -> List[RoleAttributeResponse]:
+async def get_all_role_attributes(db: AsyncSession) -> RoleAttributesListResponse:
     """Get all available role attributes"""
     try:
         attributes_query = select(RoleAttributes)
         attributes_result = await db.execute(attributes_query)
         attributes = attributes_result.scalars().all()
         
-        return [
+        attribute_responses = [
             RoleAttributeResponse(
                 id=attr.id,
                 name=attr.name,
@@ -143,6 +143,8 @@ async def get_all_role_attributes(db: AsyncSession) -> List[RoleAttributeRespons
             )
             for attr in attributes
         ]
+        
+        return RoleAttributesListResponse(attributes=attribute_responses)
         
     except Exception as e:
         raise ServerException(f"Failed to retrieve role attributes: {str(e)}")
