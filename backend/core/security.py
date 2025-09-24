@@ -1,9 +1,11 @@
 import ast
 import redis
 import logging
+from models.users import Users
 from jose import jwt, JWTError
 from core.redis import get_redis
 from core.config import settings
+from core.dependencies import get_db
 from sqlalchemy import update, select
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -93,13 +95,21 @@ async def verify_session(sid: str, token: str, redis_client) -> Dict[str, Any]:
             headers={"WWW-Authenticate": "Bearer"}
         )
 
-async def verify_token(token: str = Depends(get_token), redis_client = Depends(get_redis)) -> Dict[str, Any]:
+async def verify_token(token: str = Depends(get_token), redis_client = Depends(get_redis), db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         sid = payload.get("sid")
         if not sid:
             raise ValueError("Missing session ID")
         session_data = await verify_session(sid, token, redis_client)
+        
+        user = await db.execute(select(Users.status).where(Users.id == payload.get("sub")))
+        user_status = user.scalar_one_or_none()
+        if user_status is not None and not user_status:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account is disabled"
+            )
         
         return payload
         

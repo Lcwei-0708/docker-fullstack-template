@@ -42,6 +42,9 @@ class PasswordResetRequiredResponse(BaseModel):
     reset_token: str
     expires_at: str
 
+class LogoutRequest(BaseModel):
+    logout_all: bool = False
+
 class ResetPasswordRequest(BaseModel):
     new_password: str
 
