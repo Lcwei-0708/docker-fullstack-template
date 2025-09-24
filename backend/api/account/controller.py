@@ -66,11 +66,7 @@ async def update_user_profile_api(
     Update the current authenticated user's profile information (excluding password).
     """
     try:
-        user_id = token.get("sub")
-        
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        
+        user_id = token.get("sub")        
         user = await update_user_profile(db, user_id, user_update)
         
         if not user:

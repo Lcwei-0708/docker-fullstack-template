@@ -1,6 +1,6 @@
 import ast
 import redis
-from typing import Optional, Dict, Any
+from typing import Optional
 from sqlalchemy import select
 from models.users import Users
 from core.config import settings
@@ -66,14 +66,40 @@ async def login(
     user_agent: str
 ) -> LoginResult:
     """User login"""
-    user = await _authenticate_user(db, login_data.email, login_data.password)
+    result = await db.execute(
+        select(Users).where(Users.email == login_data.email)
+    )
+    user = result.scalar_one_or_none()
+    
     if not user:
         await _log_login_attempt(
             db, email=login_data.email,
             ip_address=ip_address,
             user_agent=user_agent,
             is_success=False,
-            failure_reason="Invalid credentials"
+            failure_reason="User not found"
+        )
+        raise AuthenticationException("Invalid email or password")
+    
+    # Check if user account is disabled
+    if not user.status:
+        await _log_login_attempt(
+            db, email=login_data.email,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            is_success=False,
+            failure_reason="Account disabled"
+        )
+        raise AuthenticationException("Account is disabled")
+    
+    # Now verify password
+    if not await verify_password(login_data.password, user.hash_password):
+        await _log_login_attempt(
+            db, email=login_data.email,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            is_success=False,
+            failure_reason="Invalid password"
         )
         raise AuthenticationException("Invalid email or password")
     
@@ -176,10 +202,13 @@ async def token(
     if not user_id:
         raise AuthenticationException("Invalid or expired session")
 
-    # Verify user exists (optional)
+    # Verify user exists
     user = await _get_user_by_id(db, user_id)
     if not user:
         raise NotFoundException("User not found")
+    
+    if not user.status:
+        raise AuthenticationException("Account is disabled")
 
     new_access_token = await create_access_token(data={
         "sub": user_id, 
@@ -332,15 +361,6 @@ async def _create_user(db: AsyncSession, user_data: UserRegister) -> Users:
         raise
     except Exception as e:
         raise ServerException(f"Failed to create user: {str(e)}")
-
-async def _authenticate_user(db: AsyncSession, email: str, password: str) -> Optional[Users]:
-    result = await db.execute(
-        select(Users).where(Users.email == email)
-    )
-    user = result.scalar_one_or_none()
-    if not user or not await verify_password(password, user.hash_password):
-        return None
-    return user
 
 async def _get_user_by_id(db: AsyncSession, user_id: str) -> Optional[Users]:
     result = await db.execute(

@@ -16,7 +16,8 @@ from .schema import (
     TokenResponse,
     PasswordResetRequiredResponse,
     ResetPasswordRequest,
-    TokenValidationResponse
+    TokenValidationResponse,
+    LogoutRequest
 )
 from .services import (
     register,
@@ -162,53 +163,39 @@ async def login_api(
     }, common_responses)
 )
 async def logout_api(
+    logout_data: LogoutRequest,
     token: dict = Depends(verify_token),
     response: Response = None,
     db: AsyncSession = Depends(get_db),
     redis_client = Depends(get_redis)
 ):
+    """
+    Logout user from current device or all devices
+    
+    Args:
+        logout_data: Contains logout_all flag to determine logout scope
+    """
     try:
         user_id = token.get("sub")
         session_id = token.get("sid")
         
-        if not user_id or not session_id:
-            raise AuthenticationException("Invalid or expired session")
-        
-        if await logout(db, redis_client, user_id, session_id):
-            if response:
-                response.delete_cookie("session_id")
-            return APIResponse(code=200, message="User logged out successfully")
+        if logout_data.logout_all:
+            # Logout from all devices
+            if await logout_all_devices(db, redis_client, user_id):
+                if response:
+                    response.delete_cookie("session_id")
+                return APIResponse(code=200, message="User logged out successfully")
+        else:
+            # Logout from current device only
+            if not session_id:
+                raise AuthenticationException("Invalid or expired session")
+            
+            if await logout(db, redis_client, user_id, session_id):
+                if response:
+                    response.delete_cookie("session_id")
+                return APIResponse(code=200, message="User logged out successfully")
     except AuthenticationException:
         raise HTTPException(status_code=401, detail="Invalid or expired session")
-    except Exception:
-        raise HTTPException(status_code=500)
-
-@router.post(
-    "/logout-all", 
-    response_model=APIResponse[None],
-    response_model_exclude_none=True,
-    summary="Logout all devices",
-    responses=parse_responses({
-        200: ("All devices logged out successfully", None)
-    }, common_responses)
-)
-async def logout_all_api(
-    token: dict = Depends(verify_token),
-    response: Response = None,
-    db: AsyncSession = Depends(get_db),
-    redis_client = Depends(get_redis)
-):
-    """Logout user from all devices"""
-    try:
-        user_id = token.get("sub")
-        
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid or expired token")
-        
-        if await logout_all_devices(db, redis_client, user_id):
-            if response:
-                response.delete_cookie("session_id")
-            return APIResponse(code=200, message="All devices logged out successfully")
     except Exception:
         raise HTTPException(status_code=500)
 
