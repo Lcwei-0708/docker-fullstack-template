@@ -14,7 +14,7 @@ from .schema import UserPagination, UserSortBy, UserCreate, UserUpdate, UserDele
 router = APIRouter(tags=["Users"])
 
 @router.get(
-    "/users",
+    "/",
     response_model=APIResponse[UserPagination],
     response_model_exclude_none=True,
     summary="Get all users",
@@ -51,7 +51,7 @@ async def get_users(
         raise HTTPException(status_code=500)
 
 @router.post(
-    "/users",
+    "/",
     response_model=APIResponse[UserResponse],
     response_model_exclude_none=True,
     summary="Create new user",
@@ -76,7 +76,7 @@ async def create_user_api(
         raise HTTPException(status_code=500)
 
 @router.put(
-    "/users/{user_id}",
+    "/{user_id}",
     response_model=APIResponse[UserResponse],
     response_model_exclude_none=True,
     summary="Update user info",
@@ -104,7 +104,7 @@ async def update_user_api(
         raise HTTPException(status_code=500)
 
 @router.delete(
-    "/users",
+    "/",
     response_model=APIResponse[dict],
     response_model_exclude_none=True,
     summary="Delete users",
@@ -129,7 +129,7 @@ async def delete_users_api(
         raise HTTPException(status_code=500)
 
 @router.post(
-    "/users/{user_id}/reset-password",
+    "/{user_id}/reset-password",
     response_model=APIResponse[dict],
     response_model_exclude_none=True,
     summary="Reset user password",
