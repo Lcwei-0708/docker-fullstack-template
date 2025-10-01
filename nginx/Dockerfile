@@ -1,7 +1,7 @@
 FROM nginx:1.29.1
 
-# Install required tools: logrotate for log management, cron for scheduling, curl for downloading gomplate, gomplate for template processing
-RUN apt-get update && apt-get install -y logrotate cron curl procps \
+# Install required tools: logrotate for log management, cron for scheduling, curl for downloading gomplate, gomplate for template processing, apache2-utils for htpasswd
+RUN apt-get update && apt-get install -y logrotate cron curl procps apache2-utils \
     && curl -L https://github.com/hairyhenderson/gomplate/releases/download/v3.11.5/gomplate_linux-amd64 -o /usr/local/bin/gomplate \
     && chmod +x /usr/local/bin/gomplate \
     && rm -rf /var/lib/apt/lists/*

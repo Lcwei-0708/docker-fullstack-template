@@ -24,12 +24,17 @@ services:
       - BACKEND_PORT=${BACKEND_PORT}
       - PMA_PORT=${PMA_PORT}
       - GRAFANA_PORT=${GRAFANA_PORT}
+      - REDIS_INSIGHT_PORT=${REDIS_INSIGHT_PORT}
+      # Redis Insight authentication
+      - REDIS_INSIGHT_USER=${REDIS_INSIGHT_USER}
+      - REDIS_INSIGHT_PASSWORD=${REDIS_INSIGHT_PASSWORD}
     entrypoint: ["/docker-entrypoint.sh"]
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
       - "${BACKEND_PORT}:${BACKEND_PORT}"
       - "${PMA_PORT}:${PMA_PORT}"
       - "${GRAFANA_PORT}:${GRAFANA_PORT}"
+      - "${REDIS_INSIGHT_PORT}:${REDIS_INSIGHT_PORT}"
     depends_on:
       frontend:
         condition: service_healthy
@@ -155,13 +160,12 @@ services:
     restart: always
 
   redis:
-    image: redis:8.0.3
+    image: redis/redis-stack:7.4.0-v6
     environment:
       - TZ=${TIMEZONE}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_ARGS=--requirepass ${REDIS_PASSWORD}
     volumes:
       - redis-data:/data
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
     depends_on:
       mariadb:
         condition: service_healthy
@@ -169,10 +173,10 @@ services:
       - backend-network
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli ping"]
-      start_period: 10s
-      interval: 30s
-      timeout: 5s
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping && curl -f http://localhost:8001 || exit 1"]
+      start_period: 30s
+      interval: 10s
+      timeout: 30s
       retries: 5
 
   loki:
