@@ -22,6 +22,20 @@ touch /var/log/nginx/nginx.log /var/log/nginx/error.log
 chown root:root /var/log/nginx/*.log /etc/logrotate.d/nginx
 chmod 644 /var/log/nginx/*.log /etc/logrotate.d/nginx
 
+# Setup Redis Insight authentication if environment variables are provided
+if [ ! -z "$REDIS_INSIGHT_USER" ] && [ ! -z "$REDIS_INSIGHT_PASSWORD" ]; then
+    echo "Setting up Redis Insight authentication..."
+    # htpasswd should already be installed via Dockerfile
+    if command -v htpasswd >/dev/null 2>&1; then
+        # Create password file
+        htpasswd -cb /etc/nginx/.htpasswd "$REDIS_INSIGHT_USER" "$REDIS_INSIGHT_PASSWORD"
+        echo "Redis Insight authentication configured for user: $REDIS_INSIGHT_USER"
+    else
+        echo "ERROR: htpasswd command not found. Please ensure apache2-utils is installed in Dockerfile."
+        exit 1
+    fi
+fi
+
 # Overwrite /etc/crontab with correct content and logrotate job
 cat > /etc/crontab <<EOF
 SHELL=/bin/sh
