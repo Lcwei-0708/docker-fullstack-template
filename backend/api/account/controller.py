@@ -70,7 +70,7 @@ async def update_user_profile_api(
         user = await update_user_profile(db, user_id, user_update)
         
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise NotFoundException("User not found")
         
         user_data = UserProfile(
             id=user.id,
@@ -83,6 +83,8 @@ async def update_user_profile_api(
         )
 
         return APIResponse(code=200, message="User profile updated successfully", data=user_data)
+    except NotFoundException:
+        raise HTTPException(status_code=404, detail="User not found")
     except ValueError:
         raise HTTPException(status_code=409, detail="Email already exists")
     except Exception:
