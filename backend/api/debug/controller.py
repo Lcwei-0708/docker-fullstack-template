@@ -21,8 +21,11 @@ router = APIRouter(tags=["Debug"])
             dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 )
 async def test_ip_detection(request: Request):
-    response = await get_ip_debug_info(request)
-    return APIResponse(code=200, message="IP detection successful", data=response)
+    try:
+        response = await get_ip_debug_info(request)
+        return APIResponse(code=200, message="IP detection successful", data=response)
+    except Exception:
+        raise HTTPException(status_code=500)
 
 @router.delete(
     "/clear-blocked-ip",
