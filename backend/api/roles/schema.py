@@ -17,22 +17,6 @@ class RoleUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100, description="Role name")
     description: Optional[str] = Field(None, max_length=500, description="Role description")
 
-class RoleAttributeResponse(BaseModel):
-    id: str
-    name: str
-    description: Optional[str] = None
-
-class RoleAttributesListResponse(BaseModel):
-    attributes: List[RoleAttributeResponse] = Field(..., description="List of role attributes")
-
-class RoleAttributeCreate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100, description="Attribute name")
-    description: Optional[str] = Field(None, max_length=500, description="Attribute description")
-
-class RoleAttributeUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=100, description="Attribute name")
-    description: Optional[str] = Field(None, max_length=500, description="Attribute description")
-
 class RoleAttributesMapping(BaseModel):
     attributes: Dict[str, bool] = Field(
         ..., 
@@ -68,3 +52,14 @@ class RoleAttributeMappingBatchResponse(BaseModel):
     total_attributes: int = Field(..., description="Total number of attributes processed")
     success_count: int = Field(..., description="Number of successfully processed attributes")
     failed_count: int = Field(..., description="Number of failed attributes")
+
+class PermissionCheckRequest(BaseModel):
+    attributes: List[str] = Field(
+        ..., 
+        min_items=1,
+        description="List of permission attributes to check",
+        example=["view-users", "manage-roles"]
+    )
+
+class PermissionCheckResponse(BaseModel):
+    permissions: Dict[str, bool] = Field(..., description="Permission check results (attribute: has_permission)")

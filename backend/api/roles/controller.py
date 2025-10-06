@@ -8,13 +8,13 @@ from utils.response import APIResponse, parse_responses, common_responses
 from utils.custom_exception import NotFoundException, ConflictException, ServerException
 from .services import (
     get_all_roles, create_role, update_role, delete_role, 
-    get_all_role_attributes, create_role_attribute, update_role_attribute, delete_role_attribute,
-    get_role_attribute_mapping, update_role_attribute_mapping
+    get_role_attribute_mapping, update_role_attribute_mapping,
+    check_user_permissions
 )
 from .schema import (
-    RoleResponse, RoleCreate, RoleUpdate, RolesListResponse, RoleAttributeResponse,
-    RoleAttributesListResponse, RoleAttributeCreate, RoleAttributeUpdate,
-    RoleAttributesMapping, RoleAttributeMappingBatchResponse
+    RoleResponse, RoleCreate, RoleUpdate, RolesListResponse,
+    RoleAttributesMapping, RoleAttributeMappingBatchResponse,
+    PermissionCheckRequest, PermissionCheckResponse
 )
 
 router = APIRouter(tags=["Roles"])
@@ -127,113 +127,6 @@ async def delete_role_api(
         raise HTTPException(status_code=500)
 
 @router.get(
-    "/attributes",
-    response_model=APIResponse[RoleAttributesListResponse],
-    response_model_exclude_none=True,
-    summary="Get all role attributes",
-    responses=parse_responses({
-        200: ("Successfully retrieved role attributes", RoleAttributesListResponse)
-    }, common_responses)
-)
-@require_permission([Permission.VIEW_ROLES, Permission.MANAGE_ROLES])
-async def get_role_attributes_api(
-    request: Request,
-    token: dict = Depends(verify_token),
-    db: AsyncSession = Depends(get_db)
-):
-    """Get all available role attributes"""
-    try:
-        attributes = await get_all_role_attributes(db)
-        return APIResponse(code=200, message="Successfully retrieved role attributes", data=attributes)
-    except Exception:
-        raise HTTPException(status_code=500) 
-
-@router.post(
-    "/attributes",
-    response_model=APIResponse[RoleAttributeResponse],
-    response_model_exclude_none=True,
-    summary="Create new role attribute",
-    responses=parse_responses({
-        200: ("Role attribute created successfully", RoleAttributeResponse),
-        409: ("Attribute name already exists", None)
-    }, common_responses)
-)
-@require_permission([Permission.MANAGE_ROLES])
-async def create_role_attribute_api(
-    attribute_data: RoleAttributeCreate,
-    request: Request,
-    token: dict = Depends(verify_token),
-    db: AsyncSession = Depends(get_db)
-):
-    """Create a new role attribute"""
-    try:
-        attribute = await create_role_attribute(db, attribute_data)
-        return APIResponse(code=200, message="Role attribute created successfully", data=attribute)
-    except ConflictException:
-        raise HTTPException(status_code=409, detail="Attribute name already exists")
-    except Exception:
-        raise HTTPException(status_code=500)
-
-@router.put(
-    "/attributes/{attribute_id}",
-    response_model=APIResponse[RoleAttributeResponse],
-    response_model_exclude_none=True,
-    summary="Update role attribute info",
-    responses=parse_responses({
-        200: ("Role attribute updated successfully", RoleAttributeResponse),
-        404: ("Role attribute not found", None),
-        409: ("Attribute name already exists", None)
-    }, common_responses)
-)
-@require_permission([Permission.MANAGE_ROLES])
-async def update_role_attribute_api(
-    attribute_id: str = Path(..., description="Attribute ID"),
-    attribute_data: RoleAttributeUpdate = None,
-    request: Request = None,
-    token: dict = Depends(verify_token),
-    db: AsyncSession = Depends(get_db)
-):
-    """Update role attribute information"""
-    try:
-        attribute = await update_role_attribute(db, attribute_id, attribute_data)
-        return APIResponse(code=200, message="Role attribute updated successfully", data=attribute)
-    except NotFoundException:
-        raise HTTPException(status_code=404, detail="Role attribute not found")
-    except ConflictException:
-        raise HTTPException(status_code=409, detail="Attribute name already exists")
-    except Exception:
-        raise HTTPException(status_code=500)
-
-@router.delete(
-    "/attributes/{attribute_id}",
-    response_model=APIResponse[dict],
-    response_model_exclude_none=True,
-    summary="Delete role attribute",
-    responses=parse_responses({
-        200: ("Role attribute deleted successfully", None),
-        404: ("Role attribute not found", None),
-        409: ("Cannot delete attribute that is assigned to roles", None)
-    }, common_responses)
-)
-@require_permission([Permission.MANAGE_ROLES])
-async def delete_role_attribute_api(
-    attribute_id: str = Path(..., description="Attribute ID"),
-    request: Request = None,
-    token: dict = Depends(verify_token),
-    db: AsyncSession = Depends(get_db)
-):
-    """Delete a role attribute"""
-    try:
-        await delete_role_attribute(db, attribute_id)
-        return APIResponse(code=200, message="Role attribute deleted successfully")
-    except NotFoundException:
-        raise HTTPException(status_code=404, detail="Role attribute not found")
-    except ConflictException:
-        raise HTTPException(status_code=409, detail="Cannot delete attribute that is assigned to roles")
-    except Exception:
-        raise HTTPException(status_code=500)
-
-@router.get(
     "/{role_id}/attributes",
     response_model=APIResponse[RoleAttributesMapping],
     response_model_exclude_none=True,
@@ -310,5 +203,31 @@ async def update_role_attribute_mapping_api(
             )
     except NotFoundException:
         raise HTTPException(status_code=404, detail="Role not found")
+    except Exception:
+        raise HTTPException(status_code=500)
+
+@router.post(
+    "/permissions/check",
+    response_model=APIResponse[PermissionCheckResponse],
+    response_model_exclude_none=True,
+    summary="Check user permissions",
+    responses=parse_responses({
+        200: ("Permission check completed", PermissionCheckResponse)
+    }, common_responses)
+)
+async def check_user_permissions_api(
+    permission_data: PermissionCheckRequest,
+    request: Request,
+    token: dict = Depends(verify_token),
+    db: AsyncSession = Depends(get_db)
+):
+    """Check if user has required permission attributes"""
+    try:
+        user_id = token.get("sub")        
+        result = await check_user_permissions(db, user_id, permission_data.attributes)
+        
+        return APIResponse(code=200, message="Permission check completed", data=result)
+    except HTTPException:
+        raise
     except Exception:
         raise HTTPException(status_code=500)

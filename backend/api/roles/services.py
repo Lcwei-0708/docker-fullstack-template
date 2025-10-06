@@ -1,14 +1,15 @@
-from typing import List, Dict, Optional
+from typing import Dict, List
 from models.roles import Roles
+from models.role_mapper import RoleMapper
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete, and_
 from models.role_attributes import RoleAttributes
-from sqlalchemy.ext.asyncio import AsyncSession
 from models.role_attributes_mapper import RoleAttributesMapper
 from utils.custom_exception import ServerException, ConflictException, NotFoundException
 from .schema import (
     RoleResponse, RoleCreate, RoleUpdate, RolesListResponse,
-    RoleAttributeResponse, RoleAttributeCreate, RoleAttributeUpdate, RoleAttributesListResponse,
-    RoleAttributesMapping, RoleAttributeMappingBatchResponse, AttributeMappingResult
+    RoleAttributesMapping, RoleAttributeMappingBatchResponse, AttributeMappingResult,
+    PermissionCheckResponse
 )
 
 async def get_all_roles(db: AsyncSession) -> RolesListResponse:
@@ -127,123 +128,6 @@ async def delete_role(db: AsyncSession, role_id: str) -> bool:
         raise
     except Exception as e:
         raise ServerException(f"Failed to delete role: {str(e)}")
-
-async def get_all_role_attributes(db: AsyncSession) -> RoleAttributesListResponse:
-    """Get all available role attributes"""
-    try:
-        attributes_query = select(RoleAttributes)
-        attributes_result = await db.execute(attributes_query)
-        attributes = attributes_result.scalars().all()
-        
-        attribute_responses = [
-            RoleAttributeResponse(
-                id=attr.id,
-                name=attr.name,
-                description=attr.description
-            )
-            for attr in attributes
-        ]
-        
-        return RoleAttributesListResponse(attributes=attribute_responses)
-        
-    except Exception as e:
-        raise ServerException(f"Failed to retrieve role attributes: {str(e)}")
-
-async def create_role_attribute(db: AsyncSession, attribute_data: RoleAttributeCreate) -> RoleAttributeResponse:
-    """Create a new role attribute"""
-    try:
-        existing_attribute = await db.execute(
-            select(RoleAttributes).where(RoleAttributes.name == attribute_data.name)
-        )
-        if existing_attribute.scalar_one_or_none():
-            raise ConflictException("Attribute name already exists")
-        
-        attribute = RoleAttributes(
-            name=attribute_data.name,
-            description=attribute_data.description
-        )
-        db.add(attribute)
-        await db.commit()
-        await db.refresh(attribute)
-        
-        return RoleAttributeResponse(
-            id=attribute.id,
-            name=attribute.name,
-            description=attribute.description
-        )
-        
-    except ConflictException:
-        raise
-    except Exception as e:
-        raise ServerException(f"Failed to create role attribute: {str(e)}")
-
-async def update_role_attribute(db: AsyncSession, attribute_id: str, attribute_data: RoleAttributeUpdate) -> RoleAttributeResponse:
-    """Update role attribute information"""
-    try:
-        attribute_result = await db.execute(
-            select(RoleAttributes).where(RoleAttributes.id == attribute_id)
-        )
-        attribute = attribute_result.scalar_one_or_none()
-        if not attribute:
-            raise NotFoundException("Role attribute not found")
-        
-        if attribute_data.name and attribute_data.name != attribute.name:
-            existing_attribute = await db.execute(
-                select(RoleAttributes).where(RoleAttributes.name == attribute_data.name, RoleAttributes.id != attribute_id)
-            )
-            if existing_attribute.scalar_one_or_none():
-                raise ConflictException("Attribute name already exists")
-        
-        update_data = attribute_data.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(attribute, field, value)
-        
-        await db.commit()
-        await db.refresh(attribute)
-        
-        return RoleAttributeResponse(
-            id=attribute.id,
-            name=attribute.name,
-            description=attribute.description
-        )
-        
-    except (ConflictException, NotFoundException):
-        raise
-    except Exception as e:
-        raise ServerException(f"Failed to update role attribute: {str(e)}")
-
-async def delete_role_attribute(db: AsyncSession, attribute_id: str) -> bool:
-    """Delete a role attribute"""
-    try:
-        attribute_result = await db.execute(
-            select(RoleAttributes).where(RoleAttributes.id == attribute_id)
-        )
-        attribute = attribute_result.scalar_one_or_none()
-        if not attribute:
-            raise NotFoundException("Role attribute not found")
-        
-        # Check if attribute is assigned to any roles
-        mapping_count = await db.execute(
-            select(func.count(RoleAttributesMapper.role_id)).where(RoleAttributesMapper.attributes_id == attribute_id)
-        )
-        if mapping_count.scalar() > 0:
-            raise ConflictException("Cannot delete attribute that is assigned to roles")
-        
-        await db.execute(
-            delete(RoleAttributesMapper).where(RoleAttributesMapper.attributes_id == attribute_id)
-        )
-        
-        await db.execute(
-            delete(RoleAttributes).where(RoleAttributes.id == attribute_id)
-        )
-        await db.commit()
-        
-        return True
-        
-    except (ConflictException, NotFoundException):
-        raise
-    except Exception as e:
-        raise ServerException(f"Failed to delete role attribute: {str(e)}")
 
 async def get_role_attribute_mapping(db: AsyncSession, role_id: str) -> RoleAttributesMapping:
     """Get role attributes mapping with all available attributes (left join)"""
@@ -375,3 +259,40 @@ async def update_role_attribute_mapping(db: AsyncSession, role_id: str, attribut
         raise
     except Exception as e:
         raise ServerException(f"Failed to update role attributes mapping: {str(e)}")
+
+async def check_user_permissions(
+    db: AsyncSession, 
+    user_id: str, 
+    required_attributes: List[str]
+) -> PermissionCheckResponse:
+    """Check if user has required permission attributes"""
+    try:        
+        user_role_query = select(RoleMapper.role_id).where(RoleMapper.user_id == user_id)
+        user_role_result = await db.execute(user_role_query)
+        user_role_id = user_role_result.scalar_one_or_none()
+        
+        if not user_role_id:
+            permissions = {attr: False for attr in required_attributes}
+            return PermissionCheckResponse(permissions=permissions)
+        
+        attributes_query = select(RoleAttributes.name).join(
+            RoleAttributesMapper, 
+            RoleAttributes.id == RoleAttributesMapper.attributes_id
+        ).where(
+            and_(
+                RoleAttributesMapper.role_id == user_role_id,
+                RoleAttributesMapper.value == True
+            )
+        )
+        
+        attributes_result = await db.execute(attributes_query)
+        user_attributes = [row[0] for row in attributes_result.fetchall()]
+        
+        permissions = {}
+        for attr in required_attributes:
+            permissions[attr] = attr in user_attributes
+        
+        return PermissionCheckResponse(permissions=permissions)
+        
+    except Exception as e:
+        raise ServerException(f"Failed to check user permissions: {str(e)}")
