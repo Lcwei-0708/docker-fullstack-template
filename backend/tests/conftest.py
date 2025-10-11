@@ -1,21 +1,25 @@
+import time
 import pytest
 import asyncio
-from main import app
 import pytest_asyncio
 import fastapi_limiter
 from uuid import uuid4
-from models.users import Users
-from core.redis import get_redis
-from core.config import settings
-from core.dependencies import get_db
-from sqlalchemy.pool import StaticPool
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, patch
 from httpx import AsyncClient, ASGITransport
-from models.user_sessions import UserSessions
-from core.database import Base, make_async_url
-from core.security import create_access_token, hash_password
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.pool import StaticPool
+from core.config import settings
+from core.database import Base, make_async_url
+from core.dependencies import get_db
+from core.redis import get_redis
+from core.security import create_access_token, hash_password
+from main import app
+from models.password_reset_tokens import PasswordResetTokens
+from models.user_sessions import UserSessions
+from models.users import Users
 
 mock_redis = AsyncMock()
 mock_redis.evalsha.return_value = 1000  # Indicates 1000ms remaining
@@ -324,14 +328,7 @@ def mock_redis_for_account():
 
 @pytest_asyncio.fixture(scope="function")
 async def account_test_user(test_db_session: AsyncSession):
-    """
-    Create a dedicated test user specifically for account module tests.
-    This ensures account tests have a clean, isolated user to work with.
-    """
-    from uuid import uuid4
-    from datetime import datetime
-    from core.security import hash_password
-
+    """Create a dedicated test user for account module tests"""
     user_id = str(uuid4())
     hashed_pwd = await hash_password("AccountTestPassword123!")
 
@@ -357,16 +354,7 @@ async def account_test_user(test_db_session: AsyncSession):
 
 @pytest_asyncio.fixture(scope="function")
 async def account_auth_headers(account_test_user: Users, test_db_session: AsyncSession):
-    """
-    Create authentication headers specifically for account module tests.
-    This fixture provides a clean auth setup for account API tests.
-    """
-    from uuid import uuid4
-    from datetime import datetime, timedelta
-    from core.security import create_access_token
-    from models.user_sessions import UserSessions
-    from core.config import settings
-
+    """Create authentication headers for account module tests"""
     session_id = str(uuid4())
     access_token = await create_access_token(
         {
@@ -443,13 +431,7 @@ def account_test_config():
 # Performance testing fixtures
 @pytest.fixture(scope="function")
 def account_performance_fixtures():
-    """
-    Provide fixtures for performance testing in account module.
-    This includes timing utilities and performance assertions.
-    """
-    import time
-    from contextlib import contextmanager
-
+    """Provide fixtures for performance testing in account module"""
     @contextmanager
     def measure_time(operation_name: str):
         start_time = time.time()
@@ -464,4 +446,89 @@ def account_performance_fixtures():
         "measure_time": measure_time,
         "max_acceptable_time": 1.0,  # seconds
         "performance_threshold": 0.5,  # seconds
+    }
+
+
+# Auth module specific fixtures
+@pytest_asyncio.fixture
+async def create_password_reset_token_with_invalid_user(test_db_session: AsyncSession):
+    """Create a password reset token with invalid user for testing edge cases"""
+    
+    nonexistent_user_id = "nonexistent_user_id"
+    token_id = str(uuid4())
+    token_string = "test_token_123"
+    expires_at = datetime.now() + timedelta(minutes=30)
+    
+    # Temporarily disable foreign key checks to insert invalid data
+    await test_db_session.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+    await test_db_session.execute(text("""
+        INSERT INTO password_reset_tokens (id, user_id, token, is_used, expires_at, created_at, updated_at)
+        VALUES (:id, :user_id, :token, :is_used, :expires_at, NOW(), NOW())
+    """), {
+        "id": token_id,
+        "user_id": nonexistent_user_id,
+        "token": token_string,
+        "is_used": False,
+        "expires_at": expires_at
+    })
+    # Re-enable foreign key checks
+    await test_db_session.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+    await test_db_session.commit()
+    
+    return {
+        "token_id": token_id,
+        "user_id": nonexistent_user_id,
+        "token": token_string,
+        "expires_at": expires_at,
+        "token_data": {
+            "sub": nonexistent_user_id,
+            "token": token_string
+        }
+    }
+
+
+@pytest_asyncio.fixture
+async def create_password_reset_token_with_valid_user(test_db_session: AsyncSession):
+    """Create a password reset token with valid user for testing normal scenarios"""
+    user_id = str(uuid4())
+    hashed_pwd = await hash_password("TestPassword123!")
+    
+    user = Users(
+        id=user_id,
+        email="tokenuser@example.com",
+        first_name="Token",
+        last_name="User",
+        phone="+1234567890",
+        hash_password=hashed_pwd,
+        status=True,
+        password_reset_required=True
+    )
+    test_db_session.add(user)
+    await test_db_session.commit()
+    
+    token_id = str(uuid4())
+    token_string = "valid_test_token_123"
+    expires_at = datetime.now() + timedelta(minutes=30)
+    
+    reset_token_record = PasswordResetTokens(
+        id=token_id,
+        user_id=user_id,
+        token=token_string,
+        is_used=False,
+        expires_at=expires_at
+    )
+    test_db_session.add(reset_token_record)
+    await test_db_session.commit()
+    
+    return {
+        "token_id": token_id,
+        "user_id": user_id,
+        "token": token_string,
+        "expires_at": expires_at,
+        "user": user,
+        "token_record": reset_token_record,
+        "token_data": {
+            "sub": user_id,
+            "token": token_string
+        }
     }
