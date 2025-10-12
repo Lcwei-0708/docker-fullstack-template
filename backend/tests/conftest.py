@@ -1,10 +1,8 @@
-import time
 import pytest
 import asyncio
 import pytest_asyncio
 import fastapi_limiter
 from uuid import uuid4
-from contextlib import contextmanager
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, patch
 from httpx import AsyncClient, ASGITransport
@@ -20,6 +18,10 @@ from main import app
 from models.password_reset_tokens import PasswordResetTokens
 from models.user_sessions import UserSessions
 from models.users import Users
+from models.roles import Roles
+from models.role_attributes import RoleAttributes
+from models.role_attributes_mapper import RoleAttributesMapper
+from models.role_mapper import RoleMapper
 
 mock_redis = AsyncMock()
 mock_redis.evalsha.return_value = 1000  # Indicates 1000ms remaining
@@ -287,44 +289,6 @@ async def auth_headers(test_user: Users, test_user_session: UserSessions):
     }
 
 
-# Module-specific fixtures for better test organization
-@pytest.fixture(scope="function")
-def account_module_fixtures():
-    """
-    Provide account module specific fixtures and utilities.
-    This fixture can be used by account module tests for common setup.
-    """
-    from tests.api.account.test_utils import (
-        AccountTestDataFactory,
-        AccountTestAssertions,
-        AccountTestMocks,
-        AccountTestScenarios,
-    )
-
-    return {
-        "data_factory": AccountTestDataFactory(),
-        "assertions": AccountTestAssertions(),
-        "mocks": AccountTestMocks(),
-        "scenarios": AccountTestScenarios(),
-    }
-
-
-@pytest.fixture(scope="function")
-def mock_redis_for_account():
-    """
-    Provide a mock Redis client specifically configured for account module tests.
-    This fixture ensures consistent Redis mocking across account tests.
-    """
-    mock_redis = AsyncMock()
-    mock_redis.get.return_value = None
-    mock_redis.setex.return_value = True
-    mock_redis.delete.return_value = 1
-    mock_redis.incr.return_value = 1
-    mock_redis.expire.return_value = True
-    mock_redis.evalsha.return_value = 1000
-
-    return mock_redis
-
 
 @pytest_asyncio.fixture(scope="function")
 async def account_test_user(test_db_session: AsyncSession):
@@ -411,41 +375,167 @@ async def account_auth_headers(account_test_user: Users, test_db_session: AsyncS
         "access_token": user_session.jwt_access_token,
     }
 
+# Users module specific fixtures
+@pytest_asyncio.fixture(scope="function")
+async def users_test_user(test_db_session: AsyncSession):
+    """Create test user for users API tests"""
+    user_id = str(uuid4())
+    hashed_pwd = await hash_password("UsersTestPassword123!")
 
-# Test configuration fixtures
-@pytest.fixture(scope="function")
-def account_test_config():
-    """
-    Provide test configuration specific to account module.
-    This fixture can be used to configure test-specific settings.
-    """
-    return {
-        "test_timeout": 30.0,
-        "max_retries": 3,
-        "test_user_prefix": "account_test_",
-        "mock_redis_prefix": "account_test:",
-        "test_data_cleanup": True,
+    user = Users(
+        id=user_id,
+        email="userstest@example.com",
+        first_name="Users",
+        last_name="Test",
+        phone="+1234567890",
+        hash_password=hashed_pwd,
+        status=True,
+        password_reset_required=False,
+        created_at=datetime.now(),
+        updated_at=datetime.now(),
+    )
+
+    test_db_session.add(user)
+    await test_db_session.commit()
+    await test_db_session.refresh(user)
+
+    return user
+
+
+@pytest_asyncio.fixture(scope="function")
+async def users_test_role(test_db_session: AsyncSession):
+    """Create admin role for users API tests"""
+    role_id = str(uuid4())
+    role = Roles(
+        id=role_id,
+        name="admin",
+        description="Administrator role with full permissions"
+    )
+    test_db_session.add(role)
+    await test_db_session.commit()
+    await test_db_session.refresh(role)
+    return role
+
+
+@pytest_asyncio.fixture(scope="function")
+async def users_test_role_attributes(test_db_session: AsyncSession, users_test_role: Roles):
+    """Create role attributes and mappings for users management permissions"""
+    
+    view_users_attr = RoleAttributes(
+        id=str(uuid4()),
+        name="view-users",
+        description="Permission to view user information"
+    )
+    manage_users_attr = RoleAttributes(
+        id=str(uuid4()),
+        name="manage-users", 
+        description="Permission to manage users"
+    )
+    
+    test_db_session.add(view_users_attr)
+    test_db_session.add(manage_users_attr)
+    await test_db_session.commit()
+    
+    attribute_mappings = [
+        RoleAttributesMapper(
+            role_id=users_test_role.id,
+            attributes_id=view_users_attr.id,
+            value=True
+        ),
+        RoleAttributesMapper(
+            role_id=users_test_role.id,
+            attributes_id=manage_users_attr.id,
+            value=True
+        )
+    ]
+    
+    for mapping in attribute_mappings:
+        test_db_session.add(mapping)
+    
+    await test_db_session.commit()
+    return attribute_mappings
+
+
+@pytest_asyncio.fixture(scope="function")
+async def users_test_role_mapping(test_db_session: AsyncSession, users_test_user: Users, users_test_role: Roles):
+    """Create role mapping for test user"""    
+    role_mapping = RoleMapper(
+        user_id=users_test_user.id,
+        role_id=users_test_role.id
+    )
+    
+    test_db_session.add(role_mapping)
+    await test_db_session.commit()
+    return role_mapping
+
+
+@pytest_asyncio.fixture(scope="function")
+async def users_test_session(test_db_session: AsyncSession, users_test_user: Users):
+    """Create a test user session for users API tests"""
+    session_id = str(uuid4())
+    access_token = await create_access_token(
+        {
+            "sub": users_test_user.id,
+            "sid": session_id,
+            "email": users_test_user.email,
+        }
+    )
+
+    user_session = UserSessions(
+        id=session_id,
+        user_id=users_test_user.id,
+        jwt_access_token=access_token,
+        ip_address="127.0.0.1",
+        user_agent="UsersTestAgent/1.0",
+        is_active=True,
+        created_at=datetime.now(),
+        updated_at=datetime.now(),
+        expires_at=datetime.now() + timedelta(minutes=settings.SESSION_EXPIRE_MINUTES),
+    )
+
+    test_db_session.add(user_session)
+    await test_db_session.commit()
+    await test_db_session.refresh(user_session)
+
+    return user_session
+
+
+@pytest_asyncio.fixture(scope="function")
+async def users_auth_headers(
+    users_test_user: Users, 
+    users_test_session: UserSessions, 
+    users_test_role_mapping,
+    users_test_role_attributes
+):
+    """Generate authentication headers for users API tests"""
+    session_data = {
+        "sid": users_test_session.id,
+        "user_id": users_test_user.id,
+        "email": users_test_user.email,
+        "access_token": users_test_session.jwt_access_token,
+        "created_at": users_test_session.created_at.isoformat(),
+        "last_activity": datetime.now().isoformat(),
+        "expires_at": users_test_session.expires_at.isoformat(),
     }
 
+    session_key = f"session:{users_test_session.id}"
 
-# Performance testing fixtures
-@pytest.fixture(scope="function")
-def account_performance_fixtures():
-    """Provide fixtures for performance testing in account module"""
-    @contextmanager
-    def measure_time(operation_name: str):
-        start_time = time.time()
-        try:
-            yield
-        finally:
-            end_time = time.time()
-            duration = end_time - start_time
-            print(f"{operation_name} took {duration:.4f} seconds")
+    async def mock_get(key):
+        if key == session_key:
+            return str(session_data)
+        return None
+
+    mock_redis.get = mock_get
+    mock_redis.setex.return_value = True
+    mock_redis.delete.return_value = 1
+    mock_redis.incr.return_value = 1
+    mock_redis.expire.return_value = True
 
     return {
-        "measure_time": measure_time,
-        "max_acceptable_time": 1.0,  # seconds
-        "performance_threshold": 0.5,  # seconds
+        "Authorization": f"Bearer {users_test_session.jwt_access_token}",
+        "session_data": session_data,
+        "session_id": users_test_session.id,
+        "access_token": users_test_session.jwt_access_token,
     }
 
 
