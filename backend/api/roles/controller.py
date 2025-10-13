@@ -3,8 +3,8 @@ from core.security import verify_token
 from core.rbac import require_permission
 from core.permissions import Permission
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import APIRouter, Depends, HTTPException, Request, Path
 from utils.response import APIResponse, parse_responses, common_responses
+from fastapi import APIRouter, Depends, HTTPException, Request, Path, Response
 from utils.custom_exception import NotFoundException, ConflictException, ServerException
 from .services import (
     get_all_roles, create_role, update_role, delete_role, 
@@ -188,18 +188,28 @@ async def update_role_attribute_mapping_api(
                 data=batch_result
             )
         elif batch_result.success_count == 0:
-            # All failed
-            return APIResponse(
+            # All failed - return 400 status code
+            response = APIResponse(
                 code=400, 
                 message="All role attributes failed to process", 
                 data=batch_result
             )
+            return Response(
+                content=response.model_dump_json(),
+                status_code=400,
+                media_type="application/json"
+            )
         else:
-            # Partial success
-            return APIResponse(
+            # Partial success - return 207 status code
+            response = APIResponse(
                 code=207, 
                 message="Role attributes processed with partial success", 
                 data=batch_result
+            )
+            return Response(
+                content=response.model_dump_json(),
+                status_code=207,
+                media_type="application/json"
             )
     except NotFoundException:
         raise HTTPException(status_code=404, detail="Role not found")

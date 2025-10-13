@@ -106,7 +106,6 @@ async def delete_role(db: AsyncSession, role_id: str) -> bool:
         if not role:
             raise NotFoundException("Role not found")
         
-        from models.role_mapper import RoleMapper
         user_count = await db.execute(
             select(func.count(RoleMapper.user_id)).where(RoleMapper.role_id == role_id)
         )
