@@ -1,0 +1,90 @@
+name: Deploy Coverage Report
+
+on:
+  workflow_run:
+    workflows: [Testing]
+    types: [completed]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy-coverage:
+    name: Deploy Coverage Report
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download coverage HTML report
+      uses: actions/download-artifact@v4
+      with:
+        name: coverage-html
+        path: ./coverage-report
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        run-id: ${{ github.event.workflow_run.id }}
+
+    - name: Download coverage JSON report
+      uses: actions/download-artifact@v4
+      with:
+        name: coverage-json
+        path: ./coverage-json
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        run-id: ${{ github.event.workflow_run.id }}
+
+    - name: Convert coverage JSON for shields.io
+      run: |
+        # Convert pytest-cov JSON to shields.io format
+        if [ -f ./coverage-json/coverage.json ]; then
+          python3 -c "
+        import json
+        
+        # Read pytest-cov coverage.json
+        with open('./coverage-json/coverage.json', 'r') as f:
+            data = json.load(f)
+        
+        # Extract coverage percentage
+        totals = data.get('totals', {})
+        percent_covered = totals.get('percent_covered', 0)
+        
+        # Create shields.io compatible JSON
+        shields_data = {
+            'schemaVersion': 1,
+            'label': 'Coverage',
+            'message': f'{percent_covered:.1f}%',
+            'color': 'green' if percent_covered >= 80 else 'yellow' if percent_covered >= 60 else 'red',
+            'namedLogo': 'python',
+            'logoColor': 'white'
+        }
+        
+        # Write shields.io compatible JSON
+        with open('./coverage-report/coverage.json', 'w') as f:
+            json.dump(shields_data, f)
+        
+        print(f'Coverage: {percent_covered:.1f}%')
+        "
+        fi
+
+    - name: Setup Pages
+      uses: actions/configure-pages@v5
+
+    - name: Upload to Pages
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ./coverage-report
+
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
