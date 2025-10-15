@@ -1,3 +1,7 @@
+[![Testing](https://github.com/Lcwei-0708/docker-fullstack-template/actions/workflows/test_backend.yml/badge.svg)](https://github.com/Lcwei-0708/docker-fullstack-template/actions/workflows/test_backend.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://lcwei-0708.github.io/docker-fullstack-template/coverage.json)](https://lcwei-0708.github.io/docker-fullstack-template/)
+
+
 # Docker Fullstack Template
 
 This project is a ready-to-use fullstack template that leverages Docker Compose to seamlessly integrate Nginx, React, FastAPI, and MariaDB. It provides a modern, production-like environment for rapid development and deployment of web applications with a clear separation between frontend and backend services.
@@ -12,6 +16,7 @@ This project is a ready-to-use fullstack template that leverages Docker Compose 
 - 🔀 **Reverse Proxy**: Nginx serves as a reverse proxy, efficiently routing traffic to the appropriate services.
 - 📊 **Log Management**: Grafana provides log visualization and monitoring dashboards.
 - 🐳 **Dockerized**: All services are containerized with Docker Compose for easy deployment.
+- ⚙️ **CI/CD Testing**: Automated testing and generate coverage reporting with GitHub Actions.
 
 
 ## How to Use
@@ -85,11 +90,12 @@ This project is a ready-to-use fullstack template that leverages Docker Compose 
 
 ## Documentation
 
-| Directory    | Link                            |
-|--------------|---------------------------------|
-| Frontend     | [Docs](./frontend/README.md)    |
-| Backend      | [Docs](./backend/README.md)     |
-| Nginx        | [Docs](./nginx/README.md)       |
+| Directory    | Link                                      |
+|--------------|-------------------------------------------|
+| Frontend     | [Docs](./frontend/README.md)              |
+| Backend      | [Docs](./backend/README.md)               |
+| Nginx        | [Docs](./nginx/README.md)                 |
+| CICD         | [Docs](./.github/workflows/README.md)     |
 
 
 ## License

@@ -1,0 +1,108 @@
+name: Testing
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-22.04
+    
+    services:
+      mariadb:
+        image: mariadb:11.3
+        env:
+          MARIADB_ROOT_PASSWORD: test_root_password
+          MARIADB_DATABASE: test_db
+          MARIADB_USER: test_user
+          MARIADB_PASSWORD: test_password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mariadb-admin --user=test_user --password=test_password --host=localhost ping" --health-interval=10s --health-timeout=5s --health-retries=5
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install Redis CLI
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y redis-tools
+
+    - name: Set up test environment variables
+      run: |
+        # Set only the essential environment variables needed for testing
+        echo "SECRET_KEY=test_secret_key_for_github_actions" >> $GITHUB_ENV
+        echo "DATABASE_URL=mysql+pymysql://test_user:test_password@127.0.0.1:3306/test_db" >> $GITHUB_ENV
+        echo "DATABASE_URL_TEST=mysql+pymysql://test_user:test_password@127.0.0.1:3306/test_db" >> $GITHUB_ENV
+        echo "REDIS_URL=redis://127.0.0.1:6379/0" >> $GITHUB_ENV
+        echo "HOSTNAME=localhost" >> $GITHUB_ENV
+        echo "BACKEND_PORT=5000" >> $GITHUB_ENV
+        echo "FRONTEND_PORT=3000" >> $GITHUB_ENV
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Wait for services to be ready
+      run: |
+        # Wait for MariaDB
+        timeout 60 bash -c 'until mysqladmin ping -h 127.0.0.1 -P 3306 -u root -ptest_root_password --silent; do sleep 2; done'
+        # Wait for Redis
+        timeout 60 bash -c 'until redis-cli -h 127.0.0.1 -p 6379 ping; do sleep 2; done'
+
+    - name: Run database migrations
+      working-directory: ./backend
+      run: |
+        # Run migrations if they exist
+        if [ -d "migrations" ]; then
+          alembic upgrade head || echo "No migrations to run"
+        fi
+
+    - name: Run tests with coverage
+      working-directory: ./backend
+      run: |
+        # Run tests with coverage
+        pytest --cov --cov-report=xml --cov-report=html --cov-report=term-missing --cov-report=json
+
+    - name: Upload coverage HTML report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-html
+        path: backend/htmlcov/
+
+    - name: Upload coverage JSON report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-json
+        path: backend/coverage.json
