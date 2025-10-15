@@ -10,12 +10,13 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-source = ["app", "api", "core"]
+source = ["api", "utils", "extensions"]
 omit = [
     "*/tests/*",
     "*/migrations/*",
     "*/venv/*",
     "*/__pycache__/*",
+    "*/debug/*",
 ]
 
 [tool.coverage.report]
