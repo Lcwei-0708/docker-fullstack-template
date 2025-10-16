@@ -44,7 +44,7 @@ class RoleAttributesMapping(BaseModel):
 
 class AttributeMappingResult(BaseModel):
     attribute_id: str = Field(..., description="Attribute ID")
-    status: str = Field(..., description="Processing status: success, failed")
+    status: str = Field(..., description="Processing status: success, failed", pattern="^(success|failed)$")
     message: str = Field(..., description="Result message")
 
 class RoleAttributeMappingBatchResponse(BaseModel):
@@ -52,6 +52,72 @@ class RoleAttributeMappingBatchResponse(BaseModel):
     total_attributes: int = Field(..., description="Total number of attributes processed")
     success_count: int = Field(..., description="Number of successfully processed attributes")
     failed_count: int = Field(..., description="Number of failed attributes")
+
+role_attributes_success_response_example = {
+    "code": 200,
+    "message": "All role attributes processed successfully",
+    "data": {
+        "results": [
+            {
+                "attribute_id": "attr-001",
+                "status": "success",
+                "message": "Updated successfully"
+            },
+            {
+                "attribute_id": "attr-002", 
+                "status": "success",
+                "message": "Updated successfully"
+            }
+        ],
+        "total_attributes": 2,
+        "success_count": 2,
+        "failed_count": 0
+    }
+}
+
+role_attributes_partial_response_example = {
+    "code": 207,
+    "message": "Role attributes processed with partial success",
+    "data": {
+        "results": [
+            {
+                "attribute_id": "attr-001",
+                "status": "success",
+                "message": "Updated successfully"
+            },
+            {
+                "attribute_id": "attr-002",
+                "status": "failed",
+                "message": "Invalid attribute ID"
+            }
+        ],
+        "total_attributes": 2,
+        "success_count": 1,
+        "failed_count": 1
+    }
+}
+
+role_attributes_failed_response_example = {
+    "code": 400,
+    "message": "All role attributes failed to process",
+    "data": {
+        "results": [
+            {
+                "attribute_id": "invalid-attr-001",
+                "status": "failed",
+                "message": "Invalid attribute ID"
+            },
+            {
+                "attribute_id": "invalid-attr-002",
+                "status": "failed", 
+                "message": "Invalid attribute ID"
+            }
+        ],
+        "total_attributes": 2,
+        "success_count": 0,
+        "failed_count": 2
+    }
+}
 
 class PermissionCheckRequest(BaseModel):
     attributes: List[str] = Field(
