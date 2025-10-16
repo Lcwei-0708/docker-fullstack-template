@@ -14,7 +14,9 @@ from .services import (
 from .schema import (
     RoleResponse, RoleCreate, RoleUpdate, RolesListResponse,
     RoleAttributesMapping, RoleAttributeMappingBatchResponse,
-    PermissionCheckRequest, PermissionCheckResponse
+    PermissionCheckRequest, PermissionCheckResponse,
+    role_attributes_success_response_example, role_attributes_partial_response_example, 
+    role_attributes_failed_response_example
 )
 
 router = APIRouter(tags=["Roles"])
@@ -162,9 +164,9 @@ async def get_role_attribute_mapping_api(
     response_model_exclude_none=True,
     summary="Update role attributes",
     responses=parse_responses({
-        200: ("All role attributes processed successfully", RoleAttributeMappingBatchResponse),
-        207: ("Role attributes processed with partial success", RoleAttributeMappingBatchResponse),
-        400: ("All role attributes failed to process", RoleAttributeMappingBatchResponse)
+        200: ("All role attributes processed successfully", RoleAttributeMappingBatchResponse, role_attributes_success_response_example),
+        207: ("Role attributes processed with partial success", RoleAttributeMappingBatchResponse, role_attributes_partial_response_example),
+        400: ("All role attributes failed to process", RoleAttributeMappingBatchResponse, role_attributes_failed_response_example)
     }, common_responses)
 )
 @require_permission([Permission.MANAGE_ROLES])

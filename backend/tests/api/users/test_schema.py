@@ -9,6 +9,8 @@ from api.users.schema import (
     UserUpdate,
     UserDelete,
     PasswordReset,
+    UserDeleteResult,
+    UserDeleteBatchResponse,
 )
 
 
@@ -479,3 +481,299 @@ class TestSchemaIntegration:
         assert "phone" not in serialized
         assert "status" not in serialized
         assert "role" not in serialized
+
+
+class TestUserDeleteResult:
+    """Test UserDeleteResult schema validation"""
+
+    def test_user_delete_result_success(self):
+        """Test UserDeleteResult with success status"""
+        result_data = {
+            "user_id": "user123",
+            "status": "success",
+            "message": "User deleted successfully"
+        }
+
+        result = UserDeleteResult(**result_data)
+
+        assert result.user_id == "user123"
+        assert result.status == "success"
+        assert result.message == "User deleted successfully"
+
+    def test_user_delete_result_failed(self):
+        """Test UserDeleteResult with failed status"""
+        result_data = {
+            "user_id": "user456",
+            "status": "failed",
+            "message": "User not found"
+        }
+
+        result = UserDeleteResult(**result_data)
+
+        assert result.user_id == "user456"
+        assert result.status == "failed"
+        assert result.message == "User not found"
+
+    def test_user_delete_result_missing_fields(self):
+        """Test UserDeleteResult with missing required fields"""
+        with pytest.raises(ValidationError) as exc_info:
+            UserDeleteResult(
+                user_id="user123",
+                # Missing status and message
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) > 0
+
+    def test_user_delete_result_invalid_status(self):
+        """Test UserDeleteResult with invalid status"""
+        with pytest.raises(ValidationError) as exc_info:
+            UserDeleteResult(
+                user_id="user123",
+                status="invalid_status",
+                message="Test message"
+            )
+
+        errors = exc_info.value.errors()
+        assert any("status" in str(error) for error in errors)
+
+
+class TestUserDeleteBatchResponse:
+    """Test UserDeleteBatchResponse schema validation"""
+
+    def test_user_delete_batch_response_success(self):
+        """Test UserDeleteBatchResponse with all successful deletions"""
+        results = [
+            UserDeleteResult(
+                user_id="user1",
+                status="success",
+                message="User deleted successfully"
+            ),
+            UserDeleteResult(
+                user_id="user2",
+                status="success",
+                message="User deleted successfully"
+            )
+        ]
+
+        batch_data = {
+            "results": results,
+            "total_users": 2,
+            "success_count": 2,
+            "failed_count": 0
+        }
+
+        batch_response = UserDeleteBatchResponse(**batch_data)
+
+        assert len(batch_response.results) == 2
+        assert batch_response.total_users == 2
+        assert batch_response.success_count == 2
+        assert batch_response.failed_count == 0
+        assert all(r.status == "success" for r in batch_response.results)
+
+    def test_user_delete_batch_response_partial_success(self):
+        """Test UserDeleteBatchResponse with partial success"""
+        results = [
+            UserDeleteResult(
+                user_id="user1",
+                status="success",
+                message="User deleted successfully"
+            ),
+            UserDeleteResult(
+                user_id="user2",
+                status="failed",
+                message="User not found"
+            )
+        ]
+
+        batch_data = {
+            "results": results,
+            "total_users": 2,
+            "success_count": 1,
+            "failed_count": 1
+        }
+
+        batch_response = UserDeleteBatchResponse(**batch_data)
+
+        assert len(batch_response.results) == 2
+        assert batch_response.total_users == 2
+        assert batch_response.success_count == 1
+        assert batch_response.failed_count == 1
+
+    def test_user_delete_batch_response_all_failed(self):
+        """Test UserDeleteBatchResponse with all failed deletions"""
+        results = [
+            UserDeleteResult(
+                user_id="user1",
+                status="failed",
+                message="User not found"
+            ),
+            UserDeleteResult(
+                user_id="user2",
+                status="failed",
+                message="User not found"
+            )
+        ]
+
+        batch_data = {
+            "results": results,
+            "total_users": 2,
+            "success_count": 0,
+            "failed_count": 2
+        }
+
+        batch_response = UserDeleteBatchResponse(**batch_data)
+
+        assert len(batch_response.results) == 2
+        assert batch_response.total_users == 2
+        assert batch_response.success_count == 0
+        assert batch_response.failed_count == 2
+        assert all(r.status == "failed" for r in batch_response.results)
+
+    def test_user_delete_batch_response_empty_results(self):
+        """Test UserDeleteBatchResponse with empty results"""
+        batch_data = {
+            "results": [],
+            "total_users": 0,
+            "success_count": 0,
+            "failed_count": 0
+        }
+
+        batch_response = UserDeleteBatchResponse(**batch_data)
+
+        assert len(batch_response.results) == 0
+        assert batch_response.total_users == 0
+        assert batch_response.success_count == 0
+        assert batch_response.failed_count == 0
+
+    def test_user_delete_batch_response_missing_fields(self):
+        """Test UserDeleteBatchResponse with missing required fields"""
+        with pytest.raises(ValidationError) as exc_info:
+            UserDeleteBatchResponse(
+                results=[],
+                # Missing total_users, success_count, failed_count
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) > 0
+
+    def test_user_delete_batch_response_serialization(self):
+        """Test UserDeleteBatchResponse serialization"""
+        results = [
+            UserDeleteResult(
+                user_id="user1",
+                status="success",
+                message="User deleted successfully"
+            )
+        ]
+
+        batch_data = {
+            "results": results,
+            "total_users": 1,
+            "success_count": 1,
+            "failed_count": 0
+        }
+
+        batch_response = UserDeleteBatchResponse(**batch_data)
+        serialized = batch_response.model_dump()
+
+        assert "results" in serialized
+        assert "total_users" in serialized
+        assert "success_count" in serialized
+        assert "failed_count" in serialized
+        assert len(serialized["results"]) == 1
+        assert serialized["total_users"] == 1
+        assert serialized["success_count"] == 1
+        assert serialized["failed_count"] == 0
+
+
+class TestBatchDeleteIntegration:
+    """Test batch delete integration scenarios"""
+
+    def test_batch_delete_workflow(self):
+        """Test complete batch delete workflow with different scenarios"""
+        # 1. Create batch response with mixed results
+        results = [
+            UserDeleteResult(
+                user_id="user1",
+                status="success",
+                message="User deleted successfully"
+            ),
+            UserDeleteResult(
+                user_id="user2",
+                status="failed",
+                message="User not found"
+            ),
+            UserDeleteResult(
+                user_id="user3",
+                status="success",
+                message="User deleted successfully"
+            )
+        ]
+
+        batch_response = UserDeleteBatchResponse(
+            results=results,
+            total_users=3,
+            success_count=2,
+            failed_count=1
+        )
+
+        # 2. Verify response structure
+        assert batch_response.total_users == 3
+        assert batch_response.success_count == 2
+        assert batch_response.failed_count == 1
+        assert len(batch_response.results) == 3
+
+        # 3. Verify individual results
+        success_results = [r for r in batch_response.results if r.status == "success"]
+        failed_results = [r for r in batch_response.results if r.status == "failed"]
+
+        assert len(success_results) == 2
+        assert len(failed_results) == 1
+        assert success_results[0].user_id == "user1"
+        assert success_results[1].user_id == "user3"
+        assert failed_results[0].user_id == "user2"
+
+        # 4. Test serialization
+        serialized = batch_response.model_dump()
+        assert serialized["total_users"] == 3
+        assert serialized["success_count"] == 2
+        assert serialized["failed_count"] == 1
+
+    def test_batch_delete_response_codes(self):
+        """Test batch delete response codes based on results"""
+        # All successful
+        all_success = UserDeleteBatchResponse(
+            results=[
+                UserDeleteResult(user_id="user1", status="success", message="Success"),
+                UserDeleteResult(user_id="user2", status="success", message="Success")
+            ],
+            total_users=2,
+            success_count=2,
+            failed_count=0
+        )
+        assert all_success.failed_count == 0  # Should return 200
+
+        # Partial success
+        partial_success = UserDeleteBatchResponse(
+            results=[
+                UserDeleteResult(user_id="user1", status="success", message="Success"),
+                UserDeleteResult(user_id="user2", status="failed", message="Failed")
+            ],
+            total_users=2,
+            success_count=1,
+            failed_count=1
+        )
+        assert partial_success.success_count > 0 and partial_success.failed_count > 0  # Should return 207
+
+        # All failed
+        all_failed = UserDeleteBatchResponse(
+            results=[
+                UserDeleteResult(user_id="user1", status="failed", message="Failed"),
+                UserDeleteResult(user_id="user2", status="failed", message="Failed")
+            ],
+            total_users=2,
+            success_count=0,
+            failed_count=2
+        )
+        assert all_failed.success_count == 0  # Should return 400

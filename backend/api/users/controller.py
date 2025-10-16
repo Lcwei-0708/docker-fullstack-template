@@ -7,9 +7,14 @@ from core.permissions import Permission
 from core.rbac import require_permission
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.response import APIResponse, parse_responses, common_responses
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Path
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Path, Response
 from .services import get_all_users, create_user, update_user, delete_users, reset_user_password
-from .schema import UserPagination, UserSortBy, UserCreate, UserUpdate, UserDelete, PasswordReset, UserResponse
+from .schema import (
+    UserPagination, UserSortBy, UserCreate, UserUpdate, UserDelete, PasswordReset, UserResponse, 
+    UserDeleteBatchResponse, user_delete_success_response_example, user_delete_partial_response_example, 
+    user_delete_failed_response_example
+)
+from utils.custom_exception import NotFoundException, ConflictException
 
 router = APIRouter(tags=["Users"])
 
@@ -96,20 +101,22 @@ async def update_user_api(
     try:
         user = await update_user(db, user_id, user_data)
         return APIResponse(code=200, message="User updated successfully", data=user)
-    except Exception as e:
-        if "User not found" in str(e):
-            raise HTTPException(status_code=404, detail="User not found")
-        if "Email already exists" in str(e):
-            raise HTTPException(status_code=409, detail="Email already exists")
+    except NotFoundException:
+        raise HTTPException(status_code=404, detail="User not found")
+    except ConflictException:
+        raise HTTPException(status_code=409, detail="Email already exists")
+    except Exception:
         raise HTTPException(status_code=500)
 
 @router.delete(
     "/",
-    response_model=APIResponse[dict],
+    response_model=APIResponse[UserDeleteBatchResponse],
     response_model_exclude_none=True,
     summary="Delete users",
     responses=parse_responses({
-        200: ("Users deleted successfully", dict)
+        200: ("All users deleted successfully", UserDeleteBatchResponse, user_delete_success_response_example),
+        207: ("Users deleted with partial success", UserDeleteBatchResponse, user_delete_partial_response_example),
+        400: ("All users failed to delete", UserDeleteBatchResponse, user_delete_failed_response_example)
     }, common_responses)
 )
 @require_permission([Permission.MANAGE_USERS])
@@ -117,15 +124,46 @@ async def delete_users_api(
     delete_data: UserDelete,
     request: Request,
     token: dict = Depends(verify_token),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    redis_client: redis.Redis = Depends(get_redis)
 ):
     """Delete multiple users"""
     try:
-        await delete_users(db, delete_data.user_ids)
-        return APIResponse(code=200, message="Users deleted successfully", data={"deleted_count": len(delete_data.user_ids)})
-    except Exception as e:
-        if "Users not found" in str(e):
-            raise HTTPException(status_code=404, detail=str(e))
+        batch_result = await delete_users(db, redis_client, delete_data.user_ids)
+        
+        # Determine response code based on results
+        if batch_result.failed_count == 0:
+            # All successful
+            return APIResponse(
+                code=200, 
+                message="All users deleted successfully", 
+                data=batch_result
+            )
+        elif batch_result.success_count == 0:
+            # All failed - return 400 status code
+            response = APIResponse(
+                code=400, 
+                message="All users failed to delete", 
+                data=batch_result
+            )
+            return Response(
+                content=response.model_dump_json(),
+                status_code=400,
+                media_type="application/json"
+            )
+        else:
+            # Partial success - return 207 status code
+            response = APIResponse(
+                code=207, 
+                message="Users deleted with partial success", 
+                data=batch_result
+            )
+            return Response(
+                content=response.model_dump_json(),
+                status_code=207,
+                media_type="application/json"
+            )
+    except Exception:
         raise HTTPException(status_code=500)
 
 @router.post(
@@ -150,7 +188,7 @@ async def reset_user_password_api(
     try:
         await reset_user_password(db, redis_client, user_id, password_data.new_password)
         return APIResponse(code=200, message="Password reset successfully and all devices logged out")
-    except Exception as e:
-        if "User not found" in str(e):
-            raise HTTPException(status_code=404, detail="User not found")
+    except NotFoundException:
+        raise HTTPException(status_code=404, detail="User not found")
+    except Exception:
         raise HTTPException(status_code=500) 

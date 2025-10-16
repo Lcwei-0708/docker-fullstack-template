@@ -2,12 +2,15 @@ import redis
 import logging
 from models.users import Users
 from models.roles import Roles
-from typing import Optional, List
 from models.role_mapper import RoleMapper
+from models.login_logs import LoginLogs
+from models.user_sessions import UserSessions
+from models.password_reset_tokens import PasswordResetTokens
+from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, delete
 from core.security import hash_password, clear_user_all_sessions
-from .schema import UserResponse, UserPagination, UserCreate, UserUpdate
+from .schema import UserResponse, UserPagination, UserCreate, UserUpdate, UserDeleteBatchResponse, UserDeleteResult
 from utils.custom_exception import ServerException, ConflictException, NotFoundException
 
 logger = logging.getLogger(__name__)
@@ -227,27 +230,67 @@ async def update_user(db: AsyncSession, user_id: str, user_data: UserUpdate) -> 
     except Exception as e:
         raise ServerException(f"Failed to update user: {str(e)}")
 
-async def delete_users(db: AsyncSession, user_ids: List[str]) -> bool:
-    """Delete multiple users"""
+async def delete_users(db: AsyncSession, redis_client: redis.Redis, user_ids: List[str]) -> UserDeleteBatchResponse:
+    """Delete multiple users with detailed batch processing results"""
     try:
+        results = []
+        success_count = 0
+        failed_count = 0
+        
+        # Check which users exist
         result = await db.execute(
             select(Users.id).where(Users.id.in_(user_ids))
         )
-        existing_ids = result.scalars().all()
+        existing_ids = set(result.scalars().all())
         
-        if len(existing_ids) != len(user_ids):
-            missing_ids = set(user_ids) - set(existing_ids)
-            raise NotFoundException(f"Users not found: {', '.join(missing_ids)}")
+        # Process each user ID
+        for user_id in user_ids:
+            try:
+                if user_id in existing_ids:
+                    # Clear user sessions and tokens before deletion
+                    await clear_user_all_sessions(db, redis_client, user_id)
+                    
+                    # Delete related records first to avoid foreign key constraints
+                    await _delete_user_related_records(db, user_id)
+                    
+                    # Delete the user
+                    await db.execute(
+                        delete(Users).where(Users.id == user_id)
+                    )
+                    
+                    results.append(UserDeleteResult(
+                        user_id=user_id,
+                        status="success",
+                        message="User deleted successfully"
+                    ))
+                    success_count += 1
+                else:
+                    results.append(UserDeleteResult(
+                        user_id=user_id,
+                        status="failed",
+                        message="User not found"
+                    ))
+                    failed_count += 1
+                    
+            except Exception as e:
+                results.append(UserDeleteResult(
+                    user_id=user_id,
+                    status="failed",
+                    message=f"Failed to delete user: {str(e)}"
+                ))
+                failed_count += 1
         
-        await db.execute(
-            delete(Users).where(Users.id.in_(user_ids))
+        # Commit all successful deletions
+        if success_count > 0:
+            await db.commit()
+        
+        return UserDeleteBatchResponse(
+            results=results,
+            total_users=len(user_ids),
+            success_count=success_count,
+            failed_count=failed_count
         )
-        await db.commit()
         
-        return True
-        
-    except NotFoundException:
-        raise
     except Exception as e:
         raise ServerException(f"Failed to delete users: {str(e)}")
 
@@ -324,3 +367,29 @@ async def _update_user_role(db: AsyncSession, user_id: str, role_name: Optional[
         
     except Exception as e:
         raise ServerException(f"Failed to update user role: {str(e)}")
+
+async def _delete_user_related_records(db: AsyncSession, user_id: str) -> None:
+    """Delete all records related to a user to avoid foreign key constraints"""
+    try:
+        # Delete login logs
+        await db.execute(
+            delete(LoginLogs).where(LoginLogs.user_id == user_id)
+        )
+        
+        # Delete user sessions
+        await db.execute(
+            delete(UserSessions).where(UserSessions.user_id == user_id)
+        )
+        
+        # Delete role mappings
+        await db.execute(
+            delete(RoleMapper).where(RoleMapper.user_id == user_id)
+        )
+        
+        # Delete password reset tokens
+        await db.execute(
+            delete(PasswordResetTokens).where(PasswordResetTokens.user_id == user_id)
+        )
+        
+    except Exception as e:
+        raise ServerException(f"Failed to delete user related records: {str(e)}")
