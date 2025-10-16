@@ -21,6 +21,7 @@ from api.users.schema import (
     UserUpdate,
     UserResponse,
     UserPagination,
+    UserDeleteBatchResponse
 )
 
 
@@ -465,21 +466,24 @@ class TestDeleteUsers:
         test_db_session.add(user2)
         await test_db_session.commit()
 
-        result = await delete_users(test_db_session, ["user1", "user2"])
-
-        assert result == True
-
-    @pytest.mark.asyncio
-    async def test_delete_users_not_found(self, test_db_session: AsyncSession):
-        """Test users deletion with non-existent users"""
-        with pytest.raises(NotFoundException) as exc_info:
-            await delete_users(test_db_session, ["nonexistent1", "nonexistent2"])
+        mock_redis = AsyncMock()
         
-        assert "Users not found" in str(exc_info.value)
+        with patch("api.users.services.clear_user_all_sessions") as mock_clear_sessions, \
+             patch("api.users.services._delete_user_related_records") as mock_delete_related:
+            result = await delete_users(test_db_session, mock_redis, ["user1", "user2"])
+
+            assert isinstance(result, UserDeleteBatchResponse)
+            assert result.total_users == 2
+            assert result.success_count == 2
+            assert result.failed_count == 0
+            assert len(result.results) == 2
+            assert all(r.status == "success" for r in result.results)
+            mock_clear_sessions.assert_called()
+            mock_delete_related.assert_called()
 
     @pytest.mark.asyncio
-    async def test_delete_users_partial_not_found(self, test_db_session: AsyncSession):
-        """Test users deletion with some non-existent users"""
+    async def test_delete_users_partial_success(self, test_db_session: AsyncSession):
+        """Test users deletion with partial success"""
         # Create one user
         user = Users(
             id="user1",
@@ -494,10 +498,107 @@ class TestDeleteUsers:
         test_db_session.add(user)
         await test_db_session.commit()
 
-        with pytest.raises(NotFoundException) as exc_info:
-            await delete_users(test_db_session, ["user1", "nonexistent"])
+        mock_redis = AsyncMock()
         
-        assert "Users not found" in str(exc_info.value)
+        with patch("api.users.services.clear_user_all_sessions") as mock_clear_sessions, \
+             patch("api.users.services._delete_user_related_records") as mock_delete_related:
+            result = await delete_users(test_db_session, mock_redis, ["user1", "nonexistent"])
+
+            assert isinstance(result, UserDeleteBatchResponse)
+            assert result.total_users == 2
+            assert result.success_count == 1
+            assert result.failed_count == 1
+            assert len(result.results) == 2
+            
+            # Check individual results
+            success_results = [r for r in result.results if r.status == "success"]
+            failed_results = [r for r in result.results if r.status == "failed"]
+            
+            assert len(success_results) == 1
+            assert len(failed_results) == 1
+            assert success_results[0].user_id == "user1"
+            assert failed_results[0].user_id == "nonexistent"
+            assert "User not found" in failed_results[0].message
+
+    @pytest.mark.asyncio
+    async def test_delete_users_all_failed(self, test_db_session: AsyncSession):
+        """Test users deletion with all failed"""
+        mock_redis = AsyncMock()
+        
+        result = await delete_users(test_db_session, mock_redis, ["nonexistent1", "nonexistent2"])
+
+        assert isinstance(result, UserDeleteBatchResponse)
+        assert result.total_users == 2
+        assert result.success_count == 0
+        assert result.failed_count == 2
+        assert len(result.results) == 2
+        assert all(r.status == "failed" for r in result.results)
+        assert all("User not found" in r.message for r in result.results)
+
+    @pytest.mark.asyncio
+    async def test_delete_users_with_session_clear_failure(self, test_db_session: AsyncSession):
+        """Test users deletion when session clearing fails"""
+        # Create test user
+        user = Users(
+            id="user1",
+            email="user1@example.com",
+            first_name="User",
+            last_name="One",
+            phone="+1234567890",
+            hash_password="hashed_password",
+            status=True,
+            created_at=datetime.now()
+        )
+        test_db_session.add(user)
+        await test_db_session.commit()
+
+        mock_redis = AsyncMock()
+        
+        with patch("api.users.services.clear_user_all_sessions") as mock_clear_sessions, \
+             patch("api.users.services._delete_user_related_records") as mock_delete_related:
+            mock_clear_sessions.side_effect = Exception("Redis connection failed")
+            
+            result = await delete_users(test_db_session, mock_redis, ["user1"])
+
+            assert isinstance(result, UserDeleteBatchResponse)
+            assert result.total_users == 1
+            assert result.success_count == 0
+            assert result.failed_count == 1
+            assert result.results[0].status == "failed"
+            assert "Failed to delete user" in result.results[0].message
+
+    @pytest.mark.asyncio
+    async def test_delete_users_with_foreign_key_constraints(self, test_db_session: AsyncSession):
+        """Test users deletion with foreign key constraints handling"""
+        # Create test user
+        user = Users(
+            id="user1",
+            email="user1@example.com",
+            first_name="User",
+            last_name="One",
+            phone="+1234567890",
+            hash_password="hashed_password",
+            status=True,
+            created_at=datetime.now()
+        )
+        test_db_session.add(user)
+        await test_db_session.commit()
+
+        mock_redis = AsyncMock()
+        
+        with patch("api.users.services.clear_user_all_sessions") as mock_clear_sessions, \
+             patch("api.users.services._delete_user_related_records") as mock_delete_related:
+            result = await delete_users(test_db_session, mock_redis, ["user1"])
+
+            assert isinstance(result, UserDeleteBatchResponse)
+            assert result.total_users == 1
+            assert result.success_count == 1
+            assert result.failed_count == 0
+            assert result.results[0].status == "success"
+            assert result.results[0].user_id == "user1"
+            
+            # Verify that related records deletion was called
+            mock_delete_related.assert_called_once_with(test_db_session, "user1")
 
 
 class TestResetUserPassword:
@@ -578,7 +679,6 @@ class TestRoleManagement:
         await _assign_user_role(test_db_session, "user1", "admin")
 
         # Verify role mapping was created
-        from sqlalchemy import text
         result = await test_db_session.execute(
             text("SELECT * FROM role_mapper WHERE user_id = 'user1' AND role_id = 'role1'")
         )

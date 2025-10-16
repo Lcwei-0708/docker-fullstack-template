@@ -2,7 +2,9 @@ import pytest
 from datetime import datetime
 from httpx import AsyncClient
 from unittest.mock import patch
+from utils.custom_exception import NotFoundException
 from api.users.schema import UserResponse, UserPagination
+from api.users.schema import UserDeleteBatchResponse, UserDeleteResult
 
 
 class TestUsersController:
@@ -211,7 +213,7 @@ class TestUsersController:
         update_data = {"first_name": "Updated"}
 
         with patch("api.users.controller.update_user") as mock_update_user:
-            mock_update_user.side_effect = Exception("User not found")
+            mock_update_user.side_effect = NotFoundException("User not found")
 
             response = await client.put(
                 f"/api/users/{user_id}",
@@ -228,11 +230,21 @@ class TestUsersController:
     async def test_delete_users_success(
         self, client: AsyncClient, users_auth_headers: dict
     ):
-        """Test successful users deletion"""
+        """Test successful users deletion"""        
         delete_data = {"user_ids": ["user1", "user2", "user3"]}
 
         with patch("api.users.controller.delete_users") as mock_delete_users:
-            mock_delete_users.return_value = True
+            mock_batch_response = UserDeleteBatchResponse(
+                results=[
+                    UserDeleteResult(user_id="user1", status="success", message="User deleted successfully"),
+                    UserDeleteResult(user_id="user2", status="success", message="User deleted successfully"),
+                    UserDeleteResult(user_id="user3", status="success", message="User deleted successfully")
+                ],
+                total_users=3,
+                success_count=3,
+                failed_count=0
+            )
+            mock_delete_users.return_value = mock_batch_response
 
             response = await client.request(
                 "DELETE",
@@ -244,20 +256,29 @@ class TestUsersController:
             assert response.status_code == 200
             data = response.json()
             assert data["code"] == 200
-            assert data["message"] == "Users deleted successfully"
-            assert data["data"]["deleted_count"] == 3
+            assert data["message"] == "All users deleted successfully"
+            assert data["data"]["total_users"] == 3
+            assert data["data"]["success_count"] == 3
+            assert data["data"]["failed_count"] == 0
 
     @pytest.mark.asyncio
-    async def test_delete_users_not_found(
+    async def test_delete_users_partial_success(
         self, client: AsyncClient, users_auth_headers: dict
     ):
-        """Test users deletion with non-existent users"""
-        delete_data = {"user_ids": ["nonexistent1", "nonexistent2"]}
+        """Test users deletion with partial success"""        
+        delete_data = {"user_ids": ["user1", "nonexistent2"]}
 
         with patch("api.users.controller.delete_users") as mock_delete_users:
-            mock_delete_users.side_effect = Exception(
-                "Users not found: nonexistent1, nonexistent2"
+            mock_batch_response = UserDeleteBatchResponse(
+                results=[
+                    UserDeleteResult(user_id="user1", status="success", message="User deleted successfully"),
+                    UserDeleteResult(user_id="nonexistent2", status="failed", message="User not found")
+                ],
+                total_users=2,
+                success_count=1,
+                failed_count=1
             )
+            mock_delete_users.return_value = mock_batch_response
 
             response = await client.request(
                 "DELETE",
@@ -266,9 +287,47 @@ class TestUsersController:
                 headers={"Authorization": users_auth_headers["Authorization"]},
             )
 
-            assert response.status_code == 404
+            assert response.status_code == 207
             data = response.json()
-            assert data["code"] == 404
+            assert data["code"] == 207
+            assert data["message"] == "Users deleted with partial success"
+            assert data["data"]["total_users"] == 2
+            assert data["data"]["success_count"] == 1
+            assert data["data"]["failed_count"] == 1
+
+    @pytest.mark.asyncio
+    async def test_delete_users_all_failed(
+        self, client: AsyncClient, users_auth_headers: dict
+    ):
+        """Test users deletion with all failed"""        
+        delete_data = {"user_ids": ["nonexistent1", "nonexistent2"]}
+
+        with patch("api.users.controller.delete_users") as mock_delete_users:
+            mock_batch_response = UserDeleteBatchResponse(
+                results=[
+                    UserDeleteResult(user_id="nonexistent1", status="failed", message="User not found"),
+                    UserDeleteResult(user_id="nonexistent2", status="failed", message="User not found")
+                ],
+                total_users=2,
+                success_count=0,
+                failed_count=2
+            )
+            mock_delete_users.return_value = mock_batch_response
+
+            response = await client.request(
+                "DELETE",
+                "/api/users/",
+                json=delete_data,
+                headers={"Authorization": users_auth_headers["Authorization"]},
+            )
+
+            assert response.status_code == 400
+            data = response.json()
+            assert data["code"] == 400
+            assert data["message"] == "All users failed to delete"
+            assert data["data"]["total_users"] == 2
+            assert data["data"]["success_count"] == 0
+            assert data["data"]["failed_count"] == 2
 
     @pytest.mark.asyncio
     async def test_reset_password_success(
@@ -304,7 +363,7 @@ class TestUsersController:
         password_data = {"new_password": "NewPassword123!"}
 
         with patch("api.users.controller.reset_user_password") as mock_reset_password:
-            mock_reset_password.side_effect = Exception("User not found")
+            mock_reset_password.side_effect = NotFoundException("User not found")
 
             response = await client.post(
                 f"/api/users/{user_id}/reset-password",

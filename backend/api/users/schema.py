@@ -49,4 +49,76 @@ class UserDelete(BaseModel):
     user_ids: List[str] = Field(..., min_items=1, description="List of user IDs to delete")
 
 class PasswordReset(BaseModel):
-    new_password: str = Field(..., min_length=settings.PASSWORD_MIN_LENGTH, max_length=50, description="New password") 
+    new_password: str = Field(..., min_length=settings.PASSWORD_MIN_LENGTH, max_length=50, description="New password")
+
+class UserDeleteResult(BaseModel):
+    user_id: str = Field(..., description="User ID")
+    status: str = Field(..., description="Processing status: success, failed", example="success|failed", pattern="^(success|failed)$")
+    message: str = Field(..., description="Result message")
+
+class UserDeleteBatchResponse(BaseModel):
+    results: List[UserDeleteResult] = Field(..., description="Individual user deletion results")
+    total_users: int = Field(..., description="Total number of users processed")
+    success_count: int = Field(..., description="Number of successfully deleted users")
+    failed_count: int = Field(..., description="Number of failed deletions")
+
+user_delete_success_response_example = {
+    "code": 200,
+    "message": "All users deleted successfully",
+    "data": {
+        "results": [
+            {
+                "user_id": "uuid-user-id-1",
+                "status": "success",
+                "message": "User deleted successfully"
+            },
+            {
+                "user_id": "uuid-user-id-2",
+                "status": "success",
+                "message": "User deleted successfully"
+            }
+        ],
+        "total_users": 2,
+        "success_count": 2,
+        "failed_count": 0
+    }
+}
+
+user_delete_partial_response_example = {
+    "code": 207,
+    "message": "Users deleted with partial success",
+    "data": {
+        "results": [
+            {
+                "user_id": "uuid-user-id-1",
+                "status": "success",
+                "message": "User deleted successfully"
+            },
+            {
+                "user_id": "uuid-user-id-2",
+                "status": "failed",
+                "message": "User not found"
+            }
+        ],
+        "total_users": 2,
+        "success_count": 1,
+        "failed_count": 1
+    }
+}
+
+user_delete_failed_response_example = {
+    "code": 400,
+    "message": "All users failed to delete",
+    "data": {
+        "results": [
+            {
+                "user_id": "uuid-user-id-1",
+                "status": "failed",
+                "message": "User not found"
+            }
+        ],
+        "total_users": 1,
+        "success_count": 0,
+        "failed_count": 1
+    }
+}
