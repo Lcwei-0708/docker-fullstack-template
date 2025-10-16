@@ -5,28 +5,28 @@ from typing import List, Optional
 from pydantic import BaseModel, EmailStr, Field
 
 class UserResponse(BaseModel):
-    id: str
-    email: str
-    first_name: str
-    last_name: str
-    phone: str
-    status: bool
-    created_at: datetime
-    role: Optional[str] = None
+    id: str = Field(..., description="User ID")
+    email: str = Field(..., description="User email address")
+    first_name: str = Field(..., description="First name")
+    last_name: str = Field(..., description="Last name")
+    phone: str = Field(..., description="Phone number")
+    status: bool = Field(..., description="User status")
+    created_at: datetime = Field(..., description="User creation time")
+    role: Optional[str] = Field(None, description="User role")
 
 class UserPagination(BaseModel):
-    users: List[UserResponse]
-    total: int
-    page: int
-    per_page: int
-    total_pages: int
+    users: List[UserResponse] = Field(..., description="List of users")
+    total: int = Field(..., description="Total number of users")
+    page: int = Field(..., description="Current page number")
+    per_page: int = Field(..., description="Number of users per page")
+    total_pages: int = Field(..., description="Total number of pages")
 
 class UserSortBy(str, Enum):
-    CREATED_AT = "created_at"
-    EMAIL = "email"
-    FIRST_NAME = "first_name"
-    LAST_NAME = "last_name"
-    STATUS = "status"
+    CREATED_AT: str = "created_at"
+    EMAIL: str = "email"
+    FIRST_NAME: str = "first_name"
+    LAST_NAME: str = "last_name"
+    STATUS: str = "status"
 
 class UserCreate(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=50, description="First name")

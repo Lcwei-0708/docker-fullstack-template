@@ -2,9 +2,9 @@ from pydantic import BaseModel, Field
 from typing import Optional, Dict, List
 
 class RoleResponse(BaseModel):
-    id: str
-    name: str
-    description: Optional[str] = None
+    id: str = Field(..., description="Role ID")
+    name: str = Field(..., description="Role name")
+    description: Optional[str] = Field(None, description="Role description")
 
 class RolesListResponse(BaseModel):
     roles: List[RoleResponse] = Field(..., description="List of roles")
@@ -52,6 +52,17 @@ class RoleAttributeMappingBatchResponse(BaseModel):
     total_attributes: int = Field(..., description="Total number of attributes processed")
     success_count: int = Field(..., description="Number of successfully processed attributes")
     failed_count: int = Field(..., description="Number of failed attributes")
+
+class PermissionCheckRequest(BaseModel):
+    attributes: List[str] = Field(
+        ..., 
+        min_items=1,
+        description="List of permission attributes to check",
+        example=["view-users", "manage-roles"]
+    )
+
+class PermissionCheckResponse(BaseModel):
+    permissions: Dict[str, bool] = Field(..., description="Permission check results (attribute: has_permission)")
 
 role_attributes_success_response_example = {
     "code": 200,
@@ -118,14 +129,3 @@ role_attributes_failed_response_example = {
         "failed_count": 2
     }
 }
-
-class PermissionCheckRequest(BaseModel):
-    attributes: List[str] = Field(
-        ..., 
-        min_items=1,
-        description="List of permission attributes to check",
-        example=["view-users", "manage-roles"]
-    )
-
-class PermissionCheckResponse(BaseModel):
-    permissions: Dict[str, bool] = Field(..., description="Permission check results (attribute: has_permission)")
