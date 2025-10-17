@@ -22,7 +22,7 @@ This project uses GitHub Actions for automated testing and deployment of test co
 
 ## Workflow Files
 
-### Testing Workflow (`test_backend.yml`)
+### Testing Workflow (`test-backend.yml`)
 
 **Purpose**: Runs tests and generates coverage reports.
 

@@ -1,4 +1,4 @@
-[![Testing](https://github.com/Lcwei-0708/docker-fullstack-template/actions/workflows/test_backend.yml/badge.svg)](https://github.com/Lcwei-0708/docker-fullstack-template/actions/workflows/test_backend.yml)
+[![Testing](https://github.com/Lcwei-0708/docker-fullstack-template/actions/workflows/test-backend.yml/badge.svg)](https://github.com/Lcwei-0708/docker-fullstack-template/actions/workflows/test-backend.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://lcwei-0708.github.io/docker-fullstack-template/coverage.json)](https://lcwei-0708.github.io/docker-fullstack-template/)
 
 
