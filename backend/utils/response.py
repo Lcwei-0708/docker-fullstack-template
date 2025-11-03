@@ -190,11 +190,11 @@ common_responses = {
         }
     ),
     429: (
-        "Too many failed attempts. Try again later.",
+        "Too many requests. Try again later.",
         APIResponse[None],
         {
             "code": 429,
-            "message": "Too many failed attempts. Try again later.",
+            "message": "Too many requests. Try again later.",
             "data": None
         }
     ),

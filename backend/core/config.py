@@ -52,9 +52,9 @@ class Settings(BaseSettings):
 
     # Security settings
     PASSWORD_MIN_LENGTH: int = 6
-    FAIL_LIMIT: int = 5
-    FAIL_WINDOW_SECONDS: int = 300  # 5 minutes
-    BLOCK_TIME_SECONDS: int = 900  # 15 minutes
+    FAIL_LIMIT: int = 30
+    FAIL_WINDOW_SECONDS: int = 180  # 3 minutes
+    BLOCK_TIME_SECONDS: int = 600  # 10 minutes
 
     # Default admin user settings
     DEFAULT_ADMIN_EMAIL: str = "admin@example.com"
