@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from urllib.parse import urlparse
 
-class CORSMiddleware(BaseHTTPMiddleware):
+class CORSMiddleware(BaseHTTPMiddleware):    
     def __init__(self, app):
         super().__init__(app)
         
@@ -14,6 +14,8 @@ class CORSMiddleware(BaseHTTPMiddleware):
             f"{settings.HOSTNAME}:{settings.FRONTEND_PORT}",
             f"localhost:{settings.FRONTEND_PORT}"
         ]
+
+        self.allowed_methods = "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD"
         
         self.generate_cors_origins()
         
@@ -111,7 +113,7 @@ class CORSMiddleware(BaseHTTPMiddleware):
         allowed_headers_str = self.get_allowed_headers(request)
         
         headers = {
-            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Methods": self.allowed_methods,
             "Access-Control-Allow-Headers": allowed_headers_str,
             "Access-Control-Max-Age": "3600",
             "Vary": "Origin",
@@ -128,7 +130,7 @@ class CORSMiddleware(BaseHTTPMiddleware):
             return
         
         self._set_cors_origin_headers(response.headers, origin)
-        response.headers["Access-Control-Allow-Methods"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = self.allowed_methods
         response.headers["Access-Control-Allow-Headers"] = "content-type, authorization, accept, accept-language, cache-control, pragma, x-requested-with"
     
     async def dispatch(self, request: Request, call_next):
