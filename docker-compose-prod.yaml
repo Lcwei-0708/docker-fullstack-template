@@ -25,6 +25,7 @@ services:
       - BACKEND_PORT=${BACKEND_PORT}
       - PMA_PORT=${PMA_PORT}
       - GRAFANA_PORT=${GRAFANA_PORT}
+      - REDIS_INSIGHT_PORT=${REDIS_INSIGHT_PORT}
       # Redis Insight authentication
       - REDIS_INSIGHT_USER=${REDIS_INSIGHT_USER}
       - REDIS_INSIGHT_PASSWORD=${REDIS_INSIGHT_PASSWORD}
@@ -34,6 +35,7 @@ services:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
       - "${PMA_PORT}:${PMA_PORT}"
       - "${GRAFANA_PORT}:${GRAFANA_PORT}"
+      - "${REDIS_INSIGHT_PORT}:${REDIS_INSIGHT_PORT}"
     depends_on:
       frontend:
         condition: service_healthy
