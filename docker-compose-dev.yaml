@@ -107,7 +107,7 @@ services:
       - DB_READ_TIMEOUT=${DB_READ_TIMEOUT}
       - DB_WRITE_TIMEOUT=${DB_WRITE_TIMEOUT}
       # Redis settings
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
     command: ["sh", "./init-dev.sh"]
     depends_on:
       mariadb:
@@ -160,12 +160,16 @@ services:
     restart: always
 
   redis:
-    image: redis/redis-stack:7.4.0-v6
+    image: redis:8.4.0
     environment:
       - TZ=${TIMEZONE}
-      - REDIS_ARGS=--requirepass ${REDIS_PASSWORD}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
       - redis-data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis/docker-entrypoint.sh:/docker-entrypoint.sh
+    user: root
+    entrypoint: ["/docker-entrypoint.sh"]
     depends_on:
       mariadb:
         condition: service_healthy
@@ -173,10 +177,34 @@ services:
       - backend-network
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping && curl -f http://localhost:8001 || exit 1"]
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping | grep -q PONG"]
       start_period: 30s
       interval: 10s
-      timeout: 30s
+      timeout: 5s
+      retries: 5
+
+  redis-insight:
+    image: redis/redisinsight:2.70
+    environment:
+      - TZ=${TIMEZONE}
+      - RI_REDIS_HOST=redis
+      - RI_REDIS_PORT=6379
+      - RI_REDIS_ALIAS=${PROJECT_NAME}
+      - RI_REDIS_USERNAME=default
+      - RI_REDIS_PASSWORD=${REDIS_PASSWORD}
+    volumes:
+      - redis-insight-data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - backend-network
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:5540 || exit 1"]
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
       retries: 5
 
   loki:
@@ -249,6 +277,7 @@ services:
 volumes:
   db-data:
   redis-data:
+  redis-insight-data:
   alloy-data:
   loki-data:
   loki-wal-data:
