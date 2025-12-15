@@ -1,6 +1,7 @@
 from typing import Dict, List
 from models.roles import Roles
 from models.role_mapper import RoleMapper
+from core.rbac import check_user_has_super_role
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete, and_
 from models.role_attributes import RoleAttributes
@@ -140,7 +141,6 @@ async def get_role_attribute_mapping(db: AsyncSession, role_id: str) -> RoleAttr
         
         # Use LEFT JOIN to get all attributes and their mappings
         query = select(
-            RoleAttributes.id,
             RoleAttributes.name,
             RoleAttributesMapper.value
         ).select_from(
@@ -159,7 +159,7 @@ async def get_role_attribute_mapping(db: AsyncSession, role_id: str) -> RoleAttr
         attributes_dict = {}
         for row in rows:
             # If value is None (no mapping), set to False
-            attributes_dict[row.id] = row.value if row.value is not None else False
+            attributes_dict[row.name] = row.value if row.value is not None else False
         
         return RoleAttributesMapping(attributes=attributes_dict)
         
@@ -182,30 +182,36 @@ async def update_role_attribute_mapping(db: AsyncSession, role_id: str, attribut
         success_count = 0
         failed_count = 0
         
-        # Validate all attribute IDs are valid first
-        attribute_ids = list(attributes_data.keys())
-        invalid_ids = set()
+        # Get mapping from attribute names to IDs
+        attribute_names = list(attributes_data.keys())
+        name_to_id_map = {}
+        invalid_names = set()
         
-        if attribute_ids:
+        if attribute_names:
             existing_attributes = await db.execute(
-                select(RoleAttributes.id).where(RoleAttributes.id.in_(attribute_ids))
+                select(RoleAttributes.id, RoleAttributes.name).where(RoleAttributes.name.in_(attribute_names))
             )
-            existing_ids = {row[0] for row in existing_attributes.fetchall()}
-            invalid_ids = set(attribute_ids) - existing_ids
+            for row in existing_attributes:
+                name_to_id_map[row.name] = row.id
             
-            # Handle invalid attribute IDs
-            for invalid_id in invalid_ids:
+            # Handle invalid attribute names
+            invalid_names = set(attribute_names) - set(name_to_id_map.keys())
+            for invalid_name in invalid_names:
                 results.append(AttributeMappingResult(
-                    attribute_id=invalid_id,
+                    attribute_id=invalid_name,  # Keep name for error reporting
                     status="failed",
-                    message="Invalid attribute ID"
+                    message="Invalid attribute name"
                 ))
                 failed_count += 1
         
         # Process valid attributes
-        for attribute_id, value in attributes_data.items():
-            if attribute_id in invalid_ids:
-                continue  # Skip invalid IDs
+        for attribute_name, value in attributes_data.items():
+            if attribute_name in invalid_names:
+                continue
+            
+            attribute_id = name_to_id_map.get(attribute_name)
+            if not attribute_id:
+                continue
                 
             try:
                 existing_mapping = await db.execute(
@@ -231,7 +237,7 @@ async def update_role_attribute_mapping(db: AsyncSession, role_id: str, attribut
                     db.add(new_mapping)
                 
                 results.append(AttributeMappingResult(
-                    attribute_id=attribute_id,
+                    attribute_id=attribute_name,
                     status="success",
                     message="Updated successfully"
                 ))
@@ -239,7 +245,7 @@ async def update_role_attribute_mapping(db: AsyncSession, role_id: str, attribut
                 
             except Exception as e:
                 results.append(AttributeMappingResult(
-                    attribute_id=attribute_id,
+                    attribute_id=attribute_name,
                     status="failed",
                     message=f"Failed to process: {str(e)}"
                 ))
@@ -262,34 +268,43 @@ async def update_role_attribute_mapping(db: AsyncSession, role_id: str, attribut
 async def check_user_permissions(
     db: AsyncSession, 
     user_id: str, 
-    required_attributes: List[str]
+    required_attributes: List[str] = None
 ) -> PermissionCheckResponse:
-    """Check if user has required permission attributes"""
-    try:        
+    """Check if user has required permission attributes."""
+    try:
+        # Get all available attributes
+        all_attributes_result = await db.execute(select(RoleAttributes.name))
+        all_attributes = [row[0] for row in all_attributes_result.fetchall()]
+        
+        if await check_user_has_super_role(user_id, db):
+            if required_attributes:
+                permissions = {attr: True for attr in required_attributes}
+            else:
+                permissions = {attr: True for attr in all_attributes}
+            return PermissionCheckResponse(permissions=permissions)
+        
         user_role_query = select(RoleMapper.role_id).where(RoleMapper.user_id == user_id)
         user_role_result = await db.execute(user_role_query)
         user_role_id = user_role_result.scalar_one_or_none()
         
-        if not user_role_id:
-            permissions = {attr: False for attr in required_attributes}
-            return PermissionCheckResponse(permissions=permissions)
-        
-        attributes_query = select(RoleAttributes.name).join(
-            RoleAttributesMapper, 
-            RoleAttributes.id == RoleAttributesMapper.attributes_id
-        ).where(
-            and_(
-                RoleAttributesMapper.role_id == user_role_id,
-                RoleAttributesMapper.value == True
+        user_attributes_set = set()
+        if user_role_id:
+            attributes_query = select(RoleAttributes.name).join(
+                RoleAttributesMapper, 
+                RoleAttributes.id == RoleAttributesMapper.attributes_id
+            ).where(
+                and_(
+                    RoleAttributesMapper.role_id == user_role_id,
+                    RoleAttributesMapper.value == True
+                )
             )
-        )
+            attributes_result = await db.execute(attributes_query)
+            user_attributes_set = {row[0] for row in attributes_result.fetchall()}
         
-        attributes_result = await db.execute(attributes_query)
-        user_attributes = [row[0] for row in attributes_result.fetchall()]
-        
-        permissions = {}
-        for attr in required_attributes:
-            permissions[attr] = attr in user_attributes
+        if not required_attributes:
+            permissions = {attr: attr in user_attributes_set for attr in all_attributes}
+        else:
+            permissions = {attr: attr in user_attributes_set for attr in required_attributes}
         
         return PermissionCheckResponse(permissions=permissions)
         

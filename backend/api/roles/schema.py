@@ -20,11 +20,11 @@ class RoleUpdate(BaseModel):
 class RoleAttributesMapping(BaseModel):
     attributes: Dict[str, bool] = Field(
         ..., 
-        description="Role attributes mapping (attribute_id: value)",
+        description="Role attributes mapping (attribute_name: value)",
         example={
-            "attribute_id_1": True,
-            "attribute_id_2": False,
-            "attribute_id_3": False
+            "view-users": True,
+            "manage-users": False,
+            "view-roles": True
         }
     )
     
@@ -35,9 +35,9 @@ class RoleAttributesMapping(BaseModel):
             "message": "Successfully retrieved role attributes mapping",
             "data": {
                 "attributes": {
-                    "attribute_id_1": True,
-                    "attribute_id_2": False,
-                    "attribute_id_3": False
+                    "view-users": True,
+                    "manage-users": False,
+                    "view-roles": True
                 }
             }
         }
@@ -54,15 +54,39 @@ class RoleAttributeMappingBatchResponse(BaseModel):
     failed_count: int = Field(..., description="Number of failed attributes")
 
 class PermissionCheckRequest(BaseModel):
-    attributes: List[str] = Field(
-        ..., 
+    attributes: Optional[List[str]] = Field(
+        None, 
         min_items=1,
-        description="List of permission attributes to check",
+        description="List of permission attributes to check. If not provided, returns all user permissions.",
         example=["view-users", "manage-roles"]
     )
 
 class PermissionCheckResponse(BaseModel):
-    permissions: Dict[str, bool] = Field(..., description="Permission check results (attribute: has_permission)")
+    permissions: Dict[str, bool] = Field(
+        ..., 
+        description="Permission check results (attribute_name: has_permission)",
+        example={
+            "view-users": True,
+            "manage-users": False,
+            "view-roles": True,
+            "manage-roles": False
+        }
+    )
+    
+    @classmethod
+    def get_example_response(cls):
+        return {
+            "code": 200,
+            "message": "User permissions retrieved",
+            "data": {
+                "permissions": {
+                    "view-users": True,
+                    "manage-users": False,
+                    "view-roles": True,
+                    "manage-roles": False
+                }
+            }
+        }
 
 role_attributes_success_response_example = {
     "code": 200,

@@ -16,6 +16,13 @@ logger = logging.getLogger(__name__)
 async def get_user_attributes(user_id: str, db: AsyncSession) -> Dict[str, bool]:
     """Get user attributes"""
     try:
+        # Check if user has super admin role first
+        if await check_user_has_super_role(user_id, db):
+            # Super admin has all attributes - get all available attributes
+            all_attributes_result = await db.execute(select(RoleAttributes.name))
+            all_attributes = [row.name for row in all_attributes_result]
+            return {attr: True for attr in all_attributes}
+        
         result = await db.execute(
             select(
                 RoleAttributes.name,

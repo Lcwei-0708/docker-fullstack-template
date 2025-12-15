@@ -8,6 +8,7 @@ from models.role_mapper import RoleMapper
 from core.database import AsyncSessionLocal
 from core.permissions import get_attributes
 from models.role_attributes import RoleAttributes
+from models.role_attributes_mapper import RoleAttributesMapper
 
 logger = logging.getLogger("init_db")
 
@@ -18,6 +19,7 @@ async def init_database():
         
         await create_role_attributes()
         await create_default_roles()
+        await assign_super_admin_attributes()
         await create_default_admin()
         
         logger.info("Database initialization completed")
@@ -99,6 +101,58 @@ async def create_default_roles():
             
         except Exception as e:
             logger.error(f"Failed to create roles: {str(e)}")
+            await db.rollback()
+            raise
+
+async def assign_super_admin_attributes():
+    """Assign all attributes to super admin role"""
+    async with AsyncSessionLocal() as db:
+        try:
+            # Get super admin role
+            super_role_result = await db.execute(
+                select(Roles).where(Roles.name == settings.DEFAULT_SUPER_ADMIN_ROLE)
+            )
+            super_role = super_role_result.scalar_one_or_none()
+            
+            if not super_role:
+                logger.warning(f"Super admin role '{settings.DEFAULT_SUPER_ADMIN_ROLE}' not found, skipping attribute assignment")
+                return
+            
+            # Get all attributes
+            attributes_result = await db.execute(select(RoleAttributes))
+            all_attributes = attributes_result.scalars().all()
+            
+            if not all_attributes:
+                logger.warning("No role attributes found, skipping attribute assignment")
+                return
+            
+            # Check existing mappings
+            existing_mappings_result = await db.execute(
+                select(RoleAttributesMapper).where(RoleAttributesMapper.role_id == super_role.id)
+            )
+            existing_mappings = {mapping.attributes_id for mapping in existing_mappings_result.scalars().all()}
+            
+            assigned_count = 0
+            for attribute in all_attributes:
+                if attribute.id in existing_mappings:
+                    continue
+                
+                attribute_mapping = RoleAttributesMapper(
+                    role_id=super_role.id,
+                    attributes_id=attribute.id,
+                    value=True
+                )
+                db.add(attribute_mapping)
+                assigned_count += 1
+            
+            if assigned_count > 0:
+                await db.commit()
+                logger.info(f"Assigned {assigned_count} attributes to super admin role")
+            else:
+                logger.info("Super admin role already has all attributes assigned")
+            
+        except Exception as e:
+            logger.error(f"Failed to assign super admin attributes: {str(e)}")
             await db.rollback()
             raise
 

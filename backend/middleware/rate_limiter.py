@@ -37,10 +37,20 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
         """
         self.endpoint_rate_limits = {
             # Add endpoint rate limits here to override default settings
+            "/api/auth/token": {
+                "limit": (60, 60),
+                "status_codes": None,
+                "clear_on_success": False
+            },
             "/api/auth/login": {
                 "limit": (5, 30),
                 "status_codes": [401, 403],
                 "clear_on_success": True
+            },
+            "/api/roles/permissions": {
+                "limit": (60, 60),
+                "status_codes": None,
+                "clear_on_success": False
             }
         }
     
