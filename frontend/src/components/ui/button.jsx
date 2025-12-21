@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva } from "class-variance-authority";
-import { cn } from "@/lib/utils"
+import { cn, debugWarn } from "@/lib/utils"
 
 const buttonVariants = cva(
   "relative overflow-hidden inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background focus:outline-none active:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 user-select-none cursor-pointer",
@@ -95,12 +95,12 @@ const Button = React.forwardRef(({ className, variant, size, onMouseDown, asChil
           ripple.style.background = `rgba(${r}, ${g}, ${b}, 0.15)`
         }
       } catch (e) {
-        console.warn('Failed to parse text color:', textColor, e)
+        debugWarn('Failed to parse text color:', textColor, e)
         const isDarkMode = document.documentElement.classList.contains('dark')
         if (isDarkMode) {
           ripple.style.background = 'rgba(200, 200, 200, 0.4)'
         } else {
-          ripple.style.background = 'rgba(80, 80, 80, 0.2)'
+          ripple.style.background = 'rgba(100, 100, 100, 0.2)'
         }
       }
     } else {
@@ -120,7 +120,7 @@ const Button = React.forwardRef(({ className, variant, size, onMouseDown, asChil
         if (isDarkMode) {
           ripple.style.background = 'rgba(200, 200, 200, 0.4)'
         } else {
-          ripple.style.background = 'rgba(80, 80, 80, 0.2)'
+          ripple.style.background = 'rgba(100, 100, 100, 0.2)'
         }
       }
     }

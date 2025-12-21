@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { debugWarn } from '@/lib/utils';
 
 const ThemeContext = createContext();
 
@@ -25,7 +26,7 @@ const getStoredTheme = () => {
         return storedTheme;
       }
     } catch (error) {
-      console.warn('Failed to read theme from localStorage:', error);
+      debugWarn('Failed to read theme from localStorage:', error);
     }
   }
   return null;
@@ -36,7 +37,7 @@ const setStoredTheme = (theme) => {
     try {
       localStorage.setItem(THEME_STORAGE_KEY, theme);
     } catch (error) {
-      console.warn('Failed to save theme to localStorage:', error);
+      debugWarn('Failed to save theme to localStorage:', error);
     }
   }
 };

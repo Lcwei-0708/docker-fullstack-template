@@ -76,256 +76,314 @@
       "message": "The request took too long, please try again later."
     }
   },
-  "home": {
-    "title": "Docker Fullstack Template",
-    "description": "A ready-to-use fullstack Docker template combining <bold>Nginx</bold>, <bold>React</bold>, <bold>FastAPI</bold>, and <bold>MariaDB</bold> for modern web application development."
-  },
-  "auth": {
-    "login": {
-      "title": "Sign in",
-      "fields": {
-        "email": {
-          "label": "Email",
-          "placeholder": "Enter your email",
-          "validation": {
-            "required": "Please enter your email",
-            "invalid": "Please enter a valid email format"
-          }
-        },
-        "password": {
-          "label": "Password",
-          "placeholder": "Enter your password",
-          "validation": {
-            "required": "Please enter your password",
-            "minLength": "Password must be at least 6 characters"
-          }
-        }
-      },
-      "actions": {
-        "submit": "Sign in",
-        "submitting": "Signing in...",
-        "register": "Sign up"
-      },
-      "links": {
-        "newUser": "New user?",
-        "register": "Sign up"
-      },
-      "messages": {
-        "success": "Sign in successful",
-        "invalidCredentials": "Invalid email or password"
-      }
+  "components": {
+    "app": {
+      "name": "Fullstack Template"
     },
-    "register": {
-      "title": "Sign up",
-      "fields": {
-        "firstName": {
-          "label": "First Name",
-          "placeholder": "Enter your first name",
-          "validation": {
-            "required": "Please enter your first name"
-          }
-        },
-        "lastName": {
-          "label": "Last Name",
-          "placeholder": "Enter your last name",
-          "validation": {
-            "required": "Please enter your last name"
-          }
-        },
-        "email": {
-          "label": "Email",
-          "placeholder": "Enter your email",
-          "validation": {
-            "required": "Please enter your email",
-            "invalid": "Please enter a valid email format"
-          }
-        },
-        "phone": {
-          "label": "Phone",
-          "placeholder": "Enter your phone number",
-          "validation": {
-            "required": "Please enter your phone number"
-          }
-        },
-        "password": {
-          "label": "Password",
-          "placeholder": "Enter your password",
-          "validation": {
-            "required": "Please enter your password",
-            "minLength": "Password must be at least 6 characters"
-          }
-        }
+    "sidebar": {
+      "groups": {
+        "projects": "Projects",
+        "systemManagement": "System Management"
       },
-      "actions": {
-        "submit": "Sign up",
-        "submitting": "Signing up...",
-        "login": "Sign in"
+      "routes": {
+        "users": "Users Management",
+        "roles": "Roles Management"
       },
-      "links": {
-        "existingUser": "Already have an account? ",
-        "login": "Sign in"
+      "title": {
+        "profile": "Profile",
+        "users": "Users",
+        "roles": "Roles"
       },
-      "messages": {
-        "success": "Registration successful",
-        "emailAlreadyExists": "Email already exists"
-      }
-    },
-    "logout": {
-      "title": "Sign out",
-      "confirmMessage": "Are you sure you want to sign out?",
-      "messages": {
-        "success": "Signed out successfully"
-      }
-    },
-    "resetPassword": {
-      "messages": {
-        "success": "Password reset successful"
-      }
-    },
-    "validateResetToken": {
-      "messages": {
-        "success": "Reset token is valid"
+      "setting": {
+        "theme": "Theme",
+        "language": "Language",
+        "logout": "Log out",
+        "logoutConfirm": "Confirm Logout",
+        "logoutConfirmDescription": "Are you sure you want to sign out?",
+        "themeOptions": {
+          "light": "Light",
+          "dark": "Dark"
+        },
+        "guest": "Guest"
       }
     }
   },
-  "profile": {
-    "title": "User Profile",
-    "description": "Manage your account settings and preferences",
-    "fields": {
-      "status": {
-        "label": "Status",
-        "values": {
-          "active": "Active",
-          "inactive": "Inactive",
-          "notSet": "Not set"
+  "pages": {
+    "home": {
+      "title": "Fullstack Template",
+      "description": "A ready-to-use fullstack Docker template combining <bold>Nginx</bold>, <bold>React</bold>, <bold>FastAPI</bold>, and <bold>MariaDB</bold> for modern web application development."
+    },
+    "auth": {
+      "login": {
+        "title": "Sign in",
+        "fields": {
+          "email": {
+            "label": "Email",
+            "placeholder": "Enter your email",
+            "validation": {
+              "required": "Please enter your email",
+              "invalid": "Please enter a valid email format"
+            }
+          },
+          "password": {
+            "label": "Password",
+            "placeholder": "Enter your password",
+            "validation": {
+              "required": "Please enter your password",
+              "minLength": "Password must be at least 6 characters"
+            }
+          }
+        },
+        "actions": {
+          "submit": "Sign in",
+          "submitting": "Signing in...",
+          "register": "Sign up"
+        },
+        "links": {
+          "newUser": "New user?",
+          "register": "Sign up"
+        },
+        "messages": {
+          "success": "Sign in successful",
+          "invalidCredentials": "Invalid email or password"
         }
       },
-      "userId": {
-        "label": "User ID"
+      "register": {
+        "title": "Sign up",
+        "fields": {
+          "firstName": {
+            "label": "First Name",
+            "placeholder": "Enter your first name",
+            "validation": {
+              "required": "Please enter your first name"
+            }
+          },
+          "lastName": {
+            "label": "Last Name",
+            "placeholder": "Enter your last name",
+            "validation": {
+              "required": "Please enter your last name"
+            }
+          },
+          "email": {
+            "label": "Email",
+            "placeholder": "Enter your email",
+            "validation": {
+              "required": "Please enter your email",
+              "invalid": "Please enter a valid email format"
+            }
+          },
+          "phone": {
+            "label": "Phone",
+            "placeholder": "Enter your phone number",
+            "validation": {
+              "required": "Please enter your phone number"
+            }
+          },
+          "password": {
+            "label": "Password",
+            "placeholder": "Enter your password",
+            "validation": {
+              "required": "Please enter your password",
+              "minLength": "Password must be at least 6 characters"
+            }
+          },
+          "confirmPassword": {
+            "label": "Confirm Password",
+            "placeholder": "Enter your password again",
+            "validation": {
+              "required": "Please confirm your password",
+              "notMatch": "Passwords do not match"
+            }
+          }
+        },
+        "actions": {
+          "submit": "Sign up",
+          "submitting": "Signing up...",
+          "login": "Sign in"
+        },
+        "links": {
+          "existingUser": "Already have an account? ",
+          "login": "Sign in"
+        },
+        "messages": {
+          "success": "Registration successful",
+          "emailAlreadyExists": "Email already exists"
+        }
       },
-      "createdAt": {
-        "label": "Created At"
+      "logout": {
+        "title": "Sign out",
+        "confirmMessage": "Are you sure you want to sign out?",
+        "messages": {
+          "success": "Signed out successfully"
+        }
+      },
+      "resetPassword": {
+        "messages": {
+          "success": "Password reset successful"
+        }
+      },
+      "validateResetToken": {
+        "messages": {
+          "success": "Reset token is valid"
+        }
       }
     },
-    "actions": {
-      "edit": "Edit Profile",
-      "changePassword": "Change Password"
-    },
-    "updateProfile": {
-      "title": "Update Profile",
-      "description": "Update your personal information",
+    "profile": {
+      "title": "User Profile",
+      "description": "Manage your account settings and preferences",
       "fields": {
-        "firstName": {
-          "label": "First Name",
-          "validation": {
-            "required": "Please enter your first name"
+        "status": {
+          "label": "Status",
+          "values": {
+            "active": "Active",
+            "inactive": "Inactive",
+            "notSet": "Not set"
           }
         },
-        "lastName": {
-          "label": "Last Name",
-          "validation": {
-            "required": "Please enter your last name"
-          }
+        "userId": {
+          "label": "User ID"
         },
-        "email": {
-          "label": "Email",
-          "validation": {
-            "required": "Please enter your email",
-            "invalid": "Please enter a valid email format"
-          }
-        },
-        "phone": {
-          "label": "Phone",
-          "validation": {
-            "required": "Please enter your phone number"
-          }
+        "createdAt": {
+          "label": "Created At"
         }
       },
       "actions": {
-        "submit": "Update Profile",
-        "submitting": "Updating..."
+        "edit": "Edit Profile",
+        "changePassword": "Change Password"
+      },
+      "profile": {
+        "title": "Profile",
+        "description": "Manage your profile information",
+        "fields": {
+          "firstName": {
+            "label": "First Name",
+            "validation": {
+              "required": "Please enter your first name"
+            }
+          },
+          "lastName": {
+            "label": "Last Name",
+            "validation": {
+              "required": "Please enter your last name"
+            }
+          },
+          "email": {
+            "label": "Email",
+            "validation": {
+              "required": "Please enter your email",
+              "invalid": "Please enter a valid email format"
+            }
+          },
+          "phone": {
+            "label": "Phone",
+            "validation": {
+              "required": "Please enter your phone number"
+            }
+          }
+        },
+        "actions": {
+          "submit": "Update Profile",
+          "submitting": "Updating..."
+        },
+        "messages": {
+          "success": "Profile updated successfully"
+        }
+      },
+      "security": {
+        "title": "Security",
+        "description": "Manage your security settings",
+        "securityTips": {
+          "title": "Security Recommendations",
+          "tips": {
+            "regularChange": "It is recommended to change your password regularly to ensure account security",
+            "uniquePassword": "Do not use the same password on different websites"
+          }
+        },
+        "fields": {
+          "currentPassword": {
+            "label": "Current Password",
+            "validation": {
+              "required": "Please enter your current password",
+              "incorrect": "Current password is incorrect"
+            }
+          },
+          "newPassword": {
+            "label": "New Password",
+            "validation": {
+              "required": "Please enter your new password",
+              "minLength": "Password must be at least 6 characters"
+            },
+            "strength": {
+              "weak": "Weak",
+              "medium": "Medium",
+              "strong": "Strong",
+              "veryStrong": "Very Strong",
+              "uppercase": "Contains uppercase letter",
+              "number": "Contains number",
+              "special": "Contains special character"
+            }
+          },
+          "confirmPassword": {
+            "label": "Confirm New Password",
+            "validation": {
+              "required": "Please confirm your new password",
+              "notMatch": "Passwords do not match"
+            }
+          }
+        },
+        "actions": {
+          "submit": "Change Password",
+          "submitting": "Changing..."
+        },
+        "messages": {
+          "success": "Password changed successfully",
+          "incorrect": "Current password is incorrect"
+        }
       },
       "messages": {
-        "success": "Profile updated successfully"
+        "getProfile": {
+          "success": "Profile retrieved successfully"
+        }
       }
     },
-    "changePassword": {
-      "title": "Change Password",
-      "description": "Update your password to keep your account secure",
-      "fields": {
-        "currentPassword": {
-          "label": "Current Password",
-          "validation": {
-            "required": "Please enter your current password",
-            "incorrect": "Current password is incorrect"
-          }
-        },
-        "newPassword": {
-          "label": "New Password",
-          "validation": {
-            "required": "Please enter your new password",
-            "minLength": "Password must be at least 6 characters"
-          }
-        },
-        "confirmPassword": {
-          "label": "Confirm New Password",
-          "validation": {
-            "required": "Please confirm your new password",
-            "notMatch": "Passwords do not match"
+    "admin": {
+      "users": {
+        "messages": {
+          "getAllUsers": {
+            "success": "Users retrieved successfully"
+          },
+          "createUser": {
+            "success": "User created successfully"
+          },
+          "updateUser": {
+            "success": "User updated successfully"
+          },
+          "deleteUsers": {
+            "success": "Users deleted successfully"
+          },
+          "resetUserPassword": {
+            "success": "User password reset successfully"
           }
         }
       },
-      "actions": {
-        "submit": "Change Password",
-        "submitting": "Changing..."
-      },
-      "messages": {
-        "success": "Password changed successfully",
-        "incorrect": "Current password is incorrect"
-      }
-    },
-    "messages": {
-      "getProfile": {
-        "success": "Profile retrieved successfully"
-      }
-    }
-  },
-  "admin": {
-    "users": {
-      "messages": {
-        "getAllUsers": {
-          "success": "Users retrieved successfully"
-        },
-        "createUser": {
-          "success": "User created successfully"
-        },
-        "updateUser": {
-          "success": "User updated successfully"
-        },
-        "deleteUsers": {
-          "success": "Users deleted successfully"
-        },
-        "resetUserPassword": {
-          "success": "User password reset successfully"
-        }
-      }
-    },
-    "roles": {
-      "messages": {
-        "getAllRoles": {
-          "success": "Roles retrieved successfully"
-        },
-        "createRole": {
-          "success": "Role created successfully"
-        },
-        "updateRole": {
-          "success": "Role updated successfully"
-        },
-        "deleteRole": {
-          "success": "Role deleted successfully"
-        },
-        "updateRoleAttributes": {
-          "success": "Role attributes updated successfully"
+      "roles": {
+        "messages": {
+          "getAllRoles": {
+            "success": "Roles retrieved successfully"
+          },
+          "createRole": {
+            "success": "Role created successfully"
+          },
+          "updateRole": {
+            "success": "Role updated successfully"
+          },
+          "deleteRole": {
+            "success": "Role deleted successfully"
+          },
+          "updateRoleAttributes": {
+            "success": "Role attributes updated successfully"
+          }
         }
       }
     }

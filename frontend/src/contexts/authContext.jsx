@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo, useRef } from 'react';
 import { setTokenGetter } from '@/services/api.service';
-import authService from '@/services/auth.service';
 
 const initialState = {
   user: null,
@@ -8,6 +7,8 @@ const initialState = {
   isAuthenticated: false,
   isLoading: true,
   error: null,
+  permissions: null,
+  isLoadingPermissions: false,
 };
 
 const AUTH_ACTIONS = {
@@ -18,6 +19,8 @@ const AUTH_ACTIONS = {
   LOGOUT: 'LOGOUT',
   SET_ERROR: 'SET_ERROR',
   CLEAR_ERROR: 'CLEAR_ERROR',
+  SET_PERMISSIONS: 'SET_PERMISSIONS',
+  SET_LOADING_PERMISSIONS: 'SET_LOADING_PERMISSIONS',
 };
 
 // Reducer for auth state
@@ -50,7 +53,15 @@ const authReducer = (state, action) => {
         isAuthenticated: false,
         isLoading: false,
         error: null,
+        permissions: null,
+        isLoadingPermissions: false,
       };
+    
+    case AUTH_ACTIONS.SET_PERMISSIONS:
+      return { ...state, permissions: action.payload, isLoadingPermissions: false };
+    
+    case AUTH_ACTIONS.SET_LOADING_PERMISSIONS:
+      return { ...state, isLoadingPermissions: action.payload };
     
     case AUTH_ACTIONS.SET_ERROR:
       return { ...state, error: action.payload, isLoading: false };
@@ -72,6 +83,7 @@ export const AuthProvider = ({ children }) => {
   const getTokenRef = useRef(null);
   const logoutRef = useRef(null);
   const profileInitRef = useRef(false);
+  const permissionsLoadRef = useRef(false);
 
   const setUser = useCallback((user) => {
     dispatch({ type: AUTH_ACTIONS.SET_USER, payload: user });
@@ -79,6 +91,14 @@ export const AuthProvider = ({ children }) => {
 
   const setToken = useCallback((token) => {
     dispatch({ type: AUTH_ACTIONS.SET_TOKEN, payload: token });
+  }, []);
+
+  const setPermissions = useCallback((permissions) => {
+    dispatch({ type: AUTH_ACTIONS.SET_PERMISSIONS, payload: permissions });
+  }, []);
+
+  const setLoadingPermissions = useCallback((isLoading) => {
+    dispatch({ type: AUTH_ACTIONS.SET_LOADING_PERMISSIONS, payload: isLoading });
   }, []);
 
   const setLoading = useCallback((isLoading) => {
@@ -96,6 +116,7 @@ export const AuthProvider = ({ children }) => {
   const clearAuth = useCallback(() => {
     dispatch({ type: AUTH_ACTIONS.LOGOUT });
     profileInitRef.current = false;
+    permissionsLoadRef.current = false;
   }, []);
 
   const loginSuccess = useCallback((user, token) => {
@@ -105,6 +126,19 @@ export const AuthProvider = ({ children }) => {
     });
   }, []);
 
+  // Check if user has required permissions
+  const checkPermissions = useCallback((requiredPermissions) => {
+    if (!requiredPermissions || requiredPermissions.length === 0) {
+      return true;
+    }
+
+    if (!state.permissions) {
+      return false;
+    }
+
+    return requiredPermissions.every(perm => state.permissions[perm] === true);
+  }, [state.permissions]);
+
   useEffect(() => {
     setTokenGetter(
       () => state.token,
@@ -113,64 +147,25 @@ export const AuthProvider = ({ children }) => {
     );
   }, [state.token]);
 
-  useEffect(() => {
-    if (initRef.current || isInitializingRef.current) {
-      return;
-    }
-
-    initRef.current = true;
-    isInitializingRef.current = true;
-
-    const init = async () => {
-      try {
-        dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-        
-        let result;
-        try {
-          result = await authService.getToken();
-        } catch (tokenError) {
-          result = null;
-        }
-        
-        let access_token;
-        if (result) {
-          if (typeof result === 'string') {
-            access_token = result;
-          } else if (result?.data) {
-            access_token = result.data.access_token || result.data;
-          } else if (result?.access_token) {
-            access_token = result.access_token;
-          }
-        }
-        
-        if (access_token) {
-          dispatch({ type: AUTH_ACTIONS.SET_TOKEN, payload: access_token });
-        }
-        
-        dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
-      } catch (error) {
-        dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
-      } finally {
-        isInitializingRef.current = false;
-      }
-    };
-
-    init();
-  }, []);
-
   const value = useMemo(() => {
     return {
       ...state,
       setUser,
       setToken,
+      setPermissions,
+      setLoadingPermissions,
       setLoading,
       setError,
       clearError,
       clearAuth,
       loginSuccess,
+      checkPermissions,
       getTokenRef,
       logoutRef,
       profileInitRef,
+      permissionsLoadRef,
+      initRef,
+      isInitializingRef,
     };
   }, [
     state.user,
@@ -178,13 +173,18 @@ export const AuthProvider = ({ children }) => {
     state.isAuthenticated,
     state.isLoading,
     state.error,
+    state.permissions,
+    state.isLoadingPermissions,
     setUser,
     setToken,
+    setPermissions,
+    setLoadingPermissions,
     setLoading,
     setError,
     clearError,
     clearAuth,
     loginSuccess,
+    checkPermissions,
   ]);
 
   return (

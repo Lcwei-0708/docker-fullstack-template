@@ -10,7 +10,7 @@ export const usersService = {
       showErrorToast: true,
       showSuccessToast: false,
       messageMap: {
-        success: i18n.t('admin.users.messages.getAllUsers.success', 'Users retrieved successfully'),
+        success: i18n.t('pages.admin.users.messages.getAllUsers.success', 'Users retrieved successfully'),
         ...config.messageMap,
       },
       ...config,
@@ -21,7 +21,7 @@ export const usersService = {
     apiService.post(USERS_BASE, userData, {
       showErrorToast: true,
       messageMap: {
-        success: i18n.t('admin.users.message.createUser.success', 'User created successfully'),
+        success: i18n.t('pages.admin.users.messages.createUser.success', 'User created successfully'),
         ...config.messageMap,
       },
       ...config,
@@ -32,7 +32,7 @@ export const usersService = {
     apiService.put(`${USERS_BASE}/${userId}`, userData, {
       showErrorToast: true,
       messageMap: {
-        success: i18n.t('admin.users.message.updateUser.success', 'User updated successfully'),
+        success: i18n.t('pages.admin.users.messages.updateUser.success', 'User updated successfully'),
         ...config.messageMap,
       },
       ...config,
@@ -43,7 +43,7 @@ export const usersService = {
     apiService.delete(USERS_BASE, {
       showErrorToast: true,
       messageMap: {
-        success: i18n.t('admin.users.message.deleteUsers.success', 'Users deleted successfully'),
+        success: i18n.t('pages.admin.users.messages.deleteUsers.success', 'Users deleted successfully'),
         ...config.messageMap,
       },
       data: { user_ids: userIds },
@@ -58,7 +58,7 @@ export const usersService = {
       {
         showErrorToast: true,
         messageMap: {
-          success: i18n.t('admin.users.message.resetUserPassword.success', 'User password reset successfully'),
+          success: i18n.t('pages.admin.users.messages.resetUserPassword.success', 'User password reset successfully'),
           ...config.messageMap,
         },
         ...config,

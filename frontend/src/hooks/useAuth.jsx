@@ -1,26 +1,34 @@
-import React, { useMemo, useRef, useCallback, useEffect } from 'react';
+import React, { useMemo, useCallback, useEffect } from 'react';
 import { useAuth as useAuthContext } from '@/contexts/authContext';
 import authService from '@/services/auth.service';
 import accountService from '@/services/account.service';
 import rolesService from '@/services/roles.service';
 import i18n from '@/i18n';
+import { debugError } from '@/lib/utils';
 
 export const useAuth = () => {
   const context = useAuthContext();
   const {
     setUser,
     setToken,
+    setPermissions,
+    setLoadingPermissions,
     setLoading,
     setError,
     clearError,
     clearAuth,
     loginSuccess,
+    checkPermissions,
     getTokenRef,
     logoutRef,
     profileInitRef,
+    permissionsLoadRef,
+    initRef,
+    isInitializingRef,
     ...state
   } = context;
 
+  // Fetch and update user profile from API
   const fetchAndUpdateProfile = useCallback(async ({ showSuccessToast = false } = {}) => {
     const profileResult = await accountService.getProfile({
       returnStatus: true,
@@ -34,6 +42,53 @@ export const useAuth = () => {
     return profileResult;
   }, [setUser]);
 
+  // Load user profile automatically when authenticated
+  const loadProfile = useCallback(async () => {
+    if (!state.token || !state.isAuthenticated) {
+      return;
+    }
+
+    if (profileInitRef.current) {
+      return;
+    }
+
+    profileInitRef.current = true;
+    try {
+      const result = await accountService.getProfile({ showErrorToast: false });
+      if (result) {
+        setUser(result);
+      }
+    } catch (error) {
+      debugError('Failed to load user profile:', error);
+      profileInitRef.current = false;
+    }
+  }, [state.token, state.isAuthenticated, setUser]);
+
+  // Load user permissions automatically when authenticated
+  const loadPermissions = useCallback(async () => {
+    if (!state.token || !state.isAuthenticated) {
+      setPermissions(null);
+      permissionsLoadRef.current = false;
+      return;
+    }
+
+    if (permissionsLoadRef.current && state.isLoadingPermissions) {
+      return;
+    }
+
+    setLoadingPermissions(true);
+    try {
+      const result = await rolesService.getAllUserPermissions({ showErrorToast: false });
+      const permissions = result?.permissions || {};
+      setPermissions(permissions);
+    } catch (error) {
+      debugError('Failed to load user permissions:', error);
+      setPermissions({});
+      permissionsLoadRef.current = false;
+    }
+  }, [state.token, state.isAuthenticated, state.isLoadingPermissions, setPermissions, setLoadingPermissions]);
+
+  // Login user with email and password
   const login = useCallback(async (credentials) => {
     try {
       setLoading(true);
@@ -62,7 +117,7 @@ export const useAuth = () => {
                         (error.code === 'ERR_BAD_REQUEST' && error.message?.includes('Unauthorized'));
       
       if (is401Error) {
-        errorMessage = i18n.t('auth.login.messages.invalidCredentials', { 
+        errorMessage = i18n.t('pages.auth.login.messages.invalidCredentials', { 
           defaultValue: 'Invalid email or password' 
         });
       }
@@ -73,6 +128,7 @@ export const useAuth = () => {
     }
   }, [setLoading, clearError, loginSuccess, fetchAndUpdateProfile, setError]);
 
+  // Register new user account
   const register = useCallback(async (userData) => {
     try {
       setLoading(true);
@@ -98,6 +154,7 @@ export const useAuth = () => {
     }
   }, [setLoading, clearError, loginSuccess, fetchAndUpdateProfile, setError]);
 
+  // Logout current user
   const logout = useCallback(async (skipApi = false) => {
     try {
       if (!skipApi) {
@@ -110,6 +167,7 @@ export const useAuth = () => {
     }
   }, [clearAuth]);
 
+  // Get authentication token from server
   const getToken = useCallback(async (isInit = false, skipProfile = false) => {
     try {
       setLoading(true);
@@ -127,13 +185,6 @@ export const useAuth = () => {
       
       if (access_token) {
         setToken(access_token);
-        profileInitRef.current = true;
-        
-        if (!skipProfile) {
-          await new Promise(resolve => setTimeout(resolve, 50));
-          await fetchAndUpdateProfile({ showSuccessToast: false });
-        }
-        
         setLoading(false);
         return { success: true, token: access_token };
       }
@@ -154,8 +205,9 @@ export const useAuth = () => {
       
       return { success: false, error: error.message };
     }
-  }, [setLoading, setToken, fetchAndUpdateProfile, clearAuth]);
+  }, [setLoading, setToken, clearAuth]);
 
+  // Reset user password with reset token
   const resetPassword = useCallback(async (newPassword, resetToken) => {
     try {
       setLoading(true);
@@ -181,6 +233,7 @@ export const useAuth = () => {
     }
   }, [setLoading, clearError, loginSuccess, fetchAndUpdateProfile, setError]);
 
+  // Validate password reset token
   const validateResetToken = useCallback(async (resetToken) => {
     try {
       const result = await authService.validateResetToken(resetToken);
@@ -191,6 +244,7 @@ export const useAuth = () => {
     }
   }, []);
 
+  // Get current user profile
   const getUserProfile = useCallback(async () => {
     const profileResult = await fetchAndUpdateProfile({ showSuccessToast: false });
     
@@ -204,6 +258,7 @@ export const useAuth = () => {
     }
   }, [fetchAndUpdateProfile]);
 
+  // Update user profile information
   const updateUserProfile = useCallback(async (userData, config = {}) => {
     try {
       clearError();
@@ -219,6 +274,7 @@ export const useAuth = () => {
     }
   }, [clearError, setUser, setError]);
 
+  // Change user password
   const changePassword = useCallback(async (passwordData, config = {}) => {
     try {
       clearError();
@@ -233,40 +289,75 @@ export const useAuth = () => {
     }
   }, [clearError, setError]);
 
-  const stateRef = useRef(state);
-  
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
-  
-  useEffect(() => {
-    if (profileInitRef.current || state.isLoading || !state.token || state.user) {
-      return;
-    }
-
-    profileInitRef.current = true;
-    
-    const initProfile = async () => {
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
-      const currentState = stateRef.current;
-      if (currentState.token && !currentState.user) {
-        try {
-          await fetchAndUpdateProfile({ showSuccessToast: false });
-        } catch (error) {
-          profileInitRef.current = false;
-          console.error('Failed to fetch profile during initialization:', error);
-        }
-      }
-    };
-
-    initProfile();
-  }, [state.token, state.user, state.isLoading, fetchAndUpdateProfile, profileInitRef]);
 
   useEffect(() => {
     getTokenRef.current = getToken;
     logoutRef.current = logout;
   }, [getToken, logout]);
+
+  // Check for existing token on mount
+  useEffect(() => {
+    if (initRef.current || isInitializingRef.current) {
+      return;
+    }
+
+    initRef.current = true;
+    isInitializingRef.current = true;
+
+    const init = async () => {
+      try {
+        setLoading(true);
+        
+        let result;
+        try {
+          result = await authService.getToken();
+        } catch (tokenError) {
+          result = null;
+        }
+        
+        let access_token;
+        if (result) {
+          if (typeof result === 'string') {
+            access_token = result;
+          } else if (result?.data) {
+            access_token = result.data.access_token || result.data;
+          } else if (result?.access_token) {
+            access_token = result.access_token;
+          }
+        }
+        
+        if (access_token) {
+          setToken(access_token);
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        setLoading(false);
+      } finally {
+        isInitializingRef.current = false;
+      }
+    };
+
+    init();
+  }, [setLoading, setToken]);
+
+  // Auto-load profile and permissions when authenticated
+  useEffect(() => {
+    if (!state.isAuthenticated) {
+      permissionsLoadRef.current = false;
+      profileInitRef.current = false;
+      return;
+    }
+    
+    if (state.isAuthenticated && state.token && !state.user && !profileInitRef.current) {
+      loadProfile();
+    }
+    
+    if (state.isAuthenticated && state.token && !state.permissions && !state.isLoadingPermissions && !permissionsLoadRef.current) {
+      permissionsLoadRef.current = true;
+      loadPermissions();
+    }
+  }, [state.isAuthenticated, state.token, state.user, state.permissions, state.isLoadingPermissions, loadProfile, loadPermissions]);
 
   return useMemo(() => ({
     ...state,
@@ -280,8 +371,17 @@ export const useAuth = () => {
     updateUserProfile,
     changePassword,
     clearError,
+    checkPermissions,
+    loadProfile,
+    loadPermissions,
   }), [
-    state,
+    state.user,
+    state.token,
+    state.isAuthenticated,
+    state.isLoading,
+    state.error,
+    state.permissions,
+    state.isLoadingPermissions,
     login,
     register,
     logout,
@@ -292,42 +392,60 @@ export const useAuth = () => {
     updateUserProfile,
     changePassword,
     clearError,
+    checkPermissions,
+    loadProfile,
+    loadPermissions,
   ]);
 };
 
+// Hook for checking user authentication status and permissions
 export const useAuthStatus = () => {
-  const { user, isAuthenticated } = useAuth();
-  const permissionCacheRef = useRef({});
+  const { 
+    user, 
+    isAuthenticated, 
+    permissions, 
+    isLoadingPermissions,
+    checkPermissions: checkPermissionsFromContext 
+  } = useAuth();
   
-  const checkPermissions = useCallback(async (attributes) => {
-    if (!isAuthenticated) {
+  // Check if user has a specific permission
+  const hasPermission = useCallback((permission) => {
+    if (!isAuthenticated || !permissions) {
+      return false;
+    }
+    return permissions[permission] === true;
+  }, [isAuthenticated, permissions]);
+  
+  // Check if user has all required permissions
+  const hasAllPermissions = useCallback((requiredPermissions) => {
+    if (!requiredPermissions || requiredPermissions.length === 0) {
+      return true;
+    }
+    return checkPermissionsFromContext(requiredPermissions);
+  }, [checkPermissionsFromContext]);
+  
+  // Get all user permissions
+  const getAllPermissions = useCallback(() => {
+    return permissions || {};
+  }, [permissions]);
+  
+  // Check permissions and return status object
+  const checkPermissions = useCallback((attributes) => {
+    if (!isAuthenticated || !permissions) {
       return {};
     }
     
-    try {
-      const cacheKey = JSON.stringify(attributes.sort());
-      if (permissionCacheRef.current[cacheKey]) {
-        return permissionCacheRef.current[cacheKey];
-      }
-      
-      const result = await rolesService.checkPermissions(attributes);
-      permissionCacheRef.current[cacheKey] = result?.permissions || result;
-      
-      return result?.permissions || result;
-    } catch (error) {
-      return {};
+    if (!attributes || attributes.length === 0) {
+      return permissions;
     }
-  }, [isAuthenticated]);
-  
-  const hasPermission = useCallback(async (permission) => {
-    const permissions = await checkPermissions([permission]);
-    return permissions[permission] === true;
-  }, [checkPermissions]);
-  
-  const hasAllPermissions = useCallback(async (permissions) => {
-    const result = await checkPermissions(permissions);
-    return permissions.every(perm => result[perm] === true);
-  }, [checkPermissions]);
+    
+    const result = {};
+    for (const attr of attributes) {
+      result[attr] = permissions[attr] === true;
+    }
+    
+    return result;
+  }, [isAuthenticated, permissions]);
   
   return useMemo(() => ({
     isLoggedIn: isAuthenticated,
@@ -335,13 +453,16 @@ export const useAuthStatus = () => {
     checkPermissions,
     hasPermission,
     hasAllPermissions,
+    getAllPermissions,
+    isLoadingPermissions,
     userId: user?.id,
     userName: user?.name || user?.username || `${user?.first_name} ${user?.last_name}`.trim(),
     userEmail: user?.email,
     user,
-  }), [user, isAuthenticated, checkPermissions, hasPermission, hasAllPermissions]);
+  }), [user, isAuthenticated, permissions, isLoadingPermissions, checkPermissions, hasPermission, hasAllPermissions, getAllPermissions]);
 };
 
+// Hook for authentication actions with error handling
 export const useAuthActions = () => {
   const {
     login,
@@ -428,6 +549,7 @@ export const useAuthActions = () => {
   }), [actions, isLoading, error]);
 };
 
+// Hook for authentication form handling
 export const useAuthForm = (initialValues = {}) => {
   const { handleLogin, handleRegister, isProcessing } = useAuthActions();
   const [values, setValues] = React.useState(initialValues);
@@ -490,6 +612,7 @@ export const useAuthForm = (initialValues = {}) => {
   };
 };
 
+// Hook for checking authentication initialization status
 export const useAuthInit = () => {
   const { isLoading } = useAuth();
   return { isLoading };

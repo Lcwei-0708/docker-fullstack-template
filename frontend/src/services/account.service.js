@@ -11,7 +11,7 @@ export const accountService = {
       showErrorToast: false,
       showSuccessToast: false,
       messageMap: {
-        success: i18n.t('profile.messages.getProfile.success'),
+        success: i18n.t('pages.profile.messages.getProfile.success'),
         ...config.messageMap,
       },
       ...config,
@@ -23,7 +23,7 @@ export const accountService = {
       showErrorToast: true,
       showSuccessToast: true,
       messageMap: {
-        success: i18n.t('profile.updateProfile.messages.success'),
+        success: i18n.t('pages.profile.profile.messages.success'),
         ...config.messageMap,
       },
       ...config,
@@ -35,8 +35,8 @@ export const accountService = {
       showErrorToast: true,
       showSuccessToast: true,
       messageMap: {
-        success: i18n.t('profile.changePassword.messages.success'),
-        incorrect: i18n.t('profile.changePassword.messages.incorrect'),
+        success: i18n.t('pages.profile.security.messages.success'),
+        incorrect: i18n.t('pages.profile.security.messages.incorrect'),
         ...config.messageMap,
       },
       ...config,

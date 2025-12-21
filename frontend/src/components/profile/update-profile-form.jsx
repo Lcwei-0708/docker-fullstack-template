@@ -3,7 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { cn, debugError } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -16,12 +17,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from '@/hooks/useAuth';
-import { useMobile } from '@/hooks/useMobile';
+import { useIsMobile } from '@/hooks/useMobile';
 
 export function UpdateProfileForm({ user, onSuccess, onClose, onSubmittingChange }) {
   const { t } = useTranslation();
   const { updateUserProfile, isLoading } = useAuth();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -34,23 +35,23 @@ export function UpdateProfileForm({ user, onSuccess, onClose, onSubmittingChange
     return z.object({
       first_name: z
         .string()
-        .min(1, t('profile.updateProfile.fields.firstName.validation.required')),
+        .min(1, t('pages.profile.profile.fields.firstName.validation.required')),
       last_name: z
         .string()
-        .min(1, t('profile.updateProfile.fields.lastName.validation.required')),
+        .min(1, t('pages.profile.profile.fields.lastName.validation.required')),
       email: z
         .string()
-        .min(1, t('profile.updateProfile.fields.email.validation.required'))
+        .min(1, t('pages.profile.profile.fields.email.validation.required'))
         .transform((val) => val.trim().toLowerCase())
         .refine((val) => {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           return emailRegex.test(val);
         }, {
-          message: t('profile.updateProfile.fields.email.validation.invalid'),
+          message: t('pages.profile.profile.fields.email.validation.invalid'),
         }),
       phone: z
         .string()
-        .min(1, t('profile.updateProfile.fields.phone.validation.required')),
+        .min(1, t('pages.profile.profile.fields.phone.validation.required')),
     });
   }, [t]);
 
@@ -92,124 +93,178 @@ export function UpdateProfileForm({ user, onSuccess, onClose, onSubmittingChange
         if (onSuccess) {
           await onSuccess(result.data);
         }
+      } else {
+        toast.error(result.error || t('common.status.error'));
       }
     } catch (error) {
-      console.error('Update profile error:', error);
+      debugError('Update profile error:', error);
+      toast.error(error.message || t('common.status.error'));
     } finally {
       setIsSubmitting(false);
     }
   }, [updateUserProfile, onSuccess]);
 
   return (
-    <div className="space-y-6">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="first_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('profile.updateProfile.fields.firstName.label')}</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="text"
-                        {...field}
-                        disabled={isSubmitting || isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="last_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('profile.updateProfile.fields.lastName.label')}</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="text"
-                        {...field}
-                        disabled={isSubmitting || isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('profile.updateProfile.fields.email.label')}</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="email"
-                      {...field}
-                      disabled={isSubmitting || isLoading}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('profile.updateProfile.fields.phone.label')}</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="tel"
-                      {...field}
-                      disabled={isSubmitting || isLoading}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          <div className={cn(
-            "flex gap-2",
-            isMobile ? "flex-row justify-between" : "flex-row justify-end"
-          )}>
-            {onClose && (
-              <Button 
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isSubmitting || isLoading}
-                className={cn(
-                  isMobile ? "flex-1" : "w-auto"
-                )}
-              >
-                {t('common.actions.cancel')}
-              </Button>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5 md:space-y-4 text-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-4 items-start">
+          <FormField
+            control={form.control}
+            name="first_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel
+                  htmlFor="first_name"
+                  className={cn(
+                    'flex items-center gap-1',
+                    form.formState.errors.first_name && 'text-destructive'
+                  )}
+                >
+                  {t('pages.profile.profile.fields.firstName.label')}
+                  <span className="text-destructive">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    id="first_name"
+                    type="text"
+                    {...field}
+                    disabled={isSubmitting || isLoading}
+                    className={cn(
+                      form.formState.errors.first_name &&
+                        'ring-2 ring-destructive focus-visible:ring-destructive'
+                    )}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-            <Button 
-              type="submit" 
+          />
+          <FormField
+            control={form.control}
+            name="last_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel
+                  htmlFor="last_name"
+                  className={cn(
+                    'flex items-center gap-1',
+                    form.formState.errors.last_name && 'text-destructive'
+                  )}
+                >
+                  {t('pages.profile.profile.fields.lastName.label')}
+                  <span className="text-destructive">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    id="last_name"
+                    type="text"
+                    {...field}
+                    disabled={isSubmitting || isLoading}
+                    className={cn(
+                      form.formState.errors.last_name &&
+                        'ring-2 ring-destructive focus-visible:ring-destructive'
+                    )}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-4 items-start">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel
+                  htmlFor="email"
+                  className={cn(
+                    'flex items-center gap-1',
+                    form.formState.errors.email && 'text-destructive'
+                  )}
+                >
+                  {t('pages.profile.profile.fields.email.label')}
+                  <span className="text-destructive">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    {...field}
+                    disabled={isSubmitting || isLoading}
+                    className={cn(
+                      form.formState.errors.email &&
+                        'ring-2 ring-destructive focus-visible:ring-destructive'
+                    )}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel
+                  htmlFor="phone"
+                  className={cn(
+                    'flex items-center gap-1',
+                    form.formState.errors.phone && 'text-destructive'
+                  )}
+                >
+                  {t('pages.profile.profile.fields.phone.label')}
+                  <span className="text-destructive">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    autoComplete="tel"
+                    {...field}
+                    disabled={isSubmitting || isLoading}
+                    className={cn(
+                      form.formState.errors.phone &&
+                        'ring-2 ring-destructive focus-visible:ring-destructive'
+                    )}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="flex justify-end gap-2 mt-4 md:mt-6">
+          {onClose && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
               disabled={isSubmitting || isLoading}
-              className={cn(
-                isMobile ? "flex-1" : "w-auto"
-              )}
+              className="flex items-center gap-1.5 md:gap-2 text-sm"
             >
-              {isSubmitting || isLoading ? (
-                <span className="inline-flex items-center justify-center gap-2">
-                  <Spinner className="size-4" />
-                </span>
-              ) : (
-                t('common.actions.save')
-              )}
+              {t('common.actions.cancel')}
             </Button>
-          </div>
-        </form>
-      </Form>
-    </div>
+          )}
+          <Button
+            type="submit"
+            disabled={isSubmitting || isLoading}
+            className="flex items-center gap-1.5 md:gap-2 text-sm"
+          >
+            {isSubmitting || isLoading ? (
+              <span className="inline-flex items-center justify-center gap-2">
+                <Spinner className="size-4" />
+              </span>
+            ) : (
+              t('common.actions.save')
+            )}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }
 

@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { cn } from '@/lib/utils'
+import { cn, debugWarn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
 import { debugError } from '@/lib/utils'
 import { Spinner } from '@/components/ui/spinner'
-import { useMobile } from '@/hooks/useMobile'
+import { useIsMobile } from '@/hooks/useMobile'
 
 const LoginButton = React.memo(({ onSubmit, t, className, isSubmitting }) => {
   return (
@@ -29,7 +29,7 @@ const LoginButton = React.memo(({ onSubmit, t, className, isSubmitting }) => {
       disabled={isSubmitting}
     >
       <span className="inline-flex items-center justify-center gap-2 min-w-[120px]">
-        {isSubmitting ? <Spinner className="size-4" /> : t('auth.login.actions.submit', { defaultValue: 'Sign in' })}
+        {isSubmitting ? <Spinner className="size-4" /> : t('pages.auth.login.actions.submit', { defaultValue: 'Sign in' })}
       </span>
     </Button>
   )
@@ -45,7 +45,7 @@ export const LoginForm = ({ className, redirectTo = '/', ...props }) => {
   const location = useLocation()
   const { t } = useTranslation()
   const authContext = useAuth()
-  const isMobile = useMobile()
+  const isMobile = useIsMobile()
   const [isSubmitting, setIsSubmitting] = useState(false)
   
   const login = useMemo(() => authContext.login, [authContext.login])
@@ -75,17 +75,17 @@ export const LoginForm = ({ className, redirectTo = '/', ...props }) => {
     return z.object({
       email: z
         .string()
-        .min(1, t('auth.login.fields.email.validation.required', { defaultValue: 'Please enter your email' }))
+        .min(1, t('pages.auth.login.fields.email.validation.required', { defaultValue: 'Please enter your email' }))
         .refine((val) => {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
           return emailRegex.test(val)
         }, {
-          message: t('auth.login.fields.email.validation.invalid', { defaultValue: 'Please enter a valid email format' }),
+          message: t('pages.auth.login.fields.email.validation.invalid', { defaultValue: 'Please enter a valid email format' }),
         }),
       password: z
         .string()
-        .min(1, t('auth.login.fields.password.validation.required', { defaultValue: 'Please enter your password' }))
-        .min(6, t('auth.login.fields.password.validation.minLength', { defaultValue: 'Password must be at least 6 characters' })),
+        .min(1, t('pages.auth.login.fields.password.validation.required', { defaultValue: 'Please enter your password' }))
+        .min(6, t('pages.auth.login.fields.password.validation.minLength', { defaultValue: 'Password must be at least 6 characters' })),
     })
   }, [t])
 
@@ -118,7 +118,7 @@ export const LoginForm = ({ className, redirectTo = '/', ...props }) => {
         }, 0)
       }
     } catch (error) {
-      console.warn('Failed to update form resolver:', error)
+      debugWarn('Failed to update form resolver:', error)
       form.clearErrors()
       if (form.formState.isSubmitted) {
         setTimeout(() => {
@@ -273,7 +273,7 @@ export const LoginForm = ({ className, redirectTo = '/', ...props }) => {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('auth.login.fields.email.label', { defaultValue: 'Email' })}</FormLabel>
+              <FormLabel>{t('pages.auth.login.fields.email.label', { defaultValue: 'Email' })}</FormLabel>
               <FormControl>
                 <Input 
                   type="email"
@@ -305,7 +305,7 @@ export const LoginForm = ({ className, redirectTo = '/', ...props }) => {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('auth.login.fields.password.label', { defaultValue: 'Password' })}</FormLabel>
+              <FormLabel>{t('pages.auth.login.fields.password.label', { defaultValue: 'Password' })}</FormLabel>
               <FormControl>
                 <Input 
                   type="password"
@@ -328,13 +328,13 @@ export const LoginForm = ({ className, redirectTo = '/', ...props }) => {
         />
         
         <div className="text-center text-sm flex items-center justify-center gap-2">
-          <span className="text-muted-foreground">{t('auth.login.links.newUser', { defaultValue: 'New user? ' })}</span>
+          <span className="text-muted-foreground">{t('pages.auth.login.links.newUser', { defaultValue: 'New user? ' })}</span>
           <Link 
             to="/register" 
             className="font-medium text-primary hover:underline"
             state={location.state}
           >
-            {t('auth.login.links.register', { defaultValue: 'Sign up' })}
+            {t('pages.auth.login.links.register', { defaultValue: 'Sign up' })}
           </Link>
         </div>
       </form>

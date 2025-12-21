@@ -1,20 +1,12 @@
 import { Dock } from '@/components/core/dock';
-import { cn } from '@/lib/utils';
+import { cn, debugError } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMobile } from '@/hooks/useMobile';
+import { useIsMobile } from '@/hooks/useMobile';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +17,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/sidebar/app-sidebar';
 
 export const Layout = ({ 
   children, 
@@ -33,11 +27,10 @@ export const Layout = ({
 }) => {
   const { user, isAuthenticated, logout } = useAuth();
   const { t } = useTranslation();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const location = useLocation();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [shouldDelayLoginButton, setShouldDelayLoginButton] = useState(false);
   const prevIsAuthenticatedRef = useRef(isAuthenticated);
   
@@ -54,33 +47,19 @@ export const Layout = ({
   const handleLogout = async () => {
     try {
       setShowLogoutDialog(false);
-      setDropdownOpen(false);
       await logout();
     } catch (error) {
-      console.error('Logout failed:', error);
+      debugError('Logout failed:', error);
       setShowLogoutDialog(false);
-      setDropdownOpen(false);
     }
   };
 
   const handleLoginClick = () => {
     navigate('/login');
   };
-
-  const handleProfileClick = () => {
-    navigate('/profile');
-    setDropdownOpen(false);
-  };
-
   const userInitials = user?.first_name?.[0]?.toUpperCase() + user?.last_name?.[0]?.toUpperCase() || 'U';
   const userName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'User' : 'User';
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setShowLogoutDialog(false);
-      setDropdownOpen(false);
-    }
-  }, [isAuthenticated]);
+  const userEmail = user?.email || '';
 
   useEffect(() => {
     let timer = null;
@@ -108,10 +87,75 @@ export const Layout = ({
     };
   }, [isAuthenticated, isAuthPage]);
 
+  const handleSidebarLogout = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const sidebarUser = user ? {
+    name: userName,
+    email: userEmail,
+    avatar: user.avatar,
+    first_name: user.first_name,
+    last_name: user.last_name,
+  } : null;
+
+  if (isAuthenticated && !isAuthPage) {
+    return (
+      <SidebarProvider>
+        <AppSidebar user={sidebarUser} onLogout={handleSidebarLogout} />
+        <SidebarInset className={cn("h-svh overflow-hidden")}>
+          <div className={cn(
+            "flex h-17 items-center gap-2 px-3 shrink-0",
+            !isMobile && "border-b"
+          )}>
+            <SidebarTrigger />
+          </div>
+          <div className={cn(
+            "flex-1 overflow-auto min-h-0"
+          )}>
+            {children}
+          </div>
+        </SidebarInset>
+        <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader className={cn(
+              "flex flex-col",
+              isMobile ? "gap-2" : "gap-0"
+            )}>
+              <AlertDialogTitle>{t("pages.auth.logout.title")}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t("pages.auth.logout.confirmMessage")}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-row gap-5 sm:gap-0 mt-2">
+              <AlertDialogCancel
+                className={cn(
+                  isMobile && "w-full"
+                )}
+              >
+                {t("common.actions.cancel")}
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleLogout}
+                className={cn(
+                  "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+                  isMobile && "w-full"
+                )}
+              >
+                {t("common.actions.confirm")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </SidebarProvider>
+    );
+  }
+
   return (
-    <div className="max-h-[100dvh] relative">
+    <div className="h-[100dvh] max-h-[100dvh] relative">
       <div className={cn(
-        isMobile && "max-h-[100dvh] overflow-y-auto"
+        "h-full",
+        isMobile && "overflow-y-auto"
       )}>
         {children}
       </div>
@@ -129,66 +173,7 @@ export const Layout = ({
           )}
           {!isAuthPage && (
             <>
-              {isAuthenticated ? (
-                <>
-                  <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-                    <DropdownMenuTrigger asChild>
-                      <button className="outline-none focus:outline-none">
-                        <Avatar className="h-12 w-12 cursor-pointer">
-                          <AvatarFallback className="text-sm font-medium bg-primary text-primary-foreground">
-                            {userInitials}
-                          </AvatarFallback>
-                        </Avatar>
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-auto flex flex-col gap-1 mt-1">
-                      <DropdownMenuItem onClick={handleProfileClick}>
-                        <span>{t("profile.title", { defaultValue: "User Profile" })}</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() => {
-                          setDropdownOpen(false);
-                          setShowLogoutDialog(true);
-                        }}
-                      >
-                        <span>{t("auth.logout.title", { defaultValue: "Sign out" })}</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-                    <AlertDialogContent>
-                      <AlertDialogHeader className={cn(
-                        "flex flex-col",
-                        isMobile ? "gap-2" : "gap-0"
-                      )}>
-                        <AlertDialogTitle>{t("auth.logout.title")}</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {t("auth.logout.confirmMessage")}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter className="flex-row gap-5 sm:gap-0 mt-2">
-                        <AlertDialogCancel
-                          className={cn(
-                            isMobile && "w-full"
-                          )}
-                        >
-                          {t("common.actions.cancel")}
-                        </AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={handleLogout}
-                          className={cn(
-                            "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-                            isMobile && "w-full"
-                          )}
-                        >
-                          {t("common.actions.confirm")}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </>
-              ) : shouldDelayLoginButton ? (
+              {shouldDelayLoginButton ? (
                 <motion.div
                   initial={{ opacity: 0, x: 0 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -204,7 +189,7 @@ export const Layout = ({
                     className="h-12 px-5 rounded-xl hover:bg-accent hover:text-accent-foreground"
                     onClick={handleLoginClick}
                   >
-                    <span className="text-sm">{t("auth.login.title", { defaultValue: "Sign in" })}</span>
+                    <span className="text-sm">{t("pages.auth.login.title", { defaultValue: "Sign in" })}</span>
                   </Button>
                 </motion.div>
               ) : (
@@ -214,7 +199,7 @@ export const Layout = ({
                   className="h-12 px-5 rounded-xl hover:bg-accent hover:text-accent-foreground"
                   onClick={handleLoginClick}
                 >
-                  <span className="text-sm">{t("auth.login.title", { defaultValue: "Sign in" })}</span>
+                  <span className="text-sm">{t("pages.auth.login.title", { defaultValue: "Sign in" })}</span>
                 </Button>
               )}
             </>

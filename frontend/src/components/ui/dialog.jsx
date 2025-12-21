@@ -4,7 +4,7 @@ import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { useMobile } from "@/hooks/useMobile"
+import { useIsMobile } from "@/hooks/useMobile"
 
 const Dialog = DialogPrimitive.Root
 
@@ -18,7 +18,7 @@ const DialogOverlay = React.forwardRef(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:duration-200 data-[state=open]:duration-200 fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity duration-200",
+      "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:duration-200 data-[state=open]:duration-200 fixed inset-0 z-50 bg-neutral-800/50 backdrop-blur-sm transition-opacity duration-200",
       className
     )}
     {...props}
@@ -27,7 +27,7 @@ const DialogOverlay = React.forwardRef(({ className, ...props }, ref) => (
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
 const DialogContent = React.forwardRef(({ className, children, showCloseButton = true, ...props }, ref) => {
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   
   return (
     <DialogPortal>

@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { cn } from '@/lib/utils'
+import { cn, debugWarn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
 import { debugError } from '@/lib/utils'
 import { Spinner } from '@/components/ui/spinner'
-import { useMobile } from '@/hooks/useMobile'
+import { useIsMobile } from '@/hooks/useMobile'
 
 const RegisterButton = React.memo(({ onSubmit, t, className, isSubmitting }) => {
   return (
@@ -29,7 +29,7 @@ const RegisterButton = React.memo(({ onSubmit, t, className, isSubmitting }) => 
       disabled={isSubmitting}
     >
       <span className="inline-flex items-center justify-center gap-2 min-w-[120px]">
-        {isSubmitting ? <Spinner className="size-4" /> : t('auth.register.actions.submit', { defaultValue: 'Sign up' })}
+        {isSubmitting ? <Spinner className="size-4" /> : t('pages.auth.register.actions.submit', { defaultValue: 'Sign up' })}
       </span>
     </Button>
   )
@@ -42,7 +42,7 @@ export const RegisterForm = ({ className, redirectTo = '/', ...props }) => {
   const location = useLocation()
   const { t } = useTranslation()
   const authContext = useAuth()
-  const isMobile = useMobile()
+  const isMobile = useIsMobile()
   const [isSubmitting, setIsSubmitting] = useState(false)
   
   const register = useMemo(() => authContext.register, [authContext.register])
@@ -62,27 +62,33 @@ export const RegisterForm = ({ className, redirectTo = '/', ...props }) => {
     return z.object({
       first_name: z
         .string()
-        .min(1, t('auth.register.fields.firstName.validation.required', { defaultValue: 'Please enter your first name' })),
+        .min(1, t('pages.auth.register.fields.firstName.validation.required', { defaultValue: 'Please enter your first name' })),
       last_name: z
         .string()
-        .min(1, t('auth.register.fields.lastName.validation.required', { defaultValue: 'Please enter your last name' })),
+        .min(1, t('pages.auth.register.fields.lastName.validation.required', { defaultValue: 'Please enter your last name' })),
       email: z
         .string()
-        .min(1, t('auth.register.fields.email.validation.required', { defaultValue: 'Please enter your email' }))
+        .min(1, t('pages.auth.register.fields.email.validation.required', { defaultValue: 'Please enter your email' }))
         .transform((val) => val.trim().toLowerCase())
         .refine((val) => {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
           return emailRegex.test(val)
         }, {
-          message: t('auth.register.fields.email.validation.invalid', { defaultValue: 'Please enter a valid email format' }),
+          message: t('pages.auth.register.fields.email.validation.invalid', { defaultValue: 'Please enter a valid email format' }),
         }),
       phone: z
         .string()
-        .min(1, t('auth.register.fields.phone.validation.required', { defaultValue: 'Please enter your phone number' })),
+        .min(1, t('pages.auth.register.fields.phone.validation.required', { defaultValue: 'Please enter your phone number' })),
       password: z
         .string()
-        .min(1, t('auth.register.fields.password.validation.required', { defaultValue: 'Please enter your password' }))
-        .min(6, t('auth.register.fields.password.validation.minLength', { defaultValue: 'Password must be at least 6 characters' })),
+        .min(1, t('pages.auth.register.fields.password.validation.required', { defaultValue: 'Please enter your password' }))
+        .min(6, t('pages.auth.register.fields.password.validation.minLength', { defaultValue: 'Password must be at least 6 characters' })),
+      confirm_password: z
+        .string()
+        .min(1, t('pages.auth.register.fields.confirmPassword.validation.required', { defaultValue: 'Please confirm your password' })),
+    }).refine((data) => data.password === data.confirm_password, {
+      message: t('pages.auth.register.fields.confirmPassword.validation.notMatch', { defaultValue: 'Passwords do not match' }),
+      path: ['confirm_password'],
     })
   }, [t])
 
@@ -92,6 +98,7 @@ export const RegisterForm = ({ className, redirectTo = '/', ...props }) => {
     email: '',
     phone: '',
     password: '',
+    confirm_password: '',
   }), [])
 
   const form = useForm({
@@ -118,7 +125,7 @@ export const RegisterForm = ({ className, redirectTo = '/', ...props }) => {
         }, 0)
       }
     } catch (error) {
-      console.warn('Failed to update form resolver:', error)
+      debugWarn('Failed to update form resolver:', error)
       form.clearErrors()
       if (form.formState.isSubmitted) {
         setTimeout(() => {
@@ -197,13 +204,13 @@ export const RegisterForm = ({ className, redirectTo = '/', ...props }) => {
         onKeyDown={handleKeyDown}
         {...props}
       >
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 items-start">
           <FormField
             control={form.control}
             name="first_name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('auth.register.fields.firstName.label', { defaultValue: 'First Name' })}</FormLabel>
+                <FormLabel>{t('pages.auth.register.fields.firstName.label', { defaultValue: 'First Name' })}</FormLabel>
                 <FormControl>
                   <Input 
                     type="text"
@@ -225,7 +232,7 @@ export const RegisterForm = ({ className, redirectTo = '/', ...props }) => {
             name="last_name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('auth.register.fields.lastName.label', { defaultValue: 'Last Name' })}</FormLabel>
+                <FormLabel>{t('pages.auth.register.fields.lastName.label', { defaultValue: 'Last Name' })}</FormLabel>
                 <FormControl>
                   <Input 
                     type="text"
@@ -244,7 +251,7 @@ export const RegisterForm = ({ className, redirectTo = '/', ...props }) => {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('auth.register.fields.email.label', { defaultValue: 'Email' })}</FormLabel>
+              <FormLabel>{t('pages.auth.register.fields.email.label', { defaultValue: 'Email' })}</FormLabel>
               <FormControl>
                 <Input 
                   type="email"
@@ -262,7 +269,7 @@ export const RegisterForm = ({ className, redirectTo = '/', ...props }) => {
           name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('auth.register.fields.phone.label', { defaultValue: 'Phone' })}</FormLabel>
+              <FormLabel>{t('pages.auth.register.fields.phone.label', { defaultValue: 'Phone' })}</FormLabel>
               <FormControl>
                 <Input 
                   type="tel"
@@ -275,25 +282,46 @@ export const RegisterForm = ({ className, redirectTo = '/', ...props }) => {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('auth.register.fields.password.label', { defaultValue: 'Password' })}</FormLabel>
-              <FormControl>
-                <Input 
-                  type="password"
-                  showPasswordToggle={true}
-                  placeholder="" 
-                  {...field} 
-                  disabled={isSubmitting} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-2 gap-4 items-start">
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('pages.auth.register.fields.password.label', { defaultValue: 'Password' })}</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="password"
+                    showPasswordToggle={true}
+                    placeholder="" 
+                    {...field} 
+                    disabled={isSubmitting} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="confirm_password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('pages.auth.register.fields.confirmPassword.label', { defaultValue: 'Confirm Password' })}</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="password"
+                    showPasswordToggle={true}
+                    placeholder="" 
+                    {...field} 
+                    disabled={isSubmitting} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         
         <RegisterButton 
           onSubmit={onSubmitHandler} 
@@ -303,13 +331,13 @@ export const RegisterForm = ({ className, redirectTo = '/', ...props }) => {
         />
         
         <div className="text-center text-sm flex items-center justify-center gap-2">
-          <span className="text-muted-foreground">{t('auth.register.links.existingUser', { defaultValue: 'Already have an account? ' })}</span>
+          <span className="text-muted-foreground">{t('pages.auth.register.links.existingUser', { defaultValue: 'Already have an account? ' })}</span>
           <Link 
             to="/login" 
             className="font-medium text-primary hover:underline"
             state={location.state}
           >
-            {t('auth.register.links.login', { defaultValue: 'Sign in' })}
+            {t('pages.auth.register.links.login', { defaultValue: 'Sign in' })}
           </Link>
         </div>
       </form>

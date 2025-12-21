@@ -49,7 +49,7 @@ const AuthComponent = React.memo(({ t, location, language }) => {
 
   return (
     <div className={cn("min-h-[100dvh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8")}>
-      <div className="max-w-md w-full space-y-8">
+      <div className="max-w-lg min-w-[360px] md:min-w-[400px] space-y-8">
         <motion.div
           layout
           transition={{
@@ -71,10 +71,10 @@ const AuthComponent = React.memo(({ t, location, language }) => {
             <Card className="gap-4">
             <CardHeader>
               <AnimatePresence mode="wait">
-                <CardTitle className="text-lg tracking-tight text-center">
+                <CardTitle className="text-lg tracking-tight text-center mb-2">
                     {activeTab === 'register' 
-                        ? t("auth.register.title", { defaultValue: "Sign up" })
-                        : t("auth.login.title", { defaultValue: "Sign in" })
+                        ? t("pages.auth.register.title", { defaultValue: "Sign up" })
+                        : t("pages.auth.login.title", { defaultValue: "Sign in" })
                     }
                 </CardTitle>
               </AnimatePresence>

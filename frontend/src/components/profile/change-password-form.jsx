@@ -3,7 +3,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { Check } from 'lucide-react';
+import { cn, debugError } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -15,14 +17,16 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
+import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/hooks/useAuth';
-import { useMobile } from '@/hooks/useMobile';
+import { useIsMobile } from '@/hooks/useMobile';
 
 export function ChangePasswordForm({ onSuccess, onClose, onSubmittingChange }) {
   const { t } = useTranslation();
   const { changePassword, isLoading } = useAuth();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
 
   useEffect(() => {
     if (onSubmittingChange) {
@@ -34,26 +38,57 @@ export function ChangePasswordForm({ onSuccess, onClose, onSubmittingChange }) {
     return z.object({
       current_password: z
         .string()
-        .min(1, t('profile.changePassword.fields.currentPassword.validation.required'))
-        .min(6, t('profile.changePassword.fields.currentPassword.validation.minLength')),
+        .min(1, { message: t('pages.profile.security.fields.currentPassword.validation.required') })
+        .min(6, { message: t('pages.profile.security.fields.currentPassword.validation.minLength') }),
       new_password: z
         .string()
-        .min(1, t('profile.changePassword.fields.newPassword.validation.required'))
-        .min(6, t('profile.changePassword.fields.newPassword.validation.minLength')),
-      confirm_password: z
-        .string()
-        .min(1, t('profile.changePassword.fields.confirmPassword.validation.required')),
-    }).refine((data) => data.new_password === data.confirm_password, {
-      message: t('profile.changePassword.fields.confirmPassword.validation.notMatch'),
-      path: ['confirm_password'],
+        .min(1, { message: t('pages.profile.security.fields.newPassword.validation.required') })
+        .min(6, { message: t('pages.profile.security.fields.newPassword.validation.minLength') }),
     });
   }, [t]);
 
   const defaultValues = useMemo(() => ({
     current_password: '',
     new_password: '',
-    confirm_password: '',
   }), []);
+
+  const checkPasswordStrength = useCallback((password) => {
+    let strength = 0;
+    if (password.length >= 8) strength += 25;
+    if (password.match(/[A-Z]/)) strength += 25;
+    if (password.match(/[0-9]/)) strength += 25;
+    if (password.match(/[^A-Za-z0-9]/)) strength += 25;
+    setPasswordStrength(strength);
+  }, []);
+
+  const strengthConfig = useMemo(() => {
+    if (passwordStrength < 50) {
+      return {
+        label: t('pages.profile.security.fields.newPassword.strength.weak'),
+        textColor: 'text-destructive',
+        barColor: '[&>div]:bg-destructive dark:[&>div]:bg-destructive',
+      };
+    }
+    if (passwordStrength < 75) {
+      return {
+        label: t('pages.profile.security.fields.newPassword.strength.medium'),
+        textColor: 'text-warning',
+        barColor: '[&>div]:bg-warning dark:[&>div]:bg-warning',
+      };
+    }
+    if (passwordStrength < 100) {
+      return {
+        label: t('pages.profile.security.fields.newPassword.strength.strong'),
+        textColor: 'text-success',
+        barColor: '[&>div]:bg-success dark:[&>div]:bg-success',
+      };
+    }
+    return {
+      label: t('pages.profile.security.fields.newPassword.strength.veryStrong'),
+      textColor: 'text-success',
+      barColor: '[&>div]:bg-success dark:[&>div]:bg-success',
+    };
+  }, [passwordStrength, t]);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -72,6 +107,7 @@ export function ChangePasswordForm({ onSuccess, onClose, onSubmittingChange }) {
       
       if (result.success) {
         form.reset(defaultValues);
+        setPasswordStrength(0);
         if (onSuccess) {
           await onSuccess();
         }
@@ -87,15 +123,17 @@ export function ChangePasswordForm({ onSuccess, onClose, onSubmittingChange }) {
           // Set error on current_password field
           form.setError('current_password', {
             type: 'manual',
-            message: t('profile.changePassword.fields.currentPassword.validation.incorrect'),
+            message: t('pages.profile.security.fields.currentPassword.validation.incorrect'),
           });
+        } else {
+          toast.error(errorMessage || t('pages.profile.security.messages.incorrect'));
         }
       }
     } catch (error) {
-      console.error('Change password error:', error);
+      debugError('Change password error:', error);
       
       if (error.isPasswordError) {
-        const errorMessage = t('profile.changePassword.fields.currentPassword.validation.incorrect');
+        const errorMessage = t('pages.profile.security.fields.currentPassword.validation.incorrect');
         const fieldName = error.passwordErrorField || 'current_password';
         
         form.setError(fieldName, {
@@ -109,102 +147,173 @@ export function ChangePasswordForm({ onSuccess, onClose, onSubmittingChange }) {
   }, [changePassword, form, defaultValues, onSuccess, t]);
 
   return (
-    <div className="space-y-6">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            {/* Current Password */}
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-4 items-start">
             <FormField
               control={form.control}
               name="current_password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('profile.changePassword.fields.currentPassword.label')}</FormLabel>
+                  <FormLabel
+                    htmlFor="current_password-input"
+                    className={cn(
+                      'flex items-center gap-1',
+                      form.formState.errors.current_password && 'text-destructive'
+                    )}
+                  >
+                    {t('pages.profile.security.fields.currentPassword.label')}
+                    <span className="text-destructive">*</span>
+                  </FormLabel>
                   <FormControl>
-                    <Input 
+                    <Input
+                      id="current_password-input"
                       type="password"
+                      autoComplete="current-password"
                       showPasswordToggle={true}
                       {...field}
                       disabled={isSubmitting || isLoading}
+                      className={cn(
+                        form.formState.errors.current_password &&
+                          'ring-2 ring-destructive focus-visible:ring-destructive'
+                      )}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            {/* New Password */}
+
             <FormField
               control={form.control}
               name="new_password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('profile.changePassword.fields.newPassword.label')}</FormLabel>
+                  <FormLabel
+                    htmlFor="new_password-input"
+                    className={cn(
+                      'flex items-center gap-1',
+                      form.formState.errors.new_password && 'text-destructive'
+                    )}
+                  >
+                    {t('pages.profile.security.fields.newPassword.label')}
+                    <span className="text-destructive">*</span>
+                  </FormLabel>
                   <FormControl>
-                    <Input 
+                    <Input
+                      id="new_password-input"
                       type="password"
+                      autoComplete="new-password"
                       showPasswordToggle={true}
                       {...field}
                       disabled={isSubmitting || isLoading}
+                      className={cn(
+                        form.formState.errors.new_password &&
+                          'ring-2 ring-destructive focus-visible:ring-destructive'
+                      )}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        checkPasswordStrength(e.target.value);
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            {/* Confirm Password */}
-            <FormField
-              control={form.control}
-              name="confirm_password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('profile.changePassword.fields.confirmPassword.label')}</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="password"
-                      showPasswordToggle={true}
-                      {...field}
-                      disabled={isSubmitting || isLoading}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          <div className={cn(
-            "flex gap-2",
-            isMobile ? "flex-row justify-between" : "flex-row justify-end"
-          )}>
-            {onClose && (
-              <Button 
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isSubmitting || isLoading}
-                className={cn(
-                  isMobile ? "flex-1" : "w-auto"
-                )}
-              >
-                {t('common.actions.cancel')}
-              </Button>
-            )}
-            <Button 
-              type="submit" 
-              disabled={isSubmitting || isLoading}
-              className={cn(
-                isMobile ? "flex-1" : "w-auto"
-              )}
-            >
-              {isSubmitting || isLoading ? (
-                <span className="inline-flex items-center justify-center gap-2">
-                  <Spinner className="size-4" />
-                </span>
-              ) : (
-                t('common.actions.confirm')
-              )}
-            </Button>
           </div>
-        </form>
-      </Form>
-    </div>
+
+          <div className="space-y-1.5 md:space-y-2">
+            <div className="flex justify-between text-sm text-foreground">
+              <span className={strengthConfig.textColor}>
+                {strengthConfig.label}
+              </span>
+            </div>
+            <Progress
+              value={passwordStrength}
+              className={cn(
+                'h-2 w-full bg-muted',
+                strengthConfig.barColor
+              )}
+            />
+            <ul className="text-sm text-muted-foreground space-y-1 mt-2 md:mt-3">
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-muted-foreground" />
+                <span className={cn(
+                  form.watch('new_password')?.length >= 8 && 'text-success'
+                )}>
+                  {t('pages.profile.security.fields.newPassword.validation.minLength')}
+                </span>
+                {form.watch('new_password')?.length >= 8 && (
+                  <Check className="size-4 text-success flex-shrink-0" />
+                )}
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-muted-foreground" />
+                <span className={cn(
+                  form.watch('new_password')?.match(/[A-Z]/) && 'text-success'
+                )}>
+                  {t('pages.profile.security.fields.newPassword.strength.uppercase')}
+                </span>
+                {form.watch('new_password')?.match(/[A-Z]/) && (
+                  <Check className="size-4 text-success flex-shrink-0" />
+                )}
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-muted-foreground" />
+                <span className={cn(
+                  form.watch('new_password')?.match(/[0-9]/) && 'text-success'
+                )}>
+                  {t('pages.profile.security.fields.newPassword.strength.number')}
+                </span>
+                {form.watch('new_password')?.match(/[0-9]/) && (
+                  <Check className="size-4 text-success flex-shrink-0" />
+                )}
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-muted-foreground" />
+                <span className={cn(
+                  form.watch('new_password')?.match(/[^A-Za-z0-9]/) && 'text-success'
+                )}>
+                  {t('pages.profile.security.fields.newPassword.strength.special')}
+                </span>
+                {form.watch('new_password')?.match(/[^A-Za-z0-9]/) && (
+                  <Check className="size-4 text-success flex-shrink-0" />
+                )}
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 mt-4 md:mt-6">
+          {onClose && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting || isLoading}
+              className="flex items-center gap-1.5 md:gap-2 text-sm"
+            >
+              {t('common.actions.cancel')}
+            </Button>
+          )}
+          <Button
+            type="submit"
+            disabled={isSubmitting || isLoading}
+            className="flex items-center gap-1.5 md:gap-2 text-sm"
+          >
+            {isSubmitting || isLoading ? (
+              <span className="inline-flex items-center justify-center gap-2">
+                <Spinner className="size-4" />
+              </span>
+            ) : (
+              t('common.actions.confirm')
+            )}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }
 

@@ -11,8 +11,8 @@ export const authService = {
       showErrorToast: true,
       showSuccessToast: true,
       messageMap: {
-        success: i18n.t('auth.register.messages.success', 'Registration successful'),
-        409: i18n.t('auth.register.messages.emailAlreadyExists', 'Email already exists'),
+        success: i18n.t('pages.auth.register.messages.success', 'Registration successful'),
+        409: i18n.t('pages.auth.register.messages.emailAlreadyExists', 'Email already exists'),
         ...config.messageMap,
       },
       ...config 
@@ -25,8 +25,8 @@ export const authService = {
       showErrorToast: true,
       showSuccessToast: true,
       messageMap: {
-        success: i18n.t('auth.login.messages.success', 'Sign in successful'),
-        401: i18n.t('auth.login.messages.invalidCredentials', 'Invalid email or password'),
+        success: i18n.t('pages.auth.login.messages.success', 'Sign in successful'),
+        401: i18n.t('pages.auth.login.messages.invalidCredentials', 'Invalid email or password'),
         ...config.messageMap,
       },
       ...config 
@@ -38,7 +38,7 @@ export const authService = {
       showErrorToast: true,
       showSuccessToast: true,
       messageMap: {
-        success: i18n.t('auth.logout.messages.success', 'Signed out successfully'),
+        success: i18n.t('pages.auth.logout.messages.success', 'Signed out successfully'),
         ...config.messageMap,
       },
       ...config,
@@ -51,7 +51,7 @@ export const authService = {
       showErrorToast: false,
       showSuccessToast: false,
       messageMap: {
-        401: i18n.t('auth.login.messages.invalidCredentials', 'Invalid email or password'),
+        401: i18n.t('pages.auth.login.messages.invalidCredentials', 'Invalid email or password'),
         ...config.messageMap,
       },
       ...config 
@@ -64,7 +64,7 @@ export const authService = {
       showErrorToast: true,
       showSuccessToast: true,
       messageMap: {
-        success: i18n.t('auth.resetPassword.messages.success', 'Password reset successful'),
+        success: i18n.t('pages.auth.resetPassword.messages.success', 'Password reset successful'),
         ...config.messageMap,
       },
       ...config,
@@ -77,7 +77,7 @@ export const authService = {
       showErrorToast: true,
       showSuccessToast: false,
       messageMap: {
-        success: i18n.t('auth.validateResetToken.messages.success', 'Reset token is valid'),
+        success: i18n.t('pages.auth.validateResetToken.messages.success', 'Reset token is valid'),
         ...config.messageMap,
       },
       ...config,

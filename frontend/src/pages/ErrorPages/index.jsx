@@ -44,11 +44,11 @@ function ErrorPage({ errorCode = "404", customTitle, customMessage }) {
   return (
     <div
       className={cn(
-        "min-h-[100dvh] flex items-center justify-center p-4",
-        "bg-background"
+        "h-full min-h-full flex items-center justify-center p-4",
+        "bg-background w-full"
       )}
     >
-      <div className="max-w-md w-full text-center space-y-6">
+      <div className="max-w-md w-full text-center space-y-6 flex-shrink-0">
         {/* Error Icon */}
         <div className="flex justify-center">
           <div

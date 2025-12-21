@@ -21,8 +21,8 @@ function Home() {
     <>
       <div
         className={cn(
-          "min-h-[100dvh] flex flex-col items-center justify-center p-4 relative",
-          "bg-background text-foreground"
+          "h-full min-h-full flex flex-col items-center justify-center p-4 relative",
+          "bg-background text-foreground w-full"
         )}
       >
         <h1
@@ -31,7 +31,7 @@ function Home() {
             "text-foreground"
           )}
         >
-          {t("home.title")}
+          {t("pages.home.title")}
         </h1>
 
         <p
@@ -41,7 +41,7 @@ function Home() {
           )}
         >
           <Trans
-            i18nKey="home.description"
+            i18nKey="pages.home.description"
             components={{
               bold: <span className={cn("text-foreground font-semibold")} />,
             }}

@@ -102,7 +102,7 @@ export function Dock({ className }) {
     <motion.div
       ref={dockRef}
       className={cn(
-        "bg-card/80 text-card-foreground shadow-sm border rounded-xl p-1.5 overflow-hidden",
+        "bg-card/80 text-card-foreground shadow-xs border rounded-xl p-1.5 overflow-hidden",
         "backdrop-blur-md",
         className
       )}

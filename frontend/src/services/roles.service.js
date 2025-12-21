@@ -10,7 +10,7 @@ export const rolesService = {
       showErrorToast: true,
       showSuccessToast: false,
       messageMap: {
-        success: i18n.t('admin.roles.messages.getAllRoles.success', 'Roles retrieved successfully'),
+        success: i18n.t('pages.admin.roles.messages.getAllRoles.success', 'Roles retrieved successfully'),
         ...config.messageMap,
       },
       ...config,
@@ -21,7 +21,7 @@ export const rolesService = {
     apiService.post(ROLES_BASE, roleData, {
       showErrorToast: true,
       messageMap: {
-        success: i18n.t('admin.roles.message.createRole.success', 'Role created successfully'),
+        success: i18n.t('pages.admin.roles.messages.createRole.success', 'Role created successfully'),
         ...config.messageMap,
       },
       ...config,
@@ -32,7 +32,7 @@ export const rolesService = {
     apiService.put(`${ROLES_BASE}/${roleId}`, roleData, {
       showErrorToast: true,
       messageMap: {
-        success: i18n.t('admin.roles.message.updateRole.success', 'Role updated successfully'),
+        success: i18n.t('pages.admin.roles.messages.updateRole.success', 'Role updated successfully'),
         ...config.messageMap,
       },
       ...config,
@@ -43,7 +43,7 @@ export const rolesService = {
     apiService.delete(`${ROLES_BASE}/${roleId}`, {
       showErrorToast: true,
       messageMap: {
-        success: i18n.t('admin.roles.message.deleteRole.success', 'Role deleted successfully'),
+        success: i18n.t('pages.admin.roles.messages.deleteRole.success', 'Role deleted successfully'),
         ...config.messageMap,
       },
       ...config,
@@ -51,22 +51,36 @@ export const rolesService = {
 
   // Get role attributes
   getRoleAttributes: (roleId, config = {}) => 
-    apiService.get(`${ROLES_BASE}/${roleId}/attributes`, {}, config),
+    apiService.get(`${ROLES_BASE}/${roleId}/attributes`, {
+      showErrorToast: true,
+      messageMap: {
+        success: i18n.t('pages.admin.roles.messages.getRoleAttributes.success', 'Role attributes retrieved successfully'),
+        ...config.messageMap,
+      },
+      ...config,
+    }),
 
   // Update role attributes
   updateRoleAttributes: (roleId, attributesData, config = {}) => 
     apiService.put(`${ROLES_BASE}/${roleId}/attributes`, attributesData, {
       showErrorToast: true,
       messageMap: {
-        success: i18n.t('admin.roles.message.updateRoleAttributes.success', 'Role attributes updated successfully'),
+        success: i18n.t('pages.admin.roles.messages.updateRoleAttributes.success', 'Role attributes updated successfully'),
         ...config.messageMap,
       },
       ...config,
     }),
 
-  // Check user permissions
-  checkPermissions: (attributes, config = {}) => 
-    apiService.post(`${ROLES_BASE}/permissions/check`, { attributes }, config),
+  // Get all user permissions (based on token)
+  getAllUserPermissions: (config = {}) => 
+    apiService.get(`${ROLES_BASE}/permissions`, {}, {
+      showErrorToast: true,
+      messageMap: {
+        success: i18n.t('pages.admin.roles.messages.getAllUserPermissions.success', 'User permissions retrieved successfully'),
+        ...config.messageMap,
+      },
+      ...config,
+    }, config),
 };
 
 export default rolesService;
