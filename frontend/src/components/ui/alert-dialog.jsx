@@ -3,6 +3,7 @@ import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { useIsMobile } from "@/hooks/useMobile"
 
 function AlertDialog({
   ...props
@@ -59,10 +60,12 @@ function AlertDialogHeader({
   className,
   ...props
 }) {
+  const isMobile = useIsMobile();
+
   return (
     (<div
       data-slot="alert-dialog-header"
-      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+      className={cn("flex flex-col text-center sm:text-left", isMobile ? "gap-4" : "gap-2", className)}
       {...props} />)
   );
 }
@@ -71,10 +74,18 @@ function AlertDialogFooter({
   className,
   ...props
 }) {
+  const isMobile = useIsMobile();
+  
   return (
     (<div
       data-slot="alert-dialog-footer"
-      className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)}
+      className={cn(
+        "flex flex-row",
+        isMobile 
+          ? "justify-between gap-4 [&>*]:flex-1 w-full mt-3" 
+          : "justify-end gap-2",
+        className
+      )}
       {...props} />)
   );
 }

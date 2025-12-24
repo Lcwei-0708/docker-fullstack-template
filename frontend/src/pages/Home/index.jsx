@@ -14,7 +14,7 @@ function Home() {
     "md:w-26 md:h-26",
     "lg:w-28 lg:h-28",
     "transition-all duration-300",
-    "user-select-none"
+    "select-none"
   );
 
   return (

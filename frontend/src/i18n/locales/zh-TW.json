@@ -8,13 +8,20 @@
       "submit": "送出",
       "save": "儲存",
       "delete": "刪除",
+      "deleting": "刪除中...",
       "edit": "編輯",
       "create": "建立",
       "update": "更新",
       "close": "關閉",
       "search": "搜尋",
       "filter": "篩選",
-      "reset": "重設"
+      "reset": "重設",
+      "resetPassword": "重設密碼",
+      "resetting": "重設中...",
+      "select": "選擇",
+      "none": "無",
+      "openMenu": "開啟選單",
+      "ok": "確定"
     },
     "status": {
       "loading": "載入中...",
@@ -28,6 +35,9 @@
       "invalid": "格式不正確",
       "minLength": "最少需要 {{min}} 個字元",
       "maxLength": "最多 {{max}} 個字元"
+    },
+    "dateTime": {
+      "format": "yyyy年MM月dd日 a hh:mm"
     }
   },
   "errors": {
@@ -105,6 +115,51 @@
           "dark": "深色"
         },
         "guest": "訪客"
+      }
+    },
+    "pagination": {
+      "previous": "上一頁",
+      "next": "下一頁",
+      "previousPage": "前往上一頁",
+      "nextPage": "前往下一頁",
+      "morePages": "更多頁面",
+      "show": "顯示",
+      "perPage": "每頁",
+      "rowsPerPage": "每頁筆數",
+      "total": "總筆數",
+      "totalAccounts": "共 {{count}} 個帳號",
+      "info": "{{from}} - {{to}} / {{count}}"
+    },
+    "dataGrid": {
+      "columnFilter": {
+        "noResults": "找不到結果。",
+        "clearFilters": "清除篩選",
+        "selected": "已選取",
+        "activeFilter": "作用中的篩選"
+      },
+      "columnHeader": {
+        "asc": "升冪",
+        "desc": "降冪",
+        "pinToLeft": "釘選至左側",
+        "pinToRight": "釘選至右側",
+        "moveToLeft": "向左移動",
+        "moveToRight": "向右移動",
+        "columns": "欄位",
+        "unpinColumn": "取消釘選 {{title}} 欄位"
+      },
+      "columnVisibility": {
+        "toggleColumns": "切換欄位"
+      },
+      "table": {
+        "noData": "無資料",
+        "loading": "載入中..."
+      },
+      "toolbar": {
+        "searchPlaceholder": "搜尋...",
+        "activeFilters": "作用中的篩選器",
+        "noActiveFilters": "沒有作用中的篩選器",
+        "toggleSelection": "切換選取",
+        "deleteSelected": "刪除選中"
       }
     }
   },
@@ -338,43 +393,101 @@
         }
       }
     },
-    "admin": {
-      "users": {
-        "messages": {
-          "getAllUsers": {
-            "success": "使用者取得成功"
-          },
-          "createUser": {
-            "success": "使用者建立成功"
-          },
-          "updateUser": {
-            "success": "使用者更新成功"
-          },
-          "deleteUsers": {
-            "success": "使用者刪除成功"
-          },
-          "resetUserPassword": {
-            "success": "使用者密碼重設成功"
+    "usersManagement": {
+      "title": "使用者列表",
+      "description": "管理使用者帳號",
+      "fields": {
+        "firstName": {
+          "label": "名字"
+        },
+        "lastName": {
+          "label": "姓氏"
+        },
+        "email": {
+          "label": "電子信箱"
+        },
+        "phone": {
+          "label": "電話"
+        },
+        "role": {
+          "label": "角色"
+        },
+        "status": {
+          "label": "狀態",
+          "values": {
+            "active": "啟用",
+            "inactive": "停用"
+          }
+        },
+        "createdAt": {
+          "label": "建立時間"
+        }
+      },
+      "dialog": {
+        "editTitle": "編輯使用者",
+        "createTitle": "建立使用者",
+        "editDescription": "更新使用者資訊",
+        "createDescription": "建立新的使用者帳號",
+        "deleteTitle": "刪除使用者",
+        "deleteMessage": "您確定要刪除 {{name}} 嗎？",
+        "deleteSelectedTitle": "刪除選中的使用者",
+        "deleteSelectedMessage": "您確定要刪除選中的 {{count}} 位使用者嗎？",
+        "deleteCurrentUserOnlyMessage": "您無法刪除自己的帳號。",
+        "deleteCurrentUserError": "您無法刪除自己的帳號，請透過其他管理員刪除。",
+        "deleteSelectedWithCurrentUserWarning": "您已選取自己的帳號以及 {{count}} 位其他使用者。您的帳號將自動排除在刪除範圍外，僅會刪除 {{count}} 位其他使用者。",
+        "resetPassword": {
+          "title": "重設密碼",
+          "description": "為 {{name}} 重設密碼",
+          "fields": {
+            "newPassword": {
+              "label": "新密碼",
+              "validation": {
+                "required": "新密碼為必填",
+                "minLength": "密碼長度至少需要 6 個字元"
+              }
+            }
           }
         }
       },
-      "roles": {
-        "messages": {
-          "getAllRoles": {
-            "success": "角色取得成功"
-          },
-          "createRole": {
-            "success": "角色建立成功"
-          },
-          "updateRole": {
-            "success": "角色更新成功"
-          },
-          "deleteRole": {
-            "success": "角色刪除成功"
-          },
-          "updateRoleAttributes": {
-            "success": "角色屬性更新成功"
-          }
+      "messages": {
+        "getAllUsers": {
+          "success": "使用者取得成功"
+        },
+        "createUser": {
+          "success": "使用者建立成功",
+          "emailAlreadyExists": "此電子信箱已被使用"
+        },
+        "updateUser": {
+          "success": "使用者更新成功",
+          "userNotFound": "使用者不存在",
+          "emailAlreadyExists": "此電子信箱已被使用"
+        },
+        "deleteUsers": {
+          "success": "使用者刪除成功",
+          "userNotFound": "使用者不存在"
+        },
+        "resetUserPassword": {
+          "success": "使用者密碼重設成功",
+          "userNotFound": "使用者不存在"
+        }
+      }
+    },
+    "rolesManagement": {
+      "messages": {
+        "getAllRoles": {
+          "success": "角色取得成功"
+        },
+        "createRole": {
+          "success": "角色建立成功"
+        },
+        "updateRole": {
+          "success": "角色更新成功"
+        },
+        "deleteRole": {
+          "success": "角色刪除成功"
+        },
+        "updateRoleAttributes": {
+          "success": "角色屬性更新成功"
         }
       }
     }

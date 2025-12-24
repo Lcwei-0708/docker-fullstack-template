@@ -35,8 +35,8 @@ const DialogContent = React.forwardRef(({ className, children, showCloseButton =
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:duration-200 data-[state=open]:duration-200 fixed left-[50%] top-[50%] z-50 grid translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg sm:rounded-lg",
-          isMobile ? "w-[calc(100%-2rem)] max-w-lg rounded-md" : "w-full max-w-lg",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:duration-200 data-[state=open]:duration-200 fixed left-[50%] top-[50%] z-50 grid translate-x-[-50%] translate-y-[-50%] border bg-card p-6 shadow-lg sm:rounded-lg",
+          isMobile ? "w-[calc(100%-2rem)] max-w-lg rounded-md gap-6" : "w-full max-w-lg gap-4",
           className
         )}
         {...props}
@@ -77,15 +77,22 @@ DialogHeader.displayName = "DialogHeader"
 const DialogFooter = ({
   className,
   ...props
-}) => (
-  <div
-    className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
-      className
-    )}
-    {...props}
-  />
-)
+}) => {
+  const isMobile = useIsMobile();
+  
+  return (
+    <div
+      className={cn(
+        "flex flex-row",
+        isMobile 
+          ? "justify-between gap-4 [&>*]:flex-1 w-full mt-6" 
+          : "justify-end gap-2",
+        className
+      )}
+      {...props}
+    />
+  );
+}
 DialogFooter.displayName = "DialogFooter"
 
 const DialogTitle = React.forwardRef(({ className, ...props }, ref) => (

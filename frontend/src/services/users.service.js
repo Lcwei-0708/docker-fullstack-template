@@ -6,11 +6,11 @@ const USERS_BASE = '/users';
 export const usersService = {
   // Get all users with pagination and filters
   getAllUsers: (params = {}, config = {}) => 
-    apiService.get(USERS_BASE, params, {
+    apiService.get(`${USERS_BASE}/`, params, {
       showErrorToast: true,
       showSuccessToast: false,
       messageMap: {
-        success: i18n.t('pages.admin.users.messages.getAllUsers.success', 'Users retrieved successfully'),
+        success: i18n.t('pages.usersManagement.messages.getAllUsers.success', 'Users retrieved successfully'),
         ...config.messageMap,
       },
       ...config,
@@ -18,10 +18,12 @@ export const usersService = {
 
   // Create user
   createUser: (userData, config = {}) => 
-    apiService.post(USERS_BASE, userData, {
+    apiService.post(`${USERS_BASE}/`, userData, {
       showErrorToast: true,
+      showSuccessToast: true,
       messageMap: {
-        success: i18n.t('pages.admin.users.messages.createUser.success', 'User created successfully'),
+        success: i18n.t('pages.usersManagement.messages.createUser.success', 'User created successfully'),
+        409: i18n.t('pages.usersManagement.messages.createUser.emailAlreadyExists', 'Email already exists'),
         ...config.messageMap,
       },
       ...config,
@@ -31,8 +33,11 @@ export const usersService = {
   updateUser: (userId, userData, config = {}) => 
     apiService.put(`${USERS_BASE}/${userId}`, userData, {
       showErrorToast: true,
+      showSuccessToast: true,
       messageMap: {
-        success: i18n.t('pages.admin.users.messages.updateUser.success', 'User updated successfully'),
+        success: i18n.t('pages.usersManagement.messages.updateUser.success', 'User updated successfully'),
+        404: i18n.t('pages.usersManagement.messages.updateUser.userNotFound', 'User not found'),
+        409: i18n.t('pages.usersManagement.messages.createUser.emailAlreadyExists', 'Email already exists'),
         ...config.messageMap,
       },
       ...config,
@@ -40,10 +45,12 @@ export const usersService = {
 
   // Delete users (batch)
   deleteUsers: (userIds, config = {}) => 
-    apiService.delete(USERS_BASE, {
+    apiService.delete(`${USERS_BASE}/`, {
       showErrorToast: true,
+      showSuccessToast: true,
       messageMap: {
-        success: i18n.t('pages.admin.users.messages.deleteUsers.success', 'Users deleted successfully'),
+        success: i18n.t('pages.usersManagement.messages.deleteUsers.success', 'Users deleted successfully'),
+        404: i18n.t('pages.usersManagement.messages.deleteUsers.userNotFound', 'User not found'),
         ...config.messageMap,
       },
       data: { user_ids: userIds },
@@ -57,8 +64,10 @@ export const usersService = {
       { new_password: newPassword },
       {
         showErrorToast: true,
+        showSuccessToast: true,
         messageMap: {
-          success: i18n.t('pages.admin.users.messages.resetUserPassword.success', 'User password reset successfully'),
+          success: i18n.t('pages.usersManagement.messages.resetUserPassword.success', 'User password reset successfully'),
+          404: i18n.t('pages.usersManagement.messages.resetUserPassword.userNotFound', 'User not found'),
           ...config.messageMap,
         },
         ...config,
