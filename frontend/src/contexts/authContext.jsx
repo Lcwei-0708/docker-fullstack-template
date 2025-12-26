@@ -136,7 +136,8 @@ export const AuthProvider = ({ children }) => {
       return false;
     }
 
-    return requiredPermissions.every(perm => state.permissions[perm] === true);
+    // user needs at least one of the required permissions
+    return requiredPermissions.some(perm => state.permissions[perm] === true);
   }, [state.permissions]);
 
   useEffect(() => {

@@ -21,7 +21,6 @@ router = APIRouter(tags=["Users"])
 @router.get(
     "/",
     response_model=APIResponse[UserPagination],
-    response_model_exclude_none=True,
     summary="Get all users",
     responses=parse_responses({
         200: ("Successfully retrieved users", UserPagination)
@@ -129,7 +128,7 @@ async def delete_users_api(
 ):
     """Delete multiple users"""
     try:
-        batch_result = await delete_users(db, redis_client, delete_data.user_ids)
+        batch_result = await delete_users(db, redis_client, delete_data.user_ids, token)
         
         # Determine response code based on results
         if batch_result.failed_count == 0:

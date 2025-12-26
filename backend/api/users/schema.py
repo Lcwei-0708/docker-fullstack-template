@@ -22,11 +22,13 @@ class UserPagination(BaseModel):
     total_pages: int = Field(..., description="Total number of pages")
 
 class UserSortBy(str, Enum):
-    CREATED_AT: str = "created_at"
-    EMAIL: str = "email"
     FIRST_NAME: str = "first_name"
     LAST_NAME: str = "last_name"
+    EMAIL: str = "email"
+    PHONE: str = "phone"
+    ROLE: str = "role"
     STATUS: str = "status"
+    CREATED_AT: str = "created_at"
 
 class UserCreate(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=50, description="First name")

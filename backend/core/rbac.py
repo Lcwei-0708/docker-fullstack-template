@@ -85,13 +85,26 @@ def require_permission(required_attributes: List[str]):
             # If not super admin, check specific permissions
             user_attributes = await get_user_attributes(user_id, db)
 
-            # Check if the user has all the required permissions
-            missing_permissions = []
-            for attr in required_attributes:
-                if not user_attributes.get(attr, False):
-                    missing_permissions.append(attr)
+            # Convert Permission enum to string value if needed
+            def get_attr_value(attr):
+                """Convert Permission enum to string value, or return as-is if already a string"""
+                if hasattr(attr, 'value'):
+                    return attr.value
+                return str(attr) if attr else attr
+
+            # Check if the user has at least one of the required permissions
+            attr_values = [get_attr_value(attr) for attr in required_attributes]
+            has_permission = any(
+                user_attributes.get(attr_value, False) 
+                for attr_value in attr_values
+            )
             
-            if missing_permissions:
+            if not has_permission:
+                logger.warning(
+                    f"Permission denied for user {user_id}. "
+                    f"Required: {attr_values}, "
+                    f"User has: {[k for k, v in user_attributes.items() if v]}"
+                )
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Permission denied"
