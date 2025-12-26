@@ -602,16 +602,14 @@ class TestUpdateRoleAttributeMappingAPI:
             assert response.status_code == 500
 
 
-class TestCheckUserPermissionsAPI:
-    """Test POST /api/roles/permissions/check endpoint"""
+class TestGetUserPermissionsAPI:
+    """Test GET /api/roles/permissions endpoint"""
 
     @pytest.mark.asyncio
-    async def test_check_user_permissions_success(
+    async def test_get_user_permissions_success(
         self, client: AsyncClient, users_auth_headers: dict
     ):
-        """Test successful user permissions check"""
-        permission_data = {"attributes": ["view-users", "manage-roles", "edit-content"]}
-
+        """Test successful user permissions retrieval"""
         with patch(
             "api.roles.controller.check_user_permissions"
         ) as mock_check_permissions:
@@ -624,58 +622,36 @@ class TestCheckUserPermissionsAPI:
             )
             mock_check_permissions.return_value = mock_result
 
-            response = await client.post(
-                "/api/roles/permissions/check",
-                json=permission_data,
+            response = await client.get(
+                "/api/roles/permissions",
                 headers={"Authorization": users_auth_headers["Authorization"]},
             )
 
             assert response.status_code == 200
             data = response.json()
             assert data["code"] == 200
-            assert data["message"] == "Permission check completed"
+            assert data["message"] == "User permissions retrieved"
             assert data["data"]["permissions"]["view-users"] is True
             assert data["data"]["permissions"]["manage-roles"] is False
             assert data["data"]["permissions"]["edit-content"] is True
 
     @pytest.mark.asyncio
-    async def test_check_user_permissions_unauthorized(self, client: AsyncClient):
-        """Test user permissions check without authentication"""
-        permission_data = {"attributes": ["view-users"]}
-        response = await client.post(
-            "/api/roles/permissions/check", json=permission_data
-        )
+    async def test_get_user_permissions_unauthorized(self, client: AsyncClient):
+        """Test user permissions retrieval without authentication"""
+        response = await client.get("/api/roles/permissions")
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_check_user_permissions_server_error(
+    async def test_get_user_permissions_server_error(
         self, client: AsyncClient, users_auth_headers: dict
     ):
-        """Test user permissions check with server error"""
-        permission_data = {"attributes": ["view-users"]}
-
+        """Test user permissions retrieval with server error"""
         with patch(
             "api.roles.controller.check_user_permissions",
             side_effect=Exception("Database error"),
         ):
-            response = await client.post(
-                "/api/roles/permissions/check",
-                json=permission_data,
+            response = await client.get(
+                "/api/roles/permissions",
                 headers={"Authorization": users_auth_headers["Authorization"]},
             )
             assert response.status_code == 500
-
-    @pytest.mark.asyncio
-    async def test_check_user_permissions_invalid_data(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
-        """Test user permissions check with invalid request data"""
-        permission_data = {"attributes": []}  # Empty attributes list
-
-        response = await client.post(
-            "/api/roles/permissions/check",
-            json=permission_data,
-            headers={"Authorization": users_auth_headers["Authorization"]},
-        )
-
-        assert response.status_code == 422  # Validation error

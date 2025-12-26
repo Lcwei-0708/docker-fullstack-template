@@ -1,6 +1,500 @@
 {
-  "Home": {
-    "title": "Docker Fullstack Template",
-    "description": "一個開箱即用的全端 Docker 範本，結合了 <bold>Nginx</bold>、<bold>React</bold>、<bold>FastAPI</bold> 和 <bold>MariaDB</bold>，適用於現代網頁應用程式開發。"
+  "common": {
+    "actions": {
+      "back": "返回",
+      "home": "首頁",
+      "cancel": "取消",
+      "confirm": "確認",
+      "submit": "送出",
+      "save": "儲存",
+      "delete": "刪除",
+      "deleting": "刪除中...",
+      "edit": "編輯",
+      "create": "建立",
+      "update": "更新",
+      "close": "關閉",
+      "search": "搜尋",
+      "filter": "篩選",
+      "reset": "重設",
+      "resetPassword": "重設密碼",
+      "resetting": "重設中...",
+      "select": "選擇",
+      "none": "無",
+      "openMenu": "開啟選單",
+      "ok": "確定",
+      "sortBy": "排序依據",
+      "sortOrder": "排序方向",
+      "ascending": "升冪",
+      "descending": "降冪"
+    },
+    "status": {
+      "loading": "載入中...",
+      "success": "成功",
+      "error": "錯誤",
+      "warning": "警告",
+      "info": "資訊"
+    },
+    "validation": {
+      "required": "此欄位為必填",
+      "invalid": "格式不正確",
+      "minLength": "最少需要 {{min}} 個字元",
+      "maxLength": "最多 {{max}} 個字元"
+    },
+    "dateTime": {
+      "format": "yyyy年MM月dd日 a hh:mm"
+    }
+  },
+  "errors": {
+    "400": {
+      "title": "請求錯誤",
+      "message": "您的請求格式不正確，請檢查後重試。"
+    },
+    "401": {
+      "title": "未授權",
+      "message": "登入已過期或無效，請重新登入。"
+    },
+    "403": {
+      "title": "權限不足",
+      "message": "您沒有權限執行此操作。"
+    },
+    "404": {
+      "title": "找不到頁面",
+      "message": "您要找的頁面不存在。"
+    },
+    "409": {
+      "title": "資料衝突",
+      "message": "資料已存在，請檢查後重試。"
+    },
+    "422": {
+      "title": "驗證錯誤",
+      "message": "資料驗證失敗，請檢查輸入內容。"
+    },
+    "429": {
+      "title": "請求過於頻繁",
+      "message": "請求過於頻繁，請稍後再試。"
+    },
+    "500": {
+      "title": "伺服器錯誤",
+      "message": "伺服器發生錯誤，請稍後再試。"
+    },
+    "unknown": {
+      "title": "未預期錯誤",
+      "message": "發生未預期的錯誤，請稍後再試。"
+    },
+    "network": {
+      "title": "連線錯誤",
+      "message": "無法連接到伺服器，請檢查您的網路連線。"
+    },
+    "timeout": {
+      "title": "請求逾時",
+      "message": "請求時間過長，請稍後再試。"
+    }
+  },
+  "components": {
+    "app": {
+      "name": "全端網頁開發模板"
+    },
+    "sidebar": {
+      "groups": {
+        "projects": "專案",
+        "systemManagement": "系統管理"
+      },
+      "routes": {
+        "users": "使用者管理",
+        "roles": "角色管理"
+      },
+      "title": {
+        "profile": "個人資料",
+        "users": "使用者管理",
+        "roles": "角色管理"
+      },
+      "setting": {
+        "theme": "主題",
+        "language": "語言",
+        "logout": "登出",
+        "logoutConfirm": "確認登出",
+        "logoutConfirmDescription": "您確定要登出嗎？",
+        "themeOptions": {
+          "light": "淺色",
+          "dark": "深色"
+        },
+        "guest": "訪客"
+      }
+    },
+    "pagination": {
+      "previous": "上一頁",
+      "next": "下一頁",
+      "previousPage": "前往上一頁",
+      "nextPage": "前往下一頁",
+      "morePages": "更多頁面",
+      "show": "顯示",
+      "perPage": "每頁",
+      "rowsPerPage": "每頁筆數",
+      "total": "總筆數",
+      "totalAccounts": "共 {{count}} 個帳號",
+      "info": "{{from}} - {{to}} / {{count}}"
+    },
+    "dataGrid": {
+      "columnFilter": {
+        "noResults": "找不到結果。",
+        "clearFilters": "清除篩選",
+        "selected": "已選取",
+        "activeFilter": "作用中的篩選"
+      },
+      "columnHeader": {
+        "asc": "升冪",
+        "desc": "降冪",
+        "pinToLeft": "釘選至左側",
+        "pinToRight": "釘選至右側",
+        "moveToLeft": "向左移動",
+        "moveToRight": "向右移動",
+        "columns": "欄位",
+        "unpinColumn": "取消釘選 {{title}} 欄位"
+      },
+      "columnVisibility": {
+        "toggleColumns": "切換欄位"
+      },
+      "table": {
+        "noData": "無資料",
+        "loading": "載入中..."
+      },
+      "toolbar": {
+        "searchPlaceholder": "搜尋...",
+        "activeFilters": "作用中的篩選器",
+        "noActiveFilters": "沒有作用中的篩選器",
+        "toggleSelection": "切換選取",
+        "deleteSelected": "刪除選中"
+      }
+    }
+  },
+  "pages": {
+    "home": {
+      "title": "Docker Fullstack Template",
+      "description": "一個開箱即用的全端 Docker 範本，結合了 <bold>Nginx</bold>、<bold>React</bold>、<bold>FastAPI</bold> 和 <bold>MariaDB</bold>，適用於現代網頁應用程式開發。"
+    },
+    "auth": {
+      "login": {
+        "title": "登入",
+        "fields": {
+          "email": {
+            "label": "電子信箱",
+            "placeholder": "請輸入您的電子信箱",
+            "validation": {
+              "required": "請輸入您的電子信箱",
+              "invalid": "請輸入有效的電子信箱格式"
+            }
+          },
+          "password": {
+            "label": "密碼",
+            "placeholder": "請輸入您的密碼",
+            "validation": {
+              "required": "請輸入您的密碼",
+              "minLength": "密碼至少需要 6 個字元"
+            }
+          }
+        },
+        "actions": {
+          "submit": "登入",
+          "submitting": "登入中...",
+          "register": "註冊"
+        },
+        "links": {
+          "newUser": "新的使用者？",
+          "register": "註冊"
+        },
+        "messages": {
+          "success": "登入成功",
+          "invalidCredentials": "電子信箱或密碼錯誤"
+        }
+      },
+      "register": {
+        "title": "註冊",
+        "fields": {
+          "firstName": {
+            "label": "名字",
+            "placeholder": "請輸入您的名字",
+            "validation": {
+              "required": "請輸入您的名字"
+            }
+          },
+          "lastName": {
+            "label": "姓氏",
+            "placeholder": "請輸入您的姓氏",
+            "validation": {
+              "required": "請輸入您的姓氏"
+            }
+          },
+          "email": {
+            "label": "電子信箱",
+            "placeholder": "請輸入您的電子信箱",
+            "validation": {
+              "required": "請輸入您的電子信箱",
+              "invalid": "請輸入有效的電子信箱格式"
+            }
+          },
+          "phone": {
+            "label": "電話",
+            "placeholder": "請輸入您的電話號碼",
+            "validation": {
+              "required": "請輸入您的電話號碼"
+            }
+          },
+          "password": {
+            "label": "密碼",
+            "placeholder": "請輸入您的密碼",
+            "validation": {
+              "required": "請輸入您的密碼",
+              "minLength": "密碼至少需要 6 個字元"
+            }
+          },
+          "confirmPassword": {
+            "label": "確認密碼",
+            "placeholder": "請再次輸入您的密碼",
+            "validation": {
+              "required": "請確認您的密碼",
+              "notMatch": "密碼不一致"
+            }
+          }
+        },
+        "actions": {
+          "submit": "註冊",
+          "login": "登入"
+        },
+        "links": {
+          "existingUser": "已有帳號？",
+          "login": "登入"
+        },
+        "messages": {
+          "success": "註冊成功",
+          "emailAlreadyExists": "此電子信箱已被使用"
+        }
+      },
+      "logout": {
+        "title": "登出",
+        "confirmMessage": "您確定要登出嗎？",
+        "messages": {
+          "success": "已成功登出"
+        }
+      },
+      "resetPassword": {
+        "messages": {
+          "success": "密碼重設成功"
+        }
+      },
+      "validateResetToken": {
+        "messages": {
+          "success": "重設令牌有效"
+        }
+      }
+    },
+    "profile": {
+      "title": "使用者資訊",
+      "description": "管理您的帳戶設定和偏好",
+      "fields": {
+        "status": {
+          "label": "狀態",
+          "values": {
+            "active": "啟用",
+            "inactive": "停用",
+            "notSet": "未設定"
+          }
+        },
+        "userId": {
+          "label": "使用者 ID"
+        },
+        "createdAt": {
+          "label": "註冊時間"
+        }
+      },
+      "actions": {
+        "edit": "編輯個人資料",
+        "changePassword": "變更密碼"
+      },
+      "profile": {
+        "title": "個人資料",
+        "description": "管理您的個人資料",
+        "fields": {
+          "firstName": {
+            "label": "名字",
+            "validation": {
+              "required": "請輸入您的名字"
+            }
+          },
+          "lastName": {
+            "label": "姓氏",
+            "validation": {
+              "required": "請輸入您的姓氏"
+            }
+          },
+          "email": {
+            "label": "電子信箱",
+            "validation": {
+              "required": "請輸入您的電子信箱",
+              "invalid": "請輸入有效的電子信箱格式"
+            }
+          },
+          "phone": {
+            "label": "電話",
+            "validation": {
+              "required": "請輸入您的電話號碼"
+            }
+          }
+        },
+        "messages": {
+          "success": "個人資料更新成功"
+        }
+      },
+      "security": {
+        "title": "安全性管理",
+        "description": "管理您的安全性設定",
+        "securityTips": {
+          "title": "安全性建議",
+          "tips": {
+            "regularChange": "建議定期更改密碼以確保帳戶安全",
+            "uniquePassword": "請勿在不同網站使用相同的密碼"
+          }
+        },
+        "fields": {
+          "currentPassword": {
+            "label": "目前密碼",
+            "validation": {
+              "required": "請輸入您的目前密碼",
+              "incorrect": "目前密碼不正確"
+            }
+          },
+          "newPassword": {
+            "label": "新密碼",
+            "validation": {
+              "required": "請輸入您的新密碼",
+              "minLength": "密碼至少需要 6 個字元"
+            },
+            "strength": {
+              "weak": "弱",
+              "medium": "中等",
+              "strong": "強",
+              "veryStrong": "超強",
+              "uppercase": "包含大寫字母",
+              "number": "包含數字",
+              "special": "包含特殊字元"
+            }
+          },
+          "confirmPassword": {
+            "label": "確認新密碼",
+            "validation": {
+              "required": "請確認您的新密碼",
+              "notMatch": "密碼不一致"
+            }
+          }
+        },
+        "messages": {
+          "success": "密碼變更成功",
+          "incorrect": "目前密碼不正確"
+        }
+      },
+      "messages": {
+        "getProfile": {
+          "success": "個人資料取得成功"
+        }
+      }
+    },
+    "usersManagement": {
+      "title": "使用者列表",
+      "description": "管理使用者帳號",
+      "fields": {
+        "firstName": {
+          "label": "名字"
+        },
+        "lastName": {
+          "label": "姓氏"
+        },
+        "email": {
+          "label": "電子信箱"
+        },
+        "phone": {
+          "label": "電話"
+        },
+        "role": {
+          "label": "角色"
+        },
+        "status": {
+          "label": "狀態",
+          "values": {
+            "active": "啟用",
+            "inactive": "停用"
+          }
+        },
+        "createdAt": {
+          "label": "註冊時間"
+        }
+      },
+      "dialog": {
+        "editTitle": "編輯使用者",
+        "createTitle": "建立使用者",
+        "editDescription": "更新使用者資訊",
+        "createDescription": "建立新的使用者帳號",
+        "deleteTitle": "刪除使用者",
+        "deleteMessage": "您確定要刪除 {{name}} 嗎？",
+        "deleteSelectedTitle": "刪除選中的使用者",
+        "deleteSelectedMessage": "您確定要刪除選中的 {{count}} 位使用者嗎？",
+        "deleteCurrentUserOnlyMessage": "您無法刪除自己的帳號。",
+        "deleteCurrentUserError": "您無法刪除自己的帳號，請透過其他管理員刪除。",
+        "deleteSelectedWithCurrentUserWarning": "您已選取自己的帳號以及 {{count}} 位其他使用者。您的帳號將自動排除在刪除範圍外，僅會刪除 {{count}} 位其他使用者。",
+        "filterDescription": "請設定篩選條件",
+        "resetPassword": {
+          "title": "重設密碼",
+          "description": "為 {{name}} 重設密碼",
+          "fields": {
+            "newPassword": {
+              "label": "新密碼",
+              "validation": {
+                "required": "新密碼為必填",
+                "minLength": "密碼長度至少需要 6 個字元"
+              }
+            }
+          }
+        }
+      },
+      "messages": {
+        "getAllUsers": {
+          "success": "使用者取得成功"
+        },
+        "createUser": {
+          "success": "使用者建立成功",
+          "emailAlreadyExists": "此電子信箱已被使用"
+        },
+        "updateUser": {
+          "success": "使用者更新成功",
+          "userNotFound": "使用者不存在",
+          "emailAlreadyExists": "此電子信箱已被使用"
+        },
+        "deleteUsers": {
+          "success": "使用者刪除成功",
+          "userNotFound": "使用者不存在"
+        },
+        "resetUserPassword": {
+          "success": "使用者密碼重設成功",
+          "userNotFound": "使用者不存在"
+        }
+      }
+    },
+    "rolesManagement": {
+      "messages": {
+        "getAllRoles": {
+          "success": "角色取得成功"
+        },
+        "createRole": {
+          "success": "角色建立成功"
+        },
+        "updateRole": {
+          "success": "角色更新成功"
+        },
+        "deleteRole": {
+          "success": "角色刪除成功"
+        },
+        "updateRoleAttributes": {
+          "success": "角色屬性更新成功"
+        }
+      }
+    }
   }
 }

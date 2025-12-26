@@ -13,3 +13,24 @@ export function debugLog(...args) {
     console.log(...args);
   }
 }
+
+// Debug error
+export function debugError(...args) {
+  if (ENV.DEBUG) {
+    console.error(...args);
+  }
+}
+
+// Debug warning
+export function debugWarn(...args) {
+  if (ENV.DEBUG) {
+    console.warn(...args);
+  }
+}
+
+// Debug info
+export function debugInfo(...args) {
+  if (ENV.DEBUG) {
+    console.info(...args);
+  }
+}

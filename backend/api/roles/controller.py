@@ -14,7 +14,7 @@ from .services import (
 from .schema import (
     RoleResponse, RoleCreate, RoleUpdate, RolesListResponse,
     RoleAttributesMapping, RoleAttributeMappingBatchResponse,
-    PermissionCheckRequest, PermissionCheckResponse,
+    PermissionCheckResponse,
     role_attributes_success_response_example, role_attributes_partial_response_example, 
     role_attributes_failed_response_example
 )
@@ -218,27 +218,26 @@ async def update_role_attribute_mapping_api(
     except Exception:
         raise HTTPException(status_code=500)
 
-@router.post(
-    "/permissions/check",
+@router.get(
+    "/permissions",
     response_model=APIResponse[PermissionCheckResponse],
     response_model_exclude_none=True,
-    summary="Check user permissions",
+    summary="Get current user permissions",
     responses=parse_responses({
-        200: ("Permission check completed", PermissionCheckResponse)
+        200: ("User permissions retrieved", PermissionCheckResponse, PermissionCheckResponse.get_example_response())
     }, common_responses)
 )
-async def check_user_permissions_api(
-    permission_data: PermissionCheckRequest,
-    request: Request,
+async def get_user_permissions_api(
+    request: Request = None,
     token: dict = Depends(verify_token),
     db: AsyncSession = Depends(get_db)
 ):
-    """Check if user has required permission attributes"""
+    """Get all permissions for the current user"""
     try:
-        user_id = token.get("sub")        
-        result = await check_user_permissions(db, user_id, permission_data.attributes)
+        user_id = token.get("sub")
+        result = await check_user_permissions(db, user_id, None)
         
-        return APIResponse(code=200, message="Permission check completed", data=result)
+        return APIResponse(code=200, message="User permissions retrieved", data=result)
     except HTTPException:
         raise
     except Exception:

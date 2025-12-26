@@ -333,13 +333,9 @@ class TestPermissionCheckRequest:
 
     def test_permission_check_request_missing_attributes(self):
         """Test PermissionCheckRequest with missing attributes field"""
-        with pytest.raises(ValidationError) as exc_info:
-            PermissionCheckRequest()
-
-        errors = exc_info.value.errors()
-        assert len(errors) == 1
-        assert errors[0]["type"] == "missing"
-        assert errors[0]["loc"] == ("attributes",)
+        # attributes is Optional, so it should be None when not provided
+        request = PermissionCheckRequest()
+        assert request.attributes is None
 
 
 class TestPermissionCheckResponse:

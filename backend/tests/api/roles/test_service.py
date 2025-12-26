@@ -305,9 +305,9 @@ class TestGetRoleAttributeMapping:
         result = await get_role_attribute_mapping(test_db_session, "role-1")
 
         assert len(result.attributes) == 3
-        assert result.attributes["attr-1"] is True
-        assert result.attributes["attr-2"] is False
-        assert result.attributes["attr-3"] is False  # No mapping, defaults to False
+        assert result.attributes["view-users"] is True
+        assert result.attributes["manage-roles"] is False
+        assert result.attributes["edit-content"] is False  # No mapping, defaults to False
 
     @pytest.mark.asyncio
     async def test_get_role_attribute_mapping_role_not_found(
@@ -353,7 +353,7 @@ class TestUpdateRoleAttributeMapping:
         test_db_session.add(attr2)
         await test_db_session.commit()
 
-        attributes_data = {"attr-1": True, "attr-2": False}
+        attributes_data = {"view-users": True, "manage-roles": False}
 
         result = await update_role_attribute_mapping(
             test_db_session, "role-1", attributes_data
@@ -378,8 +378,8 @@ class TestUpdateRoleAttributeMapping:
         await test_db_session.commit()
 
         attributes_data = {
-            "attr-1": True,
-            "invalid-attr": False,  # Invalid attribute ID
+            "view-users": True,
+            "invalid-attr-name": False,  # Invalid attribute name
         }
 
         result = await update_role_attribute_mapping(
@@ -396,7 +396,7 @@ class TestUpdateRoleAttributeMapping:
         self, test_db_session: AsyncSession
     ):
         """Test update_role_attribute_mapping with non-existent role"""
-        attributes_data = {"attr-1": True}
+        attributes_data = {"view-users": True}
 
         with pytest.raises(NotFoundException) as exc_info:
             await update_role_attribute_mapping(
@@ -410,7 +410,7 @@ class TestUpdateRoleAttributeMapping:
         self, test_db_session: AsyncSession
     ):
         """Test update_role_attribute_mapping with database error"""
-        attributes_data = {"attr-1": True}
+        attributes_data = {"view-users": True}
 
         with patch.object(
             test_db_session, "execute", side_effect=Exception("Database error")
@@ -444,7 +444,8 @@ class TestCheckUserPermissions:
         )
 
         # Create test role, attributes and mappings
-        role = Roles(id="role-1", name="admin", description="Admin role")
+        # Use a different role name to avoid super admin check
+        role = Roles(id="role-1", name="test-role", description="Test role")
         attr1 = RoleAttributes(id="attr-1", name="view-users", description="View users")
         attr2 = RoleAttributes(
             id="attr-2", name="manage-roles", description="Manage roles"
