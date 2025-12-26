@@ -52,8 +52,8 @@ class Settings(BaseSettings):
 
     # Security settings
     PASSWORD_MIN_LENGTH: int = 6
-    RATE_LIMIT: int = 30
-    RATE_LIMIT_WINDOW_SECONDS: int = 180  # 3 minutes
+    RATE_LIMIT: int = 200
+    RATE_LIMIT_WINDOW_SECONDS: int = 300  # 5 minutes
     BLOCK_TIME_SECONDS: int = 600  # 10 minutes
 
     # Default admin user settings

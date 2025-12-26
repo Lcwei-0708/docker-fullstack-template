@@ -8,7 +8,7 @@ from models.user_sessions import UserSessions
 from models.password_reset_tokens import PasswordResetTokens
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_, delete
+from sqlalchemy import select, func, or_, delete, case
 from core.security import hash_password, clear_user_all_sessions
 from .schema import UserResponse, UserPagination, UserCreate, UserUpdate, UserDeleteBatchResponse, UserDeleteResult
 from utils.custom_exception import ServerException, ConflictException, NotFoundException
@@ -45,19 +45,38 @@ async def get_all_users(
             else:
                 query = query.where(Users.status.in_(status_list))
         
+        has_role_join = False
+        
         if role:
             role_list = [r.strip() for r in role.split(',')]
             query = query.join(RoleMapper, Users.id == RoleMapper.user_id)
             query = query.join(Roles, RoleMapper.role_id == Roles.id)
             query = query.where(Roles.name.in_(role_list))
+            has_role_join = True
         
         if sort_by:
-            sort_column = getattr(Users, sort_by, None)
-            if sort_column:
+            if sort_by == "role":
+                # For role sorting, use LEFT JOIN with distinct to avoid duplicates
+                if not has_role_join:
+                    query = query.outerjoin(RoleMapper, Users.id == RoleMapper.user_id)
+                    query = query.outerjoin(Roles, RoleMapper.role_id == Roles.id)
+                # Use distinct to avoid duplicate rows when a user has multiple roles
+                query = query.distinct()
+                null_order = case((Roles.name.is_(None), 1), else_=0)
                 if desc:
-                    query = query.order_by(sort_column.desc())
+                    query = query.order_by(null_order.asc(), Roles.name.desc(), Users.id)
                 else:
-                    query = query.order_by(sort_column.asc())
+                    query = query.order_by(null_order.asc(), Roles.name.asc(), Users.id)
+            else:
+                # For other fields, use direct column access
+                sort_column = getattr(Users, sort_by, None)
+                if sort_column:
+                    if desc:
+                        query = query.order_by(sort_column.desc())
+                    else:
+                        query = query.order_by(sort_column.asc())
+                else:
+                    query = query.order_by(Users.created_at.desc())
         else:
             query = query.order_by(Users.created_at.desc())
         
@@ -131,8 +150,8 @@ async def get_all_users(
             total_pages=total_pages
         )
         
-    except Exception:
-        raise ServerException("Failed to retrieve users")
+    except Exception as e:
+        raise ServerException(f"Failed to retrieve users: {str(e)}")
 
 async def create_user(db: AsyncSession, user_data: UserCreate) -> UserResponse:
     """Create a new user"""
@@ -230,12 +249,15 @@ async def update_user(db: AsyncSession, user_id: str, user_data: UserUpdate) -> 
     except Exception as e:
         raise ServerException(f"Failed to update user: {str(e)}")
 
-async def delete_users(db: AsyncSession, redis_client: redis.Redis, user_ids: List[str]) -> UserDeleteBatchResponse:
+async def delete_users(db: AsyncSession, redis_client: redis.Redis, user_ids: List[str], token: Optional[dict] = None) -> UserDeleteBatchResponse:
     """Delete multiple users with detailed batch processing results"""
     try:
         results = []
         success_count = 0
         failed_count = 0
+        
+        # Get current user ID from token
+        current_user_id = token.get("sub") if token else None
         
         # Check which users exist
         result = await db.execute(
@@ -246,6 +268,16 @@ async def delete_users(db: AsyncSession, redis_client: redis.Redis, user_ids: Li
         # Process each user ID
         for user_id in user_ids:
             try:
+                # Skip if trying to delete own account
+                if current_user_id and user_id == current_user_id:
+                    results.append(UserDeleteResult(
+                        user_id=user_id,
+                        status="failed",
+                        message="Cannot delete your own account"
+                    ))
+                    failed_count += 1
+                    continue
+                
                 if user_id in existing_ids:
                     # Clear user sessions and tokens before deletion
                     await clear_user_all_sessions(db, redis_client, user_id)
