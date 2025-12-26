@@ -21,7 +21,11 @@
       "select": "選擇",
       "none": "無",
       "openMenu": "開啟選單",
-      "ok": "確定"
+      "ok": "確定",
+      "sortBy": "排序依據",
+      "sortOrder": "排序方向",
+      "ascending": "升冪",
+      "descending": "降冪"
     },
     "status": {
       "loading": "載入中...",
@@ -299,7 +303,7 @@
           "label": "使用者 ID"
         },
         "createdAt": {
-          "label": "建立時間"
+          "label": "註冊時間"
         }
       },
       "actions": {
@@ -420,7 +424,7 @@
           }
         },
         "createdAt": {
-          "label": "建立時間"
+          "label": "註冊時間"
         }
       },
       "dialog": {
@@ -435,6 +439,7 @@
         "deleteCurrentUserOnlyMessage": "您無法刪除自己的帳號。",
         "deleteCurrentUserError": "您無法刪除自己的帳號，請透過其他管理員刪除。",
         "deleteSelectedWithCurrentUserWarning": "您已選取自己的帳號以及 {{count}} 位其他使用者。您的帳號將自動排除在刪除範圍外，僅會刪除 {{count}} 位其他使用者。",
+        "filterDescription": "請設定篩選條件",
         "resetPassword": {
           "title": "重設密碼",
           "description": "為 {{name}} 重設密碼",

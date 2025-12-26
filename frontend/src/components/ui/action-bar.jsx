@@ -2,6 +2,7 @@ import { useDirection } from "@radix-ui/react-direction";
 import { Slot } from "@radix-ui/react-slot";
 import * as React from "react";
 import * as ReactDOM from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useComposedRefs } from "@/lib/compose-refs";
 import { cn } from "@/lib/utils";
@@ -130,7 +131,7 @@ function ActionBar(props) {
 
   if (!portalContainer || !open) return null;
 
-  const RootPrimitive = asChild ? Slot : "div";
+  const RootPrimitive = asChild ? Slot : motion.div;
 
   return (
     <ActionBarContext.Provider value={contextValue}>
@@ -144,16 +145,38 @@ function ActionBar(props) {
         dir={dir}
         {...rootProps}
         ref={composedRef}
-        className={cn(
-          "fixed z-50 rounded-lg border bg-card shadow-lg outline-none",
-          "fade-in-0 zoom-in-95 animate-in duration-250 [animation-timing-function:cubic-bezier(0.16,1,0.3,1)]",
-          "data-[side=bottom]:slide-in-from-bottom-4 data-[side=top]:slide-in-from-top-4",
-          "motion-reduce:animate-none motion-reduce:transition-none",
-          orientation === "horizontal"
-            ? "flex flex-row items-center gap-2 px-2 py-1.5"
-            : "flex flex-col items-start gap-2 px-1.5 py-2",
-          className
-        )}
+        layout
+        initial={{ 
+          opacity: 0, 
+          scale: 0.95, 
+          y: orientation === "horizontal" ? 0 : 16,
+        }}
+        animate={{ 
+          opacity: 1, 
+          scale: 1, 
+          y: 0,
+          transition: {
+            type: "spring",
+            stiffness: 400,
+            damping: 35,
+            opacity: { duration: 0.15 },
+          }
+        }}
+        exit={{ 
+          opacity: 0, 
+          scale: 0.95, 
+          y: orientation === "horizontal" ? 0 : 16,
+          transition: {
+            duration: 0.15,
+          }
+        }}
+        transition={{
+          layout: {
+            type: "spring",
+            stiffness: 500,
+            damping: 40,
+          }
+        }}
         style={{
           [side]: `${sideOffset}px`,
           ...(align === "center" && {
@@ -163,7 +186,14 @@ function ActionBar(props) {
           ...(align === "start" && { left: `${alignOffset}px` }),
           ...(align === "end" && { right: `${alignOffset}px` }),
           ...style,
-        }} />, portalContainer)}
+        }}
+        className={cn(
+          "fixed z-50 rounded-lg border bg-card/70 shadow-lg backdrop-blur-sm outline-none",
+          orientation === "horizontal"
+            ? "flex flex-row items-center gap-2 px-2 py-1.5"
+            : "flex flex-col items-start gap-2 px-1.5 py-2",
+          className
+        )} />, portalContainer)}
     </ActionBarContext.Provider>
   );
 }
@@ -171,14 +201,15 @@ function ActionBar(props) {
 function ActionBarSelection(props) {
   const { className, asChild, ...selectionProps } = props;
 
-  const SelectionPrimitive = asChild ? Slot : "div";
+  const SelectionPrimitive = asChild ? Slot : motion.div;
 
   return (
     <SelectionPrimitive
       data-slot="action-bar-selection"
       {...selectionProps}
+      layout
       className={cn(
-        "flex items-center gap-1 rounded-sm border px-2 py-1 font-medium text-sm tabular-nums",
+        "bg-input flex items-center gap-1 rounded-sm border px-3 py-1 font-medium text-sm tabular-nums shrink-0",
         className
       )} />
   );
@@ -307,7 +338,7 @@ function ActionBarGroup(props) {
     getItems,
   ]);
 
-  const GroupPrimitive = asChild ? Slot : "div";
+  const GroupPrimitive = asChild ? Slot : motion.div;
 
   return (
     <FocusContext.Provider value={focusContextValue}>
@@ -319,7 +350,15 @@ function ActionBarGroup(props) {
         tabIndex={isTabbingBackOut || focusableItemCount === 0 ? -1 : 0}
         {...groupProps}
         ref={composedRef}
-        className={cn("flex gap-2 outline-none", orientation === "horizontal"
+        layout
+        transition={{
+          layout: {
+            type: "spring",
+            stiffness: 500,
+            damping: 40,
+          }
+        }}
+        className={cn("flex gap-2 outline-none shrink-0", orientation === "horizontal"
           ? "items-center"
           : "w-full flex-col items-start", className)}
         onBlur={onBlur}
@@ -468,12 +507,16 @@ function ActionBarItem(props) {
     <Button
       type="button"
       data-slot="action-bar-item"
-      variant="secondary"
-      size="sm"
+      variant="ghost"
+      size="icon"
       disabled={disabled}
       tabIndex={isTabStop ? 0 : -1}
       {...itemProps}
-      className={cn(orientation === "vertical" && "w-full", className)}
+      className={cn(
+        "shrink-0",
+        orientation === "vertical" && "w-full",
+        className
+      )}
       ref={composedRef}
       onClick={onClick}
       onFocus={onFocus}
@@ -502,7 +545,7 @@ function ActionBarClose(props) {
       data-slot="action-bar-close"
       {...closeProps}
       className={cn(
-        "rounded-xs opacity-70 outline-none hover:opacity-100 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none [&_svg:not([class*='size-'])]:size-3.5 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "shrink-0 rounded-xs opacity-70 outline-none hover:opacity-100 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none [&_svg:not([class*='size-'])]:size-3.5 [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className
       )}
       onClick={onCloseClick} />

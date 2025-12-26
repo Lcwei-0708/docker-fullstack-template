@@ -105,8 +105,8 @@ export const Layout = ({
         <AppSidebar user={sidebarUser} onLogout={handleSidebarLogout} />
         <SidebarInset className={cn("h-svh overflow-hidden")}>
           <div className={cn(
-            "flex h-17 items-center gap-2 px-3 shrink-0",
-            !isMobile && "border-b"
+            "flex items-center gap-2 px-3 shrink-0",
+            isMobile ? "border-b-0 h-15" : "border-b h-17"
           )}>
             <SidebarTrigger />
           </div>

@@ -68,9 +68,11 @@ export function DeleteUserDialog({
       if (includesCurrentUser && selectedUserIds && Array.isArray(selectedUserIds)) {
         const currentUserIdStr = String(currentUserId).trim();
         const filteredIds = selectedUserIds.filter(id => String(id).trim() !== currentUserIdStr);
-        onConfirm(filteredIds);
+        onConfirm(filteredIds.length > 0 ? filteredIds : []);
+      } else if (selectedUserIds && Array.isArray(selectedUserIds)) {
+        onConfirm(selectedUserIds);
       } else {
-        onConfirm();
+        onConfirm([]);
       }
     } else if (user && !includesCurrentUser) {
       onConfirm(user);

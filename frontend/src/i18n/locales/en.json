@@ -21,7 +21,11 @@
       "select": "Select",
       "none": "None",
       "openMenu": "Open menu",
-      "ok": "OK"
+      "ok": "OK",
+      "sortBy": "Sort By",
+      "sortOrder": "Sort Order",
+      "ascending": "Ascending",
+      "descending": "Descending"
     },
     "status": {
       "loading": "Loading...",
@@ -300,7 +304,7 @@
           "label": "User ID"
         },
         "createdAt": {
-          "label": "Created At"
+          "label": "Registered At"
         }
       },
       "actions": {
@@ -429,7 +433,7 @@
           }
         },
         "createdAt": {
-          "label": "Created At"
+          "label": "Registered At"
         }
       },
       "dialog": {
@@ -444,6 +448,7 @@
         "deleteCurrentUserOnlyMessage": "You cannot delete your own account.",
         "deleteCurrentUserError": "You cannot delete your own account, please use the account settings page to delete your account.",
         "deleteSelectedWithCurrentUserWarning": "You have selected your own account along with {{count}} other user(s). Your account will be automatically excluded from deletion, and only {{count}} other user(s) will be deleted.",
+        "filterDescription": "Please set filter options",
         "resetPassword": {
           "title": "Reset Password",
           "description": "Reset password for {{name}}",
