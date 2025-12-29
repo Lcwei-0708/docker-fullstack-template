@@ -1,5 +1,5 @@
 import React, { useRef } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { AnimatePresence, motion } from 'motion/react'
 import { cn } from '@/lib/utils'
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/card'
 import { LoginForm } from '@/components/auth/login-form'
 import { RegisterForm } from '@/components/auth/register-form'
+import { ResetPasswordForm } from '@/components/auth/reset-password-form'
 
 const arePropsEqual = (prevProps, nextProps) => {
   const prevPath = prevProps.location?.pathname
@@ -32,7 +33,7 @@ const arePropsEqual = (prevProps, nextProps) => {
   return areEqual
 }
 
-const AuthComponent = React.memo(({ t, location, language }) => {
+const AuthComponent = React.memo(({ t, location, language, navigate }) => {
   const redirect = React.useMemo(() => {
     const result = location.state?.from?.pathname || 
            new URLSearchParams(location.search).get('redirect') || 
@@ -40,12 +41,20 @@ const AuthComponent = React.memo(({ t, location, language }) => {
     return result
   }, [location.state?.from?.pathname, location.search])
 
+  const resetToken = React.useMemo(() => {
+    return new URLSearchParams(location.search).get('token')
+  }, [location.search])
+
   const activeTab = React.useMemo(() => {
+    if (location.pathname === '/reset-password') {
+      return 'reset-password'
+    }
     if (location.pathname === '/register') {
       return 'register'
     }
     return 'login'
   }, [location.pathname])
+
 
   return (
     <div className={cn("min-h-[100dvh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8")}>
@@ -72,7 +81,9 @@ const AuthComponent = React.memo(({ t, location, language }) => {
             <CardHeader>
               <AnimatePresence mode="wait">
                 <CardTitle className="text-lg tracking-tight text-center mb-2">
-                    {activeTab === 'register' 
+                    {activeTab === 'reset-password'
+                        ? t("pages.auth.resetPassword.title", { defaultValue: "Reset Password" })
+                        : activeTab === 'register' 
                         ? t("pages.auth.register.title", { defaultValue: "Sign up" })
                         : t("pages.auth.login.title", { defaultValue: "Sign in" })
                     }
@@ -82,7 +93,9 @@ const AuthComponent = React.memo(({ t, location, language }) => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {activeTab === 'register' ? (
+              {activeTab === 'reset-password' ? (
+                <ResetPasswordForm token={resetToken} />
+              ) : activeTab === 'register' ? (
                 <RegisterForm redirectTo={redirect} />
               ) : (
                 <LoginForm redirectTo={redirect} />
@@ -107,20 +120,22 @@ const getLocationKey = (location) => {
 export function Auth() {
   const { t, i18n } = useTranslation()
   const location = useLocation()  
+  const navigate = useNavigate()
   const locationKey = getLocationKey(location)
   const language = i18n.language
   
-  const propsRef = useRef({ t, location, locationKey, language })
+  const propsRef = useRef({ t, location, locationKey, language, navigate })
   
   if (propsRef.current.locationKey !== locationKey || propsRef.current.language !== language) {
-    propsRef.current = { t, location, locationKey, language }
+    propsRef.current = { t, location, locationKey, language, navigate }
   } else {
     propsRef.current.t = t
     propsRef.current.location = location
     propsRef.current.language = language
+    propsRef.current.navigate = navigate
   }
   
-  return <AuthComponent t={propsRef.current.t} location={propsRef.current.location} language={propsRef.current.language} />
+  return <AuthComponent t={propsRef.current.t} location={propsRef.current.location} language={propsRef.current.language} navigate={propsRef.current.navigate} />
 }
 
 export default Auth

@@ -33,7 +33,12 @@ const authReducer = (state, action) => {
       return { ...state, user: action.payload };
     
     case AUTH_ACTIONS.SET_TOKEN:
-      return { ...state, token: action.payload, isAuthenticated: !!action.payload };
+      const setTokenState = { ...state, token: action.payload, isAuthenticated: !!action.payload };
+      // If token is null, clear user as well
+      if (!action.payload && state.user) {
+        setTokenState.user = null;
+      }
+      return setTokenState;
     
     case AUTH_ACTIONS.LOGIN_SUCCESS:
       return {
@@ -84,6 +89,7 @@ export const AuthProvider = ({ children }) => {
   const logoutRef = useRef(null);
   const profileInitRef = useRef(false);
   const permissionsLoadRef = useRef(false);
+  const isResettingPasswordRef = useRef(false);
 
   const setUser = useCallback((user) => {
     dispatch({ type: AUTH_ACTIONS.SET_USER, payload: user });
@@ -167,6 +173,7 @@ export const AuthProvider = ({ children }) => {
       permissionsLoadRef,
       initRef,
       isInitializingRef,
+      isResettingPasswordRef,
     };
   }, [
     state.user,

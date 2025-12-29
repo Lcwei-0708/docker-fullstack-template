@@ -25,10 +25,11 @@ export const useAuth = () => {
     permissionsLoadRef,
     initRef,
     isInitializingRef,
+    isResettingPasswordRef,
     ...state
   } = context;
 
-  // Fetch and update user profile from API
+  // Fetch and update user profile
   const fetchAndUpdateProfile = useCallback(async ({ showSuccessToast = false } = {}) => {
     const profileResult = await accountService.getProfile({
       returnStatus: true,
@@ -42,7 +43,7 @@ export const useAuth = () => {
     return profileResult;
   }, [setUser]);
 
-  // Load user profile automatically when authenticated
+  // Auto-load user profile when authenticated
   const loadProfile = useCallback(async () => {
     if (!state.token || !state.isAuthenticated) {
       return;
@@ -64,7 +65,7 @@ export const useAuth = () => {
     }
   }, [state.token, state.isAuthenticated, setUser]);
 
-  // Load user permissions automatically when authenticated
+  // Auto-load user permissions when authenticated
   const loadPermissions = useCallback(async () => {
     if (!state.token || !state.isAuthenticated) {
       setPermissions(null);
@@ -85,6 +86,8 @@ export const useAuth = () => {
       debugError('Failed to load user permissions:', error);
       setPermissions({});
       permissionsLoadRef.current = false;
+    } finally {
+      setLoadingPermissions(false);
     }
   }, [state.token, state.isAuthenticated, state.isLoadingPermissions, setPermissions, setLoadingPermissions]);
 
@@ -95,6 +98,19 @@ export const useAuth = () => {
       clearError();
 
       const result = await authService.login(credentials);
+      
+      // Check if response indicates password reset is required (202 status)
+      if (result?._statusCode === 202 || result?.reset_token) {
+        const resetToken = result?.reset_token || result?.data?.reset_token;
+        
+        setLoading(false);
+        return { 
+          success: false, 
+          requiresPasswordReset: true,
+          resetToken: resetToken,
+          data: result 
+        };
+      }
       
       if (result?.user && result?.access_token) {
         const { user, access_token: token } = result;
@@ -110,6 +126,18 @@ export const useAuth = () => {
       }
     } catch (error) {
       let errorMessage = error.response?.data?.message || error.message || 'Login failed';
+      
+      // Check if error response indicates password reset is required (202 status)
+      if (error.response?.status === 202) {
+        const resetToken = error.response?.data?.data?.reset_token || error.response?.data?.reset_token;
+        setLoading(false);
+        return { 
+          success: false, 
+          requiresPasswordReset: true,
+          resetToken: resetToken,
+          data: error.response?.data 
+        };
+      }
       
       const status = error.response?.status;
       const is401Error = status === 401 || 
@@ -184,14 +212,20 @@ export const useAuth = () => {
       }
       
       if (access_token) {
-        setToken(access_token);
+        // Preserve user if exists, otherwise just set token
+        if (state.user) {
+          loginSuccess(state.user, access_token);
+        } else {
+          setToken(access_token);
+        }
         setLoading(false);
         return { success: true, token: access_token };
       }
       
       setLoading(false);
       
-      if (!isInit) {
+      // Only clear auth if not initializing and no token exists
+      if (!isInit && !state.token) {
         clearAuth();
       }
       
@@ -199,15 +233,16 @@ export const useAuth = () => {
     } catch (error) {
       setLoading(false);
       
-      if (!isInit) {
+      // Only clear auth if not initializing and no token exists
+      if (!isInit && !state.token) {
         clearAuth();
       }
       
       return { success: false, error: error.message };
     }
-  }, [setLoading, setToken, clearAuth]);
+  }, [setLoading, setToken, clearAuth, state.token, state.user, loginSuccess]);
 
-  // Reset user password with reset token
+  // Reset password and auto-login user
   const resetPassword = useCallback(async (newPassword, resetToken) => {
     try {
       setLoading(true);
@@ -215,16 +250,36 @@ export const useAuth = () => {
 
       const result = await authService.resetPassword(newPassword, resetToken);
       
-      if (result?.user && result?.access_token) {
-        const { user, access_token: token } = result;
-        
-        loginSuccess(user, token);
-        await new Promise(resolve => setTimeout(resolve, 50));
-        await fetchAndUpdateProfile({ showSuccessToast: false });
-      }
+      const access_token = result?.access_token || result?.data?.access_token;
+      const user = result?.user || result?.data?.user;
       
-      setLoading(false);
-      return { success: true, data: result };
+      if (user && access_token) {
+        // Prevent auto-loading permissions during reset flow
+        isResettingPasswordRef.current = true;
+        
+        // Update auth state and wait for state to sync
+        loginSuccess(user, access_token);
+        await new Promise(resolve => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              setTimeout(resolve, 100);
+            });
+          });
+        });
+        
+        // Fetch profile with new token
+        await fetchAndUpdateProfile();
+        
+        // Allow permissions to load
+        isResettingPasswordRef.current = false;
+        
+        setLoading(false);
+        return { success: true, data: result };
+      } else {
+        debugError('Reset password response missing user or token:', result);
+        setLoading(false);
+        return { success: false, error: 'Invalid reset password response' };
+      }
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Password reset failed';
       setError(errorMessage);
@@ -349,11 +404,13 @@ export const useAuth = () => {
       return;
     }
     
+    // Load profile if missing
     if (state.isAuthenticated && state.token && !state.user && !profileInitRef.current) {
       loadProfile();
     }
     
-    if (state.isAuthenticated && state.token && !state.permissions && !state.isLoadingPermissions && !permissionsLoadRef.current) {
+    // Load permissions if missing and not during password reset
+    if (state.isAuthenticated && state.token && !state.permissions && !state.isLoadingPermissions && !permissionsLoadRef.current && !isResettingPasswordRef.current) {
       permissionsLoadRef.current = true;
       loadPermissions();
     }
@@ -374,6 +431,7 @@ export const useAuth = () => {
     checkPermissions,
     loadProfile,
     loadPermissions,
+    isResettingPasswordRef,
   }), [
     state.user,
     state.token,

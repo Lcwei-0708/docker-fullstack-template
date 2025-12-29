@@ -74,7 +74,8 @@ export const authService = {
   validateResetToken: (resetToken, config = {}) => 
     apiService.get(`${BASE_AUTH}/validate-reset-token`, {}, {
       headers: { Authorization: `Bearer ${resetToken}` },
-      showErrorToast: true,
+      noToken: true,
+      showErrorToast: false,
       showSuccessToast: false,
       messageMap: {
         success: i18n.t('pages.auth.validateResetToken.messages.success', 'Reset token is valid'),

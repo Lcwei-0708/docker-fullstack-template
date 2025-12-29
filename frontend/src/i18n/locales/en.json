@@ -17,7 +17,6 @@
       "filter": "Filter",
       "reset": "Reset",
       "resetPassword": "Reset Password",
-      "resetting": "Resetting...",
       "select": "Select",
       "none": "None",
       "openMenu": "Open menu",
@@ -278,8 +277,34 @@
         }
       },
       "resetPassword": {
+        "title": "Reset Password",
+        "fields": {
+          "password": {
+            "label": "New Password",
+            "validation": {
+              "required": "Please enter your new password",
+              "minLength": "Password must be at least 6 characters"
+            }
+          },
+          "confirmPassword": {
+            "label": "Confirm New Password",
+            "validation": {
+              "required": "Please confirm your new password",
+              "notMatch": "Passwords do not match"
+            }
+          }
+        },
+        "actions": {
+          "submit": "Reset Password",
+          "backToLogin": "Back to Login"
+        },
         "messages": {
           "success": "Password reset successful"
+        },
+        "errors": {
+          "invalidToken": "Invalid or expired reset token",
+          "invalidTokenTitle": "Reset Password Link Expired",
+          "invalidTokenMessage": "The reset password link has expired or is invalid. Please request a new one."
         }
       },
       "validateResetToken": {

@@ -216,6 +216,15 @@ export const LoginForm = ({ className, redirectTo = '/', ...props }) => {
         setTimeout(() => {
           navigateRef.current(redirectToRef.current, { replace: true })
         }, 0)
+      } else if (result.requiresPasswordReset && result.resetToken) {
+        // Redirect to reset password page with token
+        emailRef.current = ''
+        emailPersistRef.current = ''
+        setEmailValueRef.current('')
+        formMethodsRef.current.reset({ email: '', password: '' }, { keepValues: false })
+        setTimeout(() => {
+          navigateRef.current(`/reset-password?token=${encodeURIComponent(result.resetToken)}`, { replace: true })
+        }, 0)
       } else {
         const emailToKeep = formValues.email || emailRef.current || emailPersistRef.current
         

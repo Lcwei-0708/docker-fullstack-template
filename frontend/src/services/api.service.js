@@ -34,7 +34,9 @@ apiClient.interceptors.request.use(
   async (config) => {
     // Skip token if noToken is true
     if (config.noToken) {
-      delete config.headers.Authorization;
+      if (!config.headers || !config.headers.Authorization) {
+        delete config.headers?.Authorization;
+      }
       return config;
     }
 
@@ -71,6 +73,16 @@ apiClient.interceptors.response.use(
     const showSuccessToast = config?.showSuccessToast;
     const messageMap = config?.messageMap;
     const successMessage = config?.successMessage || (messageMap && messageMap.success);
+    
+    // 202 indicates password reset is required
+    if (response.status === 202) {
+      // Don't show success toast for 202, as it requires special handling
+      if (response.data) {
+        const responseData = response.data.data !== undefined ? response.data.data : response.data;
+        return { ...responseData, _statusCode: 202 };
+      }
+      return { _statusCode: 202 };
+    }
     
     if (successMessage && showSuccessToast === true) {
       toast.success(successMessage);
