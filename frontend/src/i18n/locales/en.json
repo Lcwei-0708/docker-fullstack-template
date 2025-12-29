@@ -299,12 +299,8 @@
           "backToLogin": "Back to Login"
         },
         "messages": {
-          "success": "Password reset successful"
-        },
-        "errors": {
-          "invalidToken": "Invalid or expired reset token",
-          "invalidTokenTitle": "Reset Password Link Expired",
-          "invalidTokenMessage": "The reset password link has expired or is invalid. Please request a new one."
+          "success": "Password reset successful",
+          "invalidToken": "The reset password link has expired or is invalid. Please request a new one."
         }
       },
       "validateResetToken": {

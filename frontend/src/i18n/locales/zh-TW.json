@@ -298,12 +298,8 @@
           "backToLogin": "返回登入"
         },
         "messages": {
-          "success": "密碼重設成功"
-        },
-        "errors": {
-          "invalidToken": "無效或已過期的重設令牌",
-          "invalidTokenTitle": "重設密碼連結已過期",
-          "invalidTokenMessage": "重設密碼連結已過期或無效，請重新申請。"
+          "success": "密碼重設成功",
+          "invalidToken": "重設密碼連結已失效或無效，請重新申請。"
         }
       },
       "validateResetToken": {

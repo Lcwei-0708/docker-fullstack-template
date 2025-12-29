@@ -7,7 +7,8 @@ export const authService = {
   // Register new user account
   register: (registerData, config = {}) => 
     apiService.post(`${BASE_AUTH}/register`, registerData, { 
-      noToken: true, 
+      noToken: true,
+      retryOn401: false,
       showErrorToast: true,
       showSuccessToast: true,
       messageMap: {
@@ -21,7 +22,8 @@ export const authService = {
   // Login user
   login: (loginData, config = {}) => 
     apiService.post(`${BASE_AUTH}/login`, loginData, { 
-      noToken: true, 
+      noToken: true,
+      retryOn401: false,
       showErrorToast: true,
       showSuccessToast: true,
       messageMap: {
@@ -47,7 +49,8 @@ export const authService = {
   // Get token
   getToken: (config = {}) => 
     apiService.post(`${BASE_AUTH}/token`, {}, { 
-      noToken: true, 
+      noToken: true,
+      retryOn401: false,
       showErrorToast: false,
       showSuccessToast: false,
       messageMap: {
@@ -61,10 +64,12 @@ export const authService = {
   resetPassword: (newPassword, resetToken, config = {}) => 
     apiService.post(`${BASE_AUTH}/reset-password`, { new_password: newPassword }, {
       headers: { Authorization: `Bearer ${resetToken}` },
+      retryOn401: false,
       showErrorToast: true,
       showSuccessToast: true,
       messageMap: {
         success: i18n.t('pages.auth.resetPassword.messages.success', 'Password reset successful'),
+        401: i18n.t('pages.auth.resetPassword.messages.invalidToken', 'The reset password link has expired or is invalid. Please request a new one.'),
         ...config.messageMap,
       },
       ...config,
@@ -75,6 +80,7 @@ export const authService = {
     apiService.get(`${BASE_AUTH}/validate-reset-token`, {}, {
       headers: { Authorization: `Bearer ${resetToken}` },
       noToken: true,
+      retryOn401: false,
       showErrorToast: false,
       showSuccessToast: false,
       messageMap: {

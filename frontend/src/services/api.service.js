@@ -95,8 +95,9 @@ apiClient.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
+    const retryOn401 = originalRequest.retryOn401 !== false; // Default to true for backward compatibility
 
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.noToken && !isGettingToken) {
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.noToken && !isGettingToken && retryOn401) {
       const errorMessage = error.response?.data?.message || '';
       const isPasswordError = errorMessage.includes('Current password is incorrect') || 
                              errorMessage.includes('password is incorrect') ||
@@ -175,6 +176,7 @@ export const apiService = {
    * @param {object} params - Query parameters
    * @param {object} config - Axios config
    * @param {boolean} config.noToken - Skip authentication token (default: false)
+   * @param {boolean} config.retryOn401 - Retry request with new token on 401 error (default: true)
    * @param {boolean} config.showErrorToast - Show error toast (default: false)
    * @param {boolean} config.showSuccessToast - Show success toast (default: false)
    * @param {string} config.customMessage - Custom error message
@@ -192,6 +194,7 @@ export const apiService = {
    * @param {object} data - Request body data
    * @param {object} config - Axios config
    * @param {boolean} config.noToken - Skip authentication token (default: false)
+   * @param {boolean} config.retryOn401 - Retry request with new token on 401 error (default: true)
    * @param {boolean} config.showErrorToast - Show error toast (default: false)
    * @param {boolean} config.showSuccessToast - Show success toast (default: false)
    * @param {string} config.customMessage - Custom error message
@@ -209,6 +212,7 @@ export const apiService = {
    * @param {object} data - Request body data
    * @param {object} config - Axios config
    * @param {boolean} config.noToken - Skip authentication token (default: false)
+   * @param {boolean} config.retryOn401 - Retry request with new token on 401 error (default: true)
    * @param {boolean} config.showErrorToast - Show error toast (default: false)
    * @param {boolean} config.showSuccessToast - Show success toast (default: false)
    * @param {string} config.customMessage - Custom error message
@@ -225,6 +229,7 @@ export const apiService = {
    * @param {string} url - API endpoint
    * @param {object} config - Axios config
    * @param {boolean} config.noToken - Skip authentication token (default: false)
+   * @param {boolean} config.retryOn401 - Retry request with new token on 401 error (default: true)
    * @param {boolean} config.showErrorToast - Show error toast (default: false)
    * @param {boolean} config.showSuccessToast - Show success toast (default: false)
    * @param {string} config.customMessage - Custom error message

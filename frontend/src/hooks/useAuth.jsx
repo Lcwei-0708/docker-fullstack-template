@@ -125,8 +125,6 @@ export const useAuth = () => {
         throw new Error('Invalid login response format');
       }
     } catch (error) {
-      let errorMessage = error.response?.data?.message || error.message || 'Login failed';
-      
       // Check if error response indicates password reset is required (202 status)
       if (error.response?.status === 202) {
         const resetToken = error.response?.data?.data?.reset_token || error.response?.data?.reset_token;
@@ -139,16 +137,8 @@ export const useAuth = () => {
         };
       }
       
-      const status = error.response?.status;
-      const is401Error = status === 401 || 
-                        error.message?.includes('401') || 
-                        (error.code === 'ERR_BAD_REQUEST' && error.message?.includes('Unauthorized'));
-      
-      if (is401Error) {
-        errorMessage = i18n.t('pages.auth.login.messages.invalidCredentials', { 
-          defaultValue: 'Invalid email or password' 
-        });
-      }
+      // Get error message from response or use default
+      const errorMessage = error.response?.data?.message || error.message || 'Login failed';
       
       setError(errorMessage);
       setLoading(false);
@@ -282,9 +272,10 @@ export const useAuth = () => {
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Password reset failed';
+      const status = error.response?.status;
       setError(errorMessage);
       setLoading(false);
-      return { success: false, error: errorMessage };
+      return { success: false, error: errorMessage, status };
     }
   }, [setLoading, clearError, loginSuccess, fetchAndUpdateProfile, setError]);
 

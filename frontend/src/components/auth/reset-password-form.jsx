@@ -192,10 +192,18 @@ export const ResetPasswordForm = ({ className, token, ...props }) => {
           navigateRef.current('/', { replace: true })
         }, 0)
       } else {
+        // Check if error is 401 (token expired/invalid)
+        if (result.status === 401) {
+          setTokenValid(false)
+        }
         setIsSubmitting(false)
       }
     } catch (error) {
       debugError('Reset password error:', error)
+      // Check if error is 401 (token expired/invalid)
+      if (error.response?.status === 401) {
+        setTokenValid(false)
+      }
       setIsSubmitting(false)
     }
   }, [token, tokenValid, stableDefaultValues])
@@ -239,7 +247,7 @@ export const ResetPasswordForm = ({ className, token, ...props }) => {
       <div className={cn('space-y-6', className)}>
         <div className="text-center">
           <p className="text-muted-foreground text-sm">
-            {t('pages.auth.resetPassword.errors.invalidTokenMessage', { defaultValue: 'The reset password link has expired or is invalid. Please request a new one.' })}
+            {t('pages.auth.resetPassword.messages.invalidToken', { defaultValue: 'The reset password link has expired or is invalid. Please request a new one.' })}
           </p>
         </div>
         <div className="flex justify-center pt-2">
