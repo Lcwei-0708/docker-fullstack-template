@@ -3,14 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Drawer,
   DrawerContent,
@@ -54,6 +48,7 @@ export function UserCard({
 }) {
   const { t } = useTranslation();
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
+  const [isActionsDrawerOpen, setIsActionsDrawerOpen] = React.useState(false);
   const longPressTimerRef = React.useRef(null);
   const isLongPressRef = React.useRef(false);
 
@@ -104,9 +99,8 @@ export function UserCard({
   };
 
   const handleCardClick = (e) => {
-    // Prevent opening drawer when clicking on dropdown menu
-    if (e.target.closest('[data-slot="dropdown-menu-trigger"]') || 
-        e.target.closest('[data-slot="dropdown-menu-content"]')) {
+    // Prevent opening drawer when clicking on action button
+    if (e.target.closest('[data-action-button]')) {
       return;
     }
 
@@ -125,6 +119,17 @@ export function UserCard({
     isLongPressRef.current = false;
   };
 
+  const handleActionClick = (action) => {
+    setIsActionsDrawerOpen(false);
+    if (action === 'edit') {
+      onEdit?.(user);
+    } else if (action === 'resetPassword') {
+      onResetPassword?.(user);
+    } else if (action === 'delete') {
+      onDelete?.(user);
+    }
+  };
+
   // Cleanup on unmount
   React.useEffect(() => {
     return () => {
@@ -139,7 +144,7 @@ export function UserCard({
     <>
       <Card 
         className={cn(
-          "shadow-xs border-y-0 border-x-5 border-transparent rounded-none py-2 cursor-pointer bg-background hover:bg-accent/50 select-none",
+          "shadow-xs border-y-0 border-x-5 border-transparent rounded-none py-2 cursor-pointer bg-popover hover:bg-accent/50 select-none",
           isSelectionMode && isSelected && "bg-primary/1 border-l-primary"
         )}
         onClick={handleCardClick}
@@ -203,45 +208,21 @@ export function UserCard({
                     </span>
                   </Button>
                 ) : (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 rounded-sm"
-                      >
-                        <MoreHorizontal className="size-4" />
-                        <span className="sr-only">
-                          {t("common.actions.openMenu", "Open menu")}
-                        </span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-auto">
-                      <DropdownMenuItem
-                        className="flex items-center justify-between gap-8 rounded-xs"
-                        onSelect={() => onEdit?.(user)}
-                      >
-                        {t("common.actions.edit", "Edit")}
-                        <Edit className="size-4" />
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="flex items-center justify-between gap-8 rounded-xs"
-                        onSelect={() => onResetPassword?.(user)}
-                      >
-                        {t("common.actions.resetPassword", "Reset Password")}
-                        <Key className="size-4" />
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        variant="destructive"
-                        className="flex items-center justify-between gap-8 rounded-xs"
-                        onClick={() => onDelete?.(user)}
-                      >
-                        {t("common.actions.delete", "Delete")}
-                        <Trash2 className="size-4" />
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 rounded-sm"
+                    data-action-button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsActionsDrawerOpen(true);
+                    }}
+                  >
+                    <MoreHorizontal className="size-4" />
+                    <span className="sr-only">
+                      {t("common.actions.openMenu", "Open menu")}
+                    </span>
+                  </Button>
                 )}
               </div>
             )}
@@ -329,6 +310,65 @@ export function UserCard({
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Actions Drawer */}
+      <Drawer open={isActionsDrawerOpen} onOpenChange={setIsActionsDrawerOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle className="text-xl font-semibold">
+              {fullName}
+            </DrawerTitle>
+            <DrawerDescription>
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="px-6 pb-10 pt-2">
+            <div className="space-y-6">
+              {/* General Actions Group */}
+              <div className="space-y-2">
+                <div className="overflow-hidden rounded-lg border">
+                  <Button
+                    variant="default"
+                    className="w-full justify-between gap-3 h-auto py-4 px-4 rounded-none bg-input text-card-foreground hover:bg-accent"
+                    onClick={() => handleActionClick('edit')}
+                  >
+                    <span className="flex-1 text-left">
+                      {t("common.actions.edit", "Edit")}
+                    </span>
+                    <Edit className="size-5 shrink-0" />
+                  </Button>
+                  <Separator className="!w-[95%] mx-auto" />
+                  <Button
+                    variant="default"
+                    className="w-full justify-between gap-3 h-auto py-4 px-4 rounded-none bg-input text-card-foreground hover:bg-accent"
+                    onClick={() => handleActionClick('resetPassword')}
+                  >
+                    <span className="flex-1 text-left">
+                      {t("common.actions.resetPassword", "Reset Password")}
+                    </span>
+                    <Key className="size-5 shrink-0" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Dangerous Actions Group */}
+              <div className="space-y-2">
+                <div className="overflow-hidden rounded-lg border border-destructive/20">
+                  <Button
+                    variant="destructive"
+                    className="w-full justify-between gap-3 h-auto py-4 px-4 bg-destructive/15 text-destructive hover:bg-accent"
+                    onClick={() => handleActionClick('delete')}
+                  >
+                    <span className="flex-1 text-left">
+                      {t("common.actions.delete", "Delete")}
+                    </span>
+                    <Trash2 className="size-5 shrink-0" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </DrawerContent>

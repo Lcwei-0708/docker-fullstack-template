@@ -32,16 +32,15 @@ const buttonVariants = cva(
   }
 )
 
-const Button = React.forwardRef(({ className, variant, size, onMouseDown, asChild = false, ...props }, ref) => {
+const Button = React.forwardRef(({ className, variant, size, onMouseDown, onTouchStart, asChild = false, ...props }, ref) => {
   const Comp = asChild ? Slot : "button"
 
-  const handleMouseDown = (e) => {
-    const button = e.currentTarget
+  const createRipple = (button, clientX, clientY) => {
     const rect = button.getBoundingClientRect()
     const rippleSize = Math.max(rect.width, rect.height)
     const rippleRadius = rippleSize / 2
-    const left = e.clientX - rect.left - rippleRadius
-    const top = e.clientY - rect.top - rippleRadius
+    const left = clientX - rect.left - rippleRadius
+    const top = clientY - rect.top - rippleRadius
 
     const ripple = document.createElement("span")
     ripple.style.width = ripple.style.height = `${rippleSize}px`
@@ -130,8 +129,19 @@ const Button = React.forwardRef(({ className, variant, size, onMouseDown, asChil
     setTimeout(() => {
       ripple.remove()
     }, 800)
+  }
 
+  const handleMouseDown = (e) => {
+    createRipple(e.currentTarget, e.clientX, e.clientY)
     if (onMouseDown) onMouseDown(e)
+  }
+
+  const handleTouchStart = (e) => {
+    const touch = e.touches[0]
+    if (touch) {
+      createRipple(e.currentTarget, touch.clientX, touch.clientY)
+    }
+    if (onTouchStart) onTouchStart(e)
   }
 
   return (
@@ -139,6 +149,7 @@ const Button = React.forwardRef(({ className, variant, size, onMouseDown, asChil
       className={cn(buttonVariants({ variant, size, className }))}
       ref={ref}
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
       {...props}
     />
   );
