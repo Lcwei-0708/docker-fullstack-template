@@ -34,17 +34,26 @@ async def create_role_attributes():
         try:
             attributes = get_attributes()
             created_count = 0
+            updated_count = 0
             
             for attr_config in attributes:
                 existing_attr = await db.execute(
                     select(RoleAttributes).where(RoleAttributes.name == attr_config["name"])
                 )
-                if existing_attr.scalar_one_or_none():
+                existing = existing_attr.scalar_one_or_none()
+                if existing:
+                    if getattr(existing, "group", None) is None and attr_config.get("group") is not None:
+                        existing.group = attr_config.get("group")
+                        updated_count += 1
+                    if getattr(existing, "category", None) is None and attr_config.get("category") is not None:
+                        existing.category = attr_config.get("category")
+                        updated_count += 1
                     continue
                 
                 attribute = RoleAttributes(
                     name=attr_config["name"],
-                    description=attr_config["description"]
+                    group=attr_config.get("group"),
+                    category=attr_config.get("category"),
                 )
                 db.add(attribute)
                 created_count += 1

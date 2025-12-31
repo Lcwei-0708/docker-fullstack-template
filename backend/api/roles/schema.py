@@ -32,13 +32,58 @@ class RoleAttributesMapping(BaseModel):
     def get_example_response(cls):
         return {
             "code": 200,
-            "message": "Successfully retrieved role attributes mapping",
+            "message": "Role attributes mapping example",
             "data": {
                 "attributes": {
                     "view-users": True,
                     "manage-users": False,
                     "view-roles": True
                 }
+            }
+        }
+
+class RoleAttributeDetail(BaseModel):
+    name: str = Field(..., description="Attribute name", example="view-users")
+    value: bool = Field(..., description="Whether the role has this attribute", example=True)
+
+
+class RoleAttributesGroup(BaseModel):
+    group: str = Field(..., description="Top-level group key", example="user-role-management")
+    categories: Dict[str, List[RoleAttributeDetail]] = Field(..., description="Categories inside this group (category -> attributes)")
+
+
+class RoleAttributesGroupedResponse(BaseModel):
+    groups: List[RoleAttributesGroup] = Field(..., description="Role attributes grouped by group and category")
+
+    @classmethod
+    def get_example_response(cls):
+        return {
+            "code": 200,
+            "message": "Successfully retrieved role attributes mapping",
+            "data": {
+                "groups": [
+                    {
+                        "group": "user-role-management",
+                        "categories": {
+                            "user": [
+                                {
+                                    "name": "view-users",
+                                    "value": True
+                                },
+                                {
+                                    "name": "manage-users",
+                                    "value": False
+                                }
+                            ],
+                            "role": [
+                                {
+                                    "name": "view-roles",
+                                    "value": True
+                                }
+                            ]
+                        }
+                    }
+                ]
             }
         }
 

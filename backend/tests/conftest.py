@@ -423,13 +423,11 @@ async def users_test_role_attributes(test_db_session: AsyncSession, users_test_r
     
     view_users_attr = RoleAttributes(
         id=str(uuid4()),
-        name="view-users",
-        description="Permission to view user information"
+        name="view-users"
     )
     manage_users_attr = RoleAttributes(
         id=str(uuid4()),
-        name="manage-users", 
-        description="Permission to manage users"
+        name="manage-users"
     )
     
     test_db_session.add(view_users_attr)

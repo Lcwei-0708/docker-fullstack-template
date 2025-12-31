@@ -14,6 +14,7 @@ from .services import (
 from .schema import (
     RoleResponse, RoleCreate, RoleUpdate, RolesListResponse,
     RoleAttributesMapping, RoleAttributeMappingBatchResponse,
+    RoleAttributesGroupedResponse,
     PermissionCheckResponse,
     role_attributes_success_response_example, role_attributes_partial_response_example, 
     role_attributes_failed_response_example
@@ -130,11 +131,11 @@ async def delete_role_api(
 
 @router.get(
     "/{role_id}/attributes",
-    response_model=APIResponse[RoleAttributesMapping],
+    response_model=APIResponse[RoleAttributesGroupedResponse],
     response_model_exclude_none=True,
     summary="Get role attributes mapping",
     responses=parse_responses({
-        200: ("Successfully retrieved role attributes mapping", RoleAttributesMapping, RoleAttributesMapping.get_example_response()),
+        200: ("Successfully retrieved role attributes mapping", RoleAttributesGroupedResponse, RoleAttributesGroupedResponse.get_example_response()),
         404: ("Role not found", None)
     }, common_responses)
 )
