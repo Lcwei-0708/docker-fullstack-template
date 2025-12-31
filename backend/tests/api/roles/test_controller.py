@@ -4,7 +4,7 @@ from httpx import AsyncClient
 from api.roles.schema import (
     RoleResponse,
     RolesListResponse,
-    RoleAttributesMapping,
+    RoleAttributesGroupedResponse,
     RoleAttributeMappingBatchResponse,
     AttributeMappingResult,
     PermissionCheckResponse,
@@ -346,8 +346,21 @@ class TestGetRoleAttributeMappingAPI:
         with patch(
             "api.roles.controller.get_role_attribute_mapping"
         ) as mock_get_mapping:
-            mock_mapping = RoleAttributesMapping(
-                attributes={"attr-1": True, "attr-2": False, "attr-3": True}
+            mock_mapping = RoleAttributesGroupedResponse(
+                groups=[
+                    {
+                        "group": "user-role-management",
+                        "categories": {
+                            "user": [
+                                {"name": "attr-1", "value": True},
+                                {"name": "attr-2", "value": False},
+                            ],
+                            "role": [
+                                {"name": "attr-3", "value": True},
+                            ],
+                        },
+                    },
+                ]
             )
             mock_get_mapping.return_value = mock_mapping
 
@@ -361,9 +374,11 @@ class TestGetRoleAttributeMappingAPI:
             assert data["code"] == 200
             assert data["message"] == "Successfully retrieved role attributes mapping"
             assert "data" in data
-            assert "attributes" in data["data"]
-            assert data["data"]["attributes"]["attr-1"] is True
-            assert data["data"]["attributes"]["attr-2"] is False
+            assert "groups" in data["data"]
+            groups = {g["group"]: {cat: {a["name"]: a for a in attrs} for cat, attrs in g["categories"].items()} for g in data["data"]["groups"]}
+            assert groups["user-role-management"]["user"]["attr-1"]["value"] is True
+            assert groups["user-role-management"]["user"]["attr-2"]["value"] is False
+            assert groups["user-role-management"]["role"]["attr-3"]["value"] is True
 
     @pytest.mark.asyncio
     async def test_get_role_attribute_mapping_not_found(

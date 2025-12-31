@@ -6,6 +6,7 @@ from api.roles.schema import (
     RoleCreate,
     RoleUpdate,
     RoleAttributesMapping,
+    RoleAttributesGroupedResponse,
     AttributeMappingResult,
     RoleAttributeMappingBatchResponse,
     PermissionCheckRequest,
@@ -212,6 +213,37 @@ class TestRoleAttributesMapping:
         assert "data" in example
         assert example["code"] == 200
         assert "attributes" in example["data"]
+
+
+class TestRoleAttributesGroupedResponse:
+    """Test RoleAttributesGroupedResponse schema validation"""
+
+    def test_role_attributes_grouped_response_valid_data(self):
+        data = {
+            "groups": [
+                {
+                    "group": "user-role-management",
+                    "categories": {
+                        "user": [
+                            {"name": "view-users", "value": True},
+                            {"name": "manage-users", "value": False},
+                        ]
+                    },
+                }
+            ]
+        }
+
+        result = RoleAttributesGroupedResponse(**data)
+        assert len(result.groups) == 1
+        assert result.groups[0].group == "user-role-management"
+        assert "user" in result.groups[0].categories
+        assert result.groups[0].categories["user"][0].name == "view-users"
+        assert result.groups[0].categories["user"][0].value is True
+
+    def test_get_example_response(self):
+        example = RoleAttributesGroupedResponse.get_example_response()
+        assert example["code"] == 200
+        assert "groups" in example["data"]
 
 
 class TestAttributeMappingResult:

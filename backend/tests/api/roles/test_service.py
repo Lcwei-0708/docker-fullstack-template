@@ -276,12 +276,12 @@ class TestGetRoleAttributeMapping:
         """Test successful role attributes mapping retrieval"""
         # Create test role and attributes
         role = Roles(id="role-1", name="admin", description="Admin role")
-        attr1 = RoleAttributes(id="attr-1", name="view-users", description="View users")
+        attr1 = RoleAttributes(id="attr-1", name="view-users", group="user-role-management", category="user")
         attr2 = RoleAttributes(
-            id="attr-2", name="manage-roles", description="Manage roles"
+            id="attr-2", name="manage-roles", group="user-role-management", category="role"
         )
         attr3 = RoleAttributes(
-            id="attr-3", name="edit-content", description="Edit content"
+            id="attr-3", name="edit-content", group=None, category=None
         )
 
         test_db_session.add(role)
@@ -304,10 +304,15 @@ class TestGetRoleAttributeMapping:
 
         result = await get_role_attribute_mapping(test_db_session, "role-1")
 
-        assert len(result.attributes) == 3
-        assert result.attributes["view-users"] is True
-        assert result.attributes["manage-roles"] is False
-        assert result.attributes["edit-content"] is False  # No mapping, defaults to False
+        groups = {g.group: {cat: {a.name: a for a in attrs} for cat, attrs in g.categories.items()} for g in result.groups}
+        assert set(groups.keys()) == {"default", "user-role-management"}
+
+        assert groups["user-role-management"]["user"]["view-users"].value is True
+
+        assert groups["user-role-management"]["role"]["manage-roles"].value is False
+
+        # No mapping, defaults to False; and both group/category missing -> default/uncategorized
+        assert groups["default"]["uncategorized"]["edit-content"].value is False
 
     @pytest.mark.asyncio
     async def test_get_role_attribute_mapping_role_not_found(
@@ -343,9 +348,9 @@ class TestUpdateRoleAttributeMapping:
         """Test successful role attributes mapping update"""
         # Create test role and attributes
         role = Roles(id="role-1", name="admin", description="Admin role")
-        attr1 = RoleAttributes(id="attr-1", name="view-users", description="View users")
+        attr1 = RoleAttributes(id="attr-1", name="view-users")
         attr2 = RoleAttributes(
-            id="attr-2", name="manage-roles", description="Manage roles"
+            id="attr-2", name="manage-roles"
         )
 
         test_db_session.add(role)
@@ -371,7 +376,7 @@ class TestUpdateRoleAttributeMapping:
         """Test role attributes mapping update with partial success"""
         # Create test role and valid attribute
         role = Roles(id="role-1", name="admin", description="Admin role")
-        attr1 = RoleAttributes(id="attr-1", name="view-users", description="View users")
+        attr1 = RoleAttributes(id="attr-1", name="view-users")
 
         test_db_session.add(role)
         test_db_session.add(attr1)
@@ -446,12 +451,12 @@ class TestCheckUserPermissions:
         # Create test role, attributes and mappings
         # Use a different role name to avoid super admin check
         role = Roles(id="role-1", name="test-role", description="Test role")
-        attr1 = RoleAttributes(id="attr-1", name="view-users", description="View users")
+        attr1 = RoleAttributes(id="attr-1", name="view-users")
         attr2 = RoleAttributes(
-            id="attr-2", name="manage-roles", description="Manage roles"
+            id="attr-2", name="manage-roles"
         )
         attr3 = RoleAttributes(
-            id="attr-3", name="edit-content", description="Edit content"
+            id="attr-3", name="edit-content"
         )
 
         role_mapping = RoleMapper(user_id="user-1", role_id="role-1")

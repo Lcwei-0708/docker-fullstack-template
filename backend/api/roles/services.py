@@ -9,7 +9,8 @@ from models.role_attributes_mapper import RoleAttributesMapper
 from utils.custom_exception import ServerException, ConflictException, NotFoundException
 from .schema import (
     RoleResponse, RoleCreate, RoleUpdate, RolesListResponse,
-    RoleAttributesMapping, RoleAttributeMappingBatchResponse, AttributeMappingResult,
+    RoleAttributeMappingBatchResponse, AttributeMappingResult,
+    RoleAttributesGroupedResponse, RoleAttributesGroup, RoleAttributeDetail,
     PermissionCheckResponse
 )
 
@@ -129,8 +130,8 @@ async def delete_role(db: AsyncSession, role_id: str) -> bool:
     except Exception as e:
         raise ServerException(f"Failed to delete role: {str(e)}")
 
-async def get_role_attribute_mapping(db: AsyncSession, role_id: str) -> RoleAttributesMapping:
-    """Get role attributes mapping with all available attributes (left join)"""
+async def get_role_attribute_mapping(db: AsyncSession, role_id: str) -> RoleAttributesGroupedResponse:
+    """Get role attributes mapping grouped by group and category (left join)."""
     try:
         role_result = await db.execute(
             select(Roles).where(Roles.id == role_id)
@@ -142,6 +143,8 @@ async def get_role_attribute_mapping(db: AsyncSession, role_id: str) -> RoleAttr
         # Use LEFT JOIN to get all attributes and their mappings
         query = select(
             RoleAttributes.name,
+            RoleAttributes.group,
+            RoleAttributes.category,
             RoleAttributesMapper.value
         ).select_from(
             RoleAttributes
@@ -155,13 +158,32 @@ async def get_role_attribute_mapping(db: AsyncSession, role_id: str) -> RoleAttr
         
         result = await db.execute(query)
         rows = result.all()
-        
-        attributes_dict = {}
+
+        grouped: Dict[str, Dict[str, List[RoleAttributeDetail]]] = {}
         for row in rows:
-            # If value is None (no mapping), set to False
-            attributes_dict[row.name] = row.value if row.value is not None else False
-        
-        return RoleAttributesMapping(attributes=attributes_dict)
+            group = row.group or "default"
+            category = row.category or "uncategorized"
+            grouped.setdefault(group, {}).setdefault(category, []).append(
+                RoleAttributeDetail(
+                    name=row.name,
+                    value=row.value if row.value is not None else False,
+                )
+            )
+
+        for categories in grouped.values():
+            for attrs in categories.values():
+                attrs.sort(key=lambda a: a.name)
+
+        groups = []
+        for group, categories in sorted(grouped.items(), key=lambda x: x[0]):
+            groups.append(
+                RoleAttributesGroup(
+                    group=group,
+                    categories={category: attrs for category, attrs in sorted(categories.items(), key=lambda x: x[0])},
+                )
+            )
+
+        return RoleAttributesGroupedResponse(groups=groups)
         
     except NotFoundException:
         raise
