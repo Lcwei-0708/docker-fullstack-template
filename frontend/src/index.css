@@ -221,7 +221,7 @@
   
   /* Custom Scrollbar Styles */
   * {
-    scrollbar-color: oklch(0. 0 0 / 0.5) transparent;
+    scrollbar-color: oklch(0.3 0 0 / 0.5) transparent;
   }
   
   *::-webkit-scrollbar-track {

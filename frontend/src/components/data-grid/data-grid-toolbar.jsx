@@ -127,7 +127,7 @@ function DataGridToolbar({
             <Button
               onClick={handleSearchClick}
               size="sm"
-              variant="default"
+              variant="secondary"
               className="size-9">
               <Search className="size-4" />
             </Button>

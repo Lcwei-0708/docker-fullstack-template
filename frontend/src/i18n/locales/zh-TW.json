@@ -8,11 +8,11 @@
       "submit": "送出",
       "save": "儲存",
       "delete": "刪除",
-      "deleting": "刪除中...",
       "edit": "編輯",
       "create": "建立",
       "update": "更新",
       "close": "關閉",
+      "clear": "清除",
       "search": "搜尋",
       "filter": "篩選",
       "reset": "重設",
@@ -419,8 +419,8 @@
       }
     },
     "usersManagement": {
-      "title": "使用者列表",
-      "description": "管理使用者帳號",
+      "title": "使用者管理",
+      "description": "管理系統使用者帳號及其相關資訊",
       "fields": {
         "firstName": {
           "label": "名字"
@@ -499,21 +499,78 @@
       }
     },
     "rolesManagement": {
+      "title": "角色管理",
+      "description": "管理系統角色與權限設定",
+      "searchPlaceholder": "搜尋角色名稱",
+      "noRolesFound": "找不到符合的角色",
+      "noRoles": "目前沒有角色",
+      "selectRole": "請選擇角色",
+      "selectRoleFromLeft": "請從左側選擇一個角色",
+      "noDescription": "無描述",
+      "actions": {
+        "selectAll": "全選",
+        "deselectAll": "取消全選"
+      },
+      "dialog": {
+        "editTitle": "編輯角色",
+        "createTitle": "建立角色",
+        "editDescription": "更新角色資訊",
+        "createDescription": "建立新的角色",
+        "deleteTitle": "刪除角色",
+        "deleteMessage": "您確定要刪除角色「{{name}}」嗎？",
+        "noAttributes": "目前沒有可用的權限屬性",
+        "hasChanges": "有未儲存的變更"
+      },
+      "fields": {
+        "name": {
+          "label": "角色名稱",
+          "placeholder": "請輸入角色名稱"
+        },
+        "description": {
+          "label": "角色敘述",
+          "placeholder": "請輸入角色敘述"
+        }
+      },
+      "groups": {
+        "systemManagement": "系統管理"
+      },
+      "categories": {
+        "roleManagement": "角色管理模組",
+        "userManagement": "使用者管理模組",
+        "other": "其他"
+      },
+      "attributes": {
+        "manageUsers": "管理使用者",
+        "viewUsers": "瀏覽使用者",
+        "manageRoles": "管理角色",
+        "viewRoles": "瀏覽角色"
+      },
       "messages": {
         "getAllRoles": {
           "success": "角色取得成功"
         },
         "createRole": {
-          "success": "角色建立成功"
+          "success": "角色建立成功",
+          "roleNameAlreadyExists": "角色名稱已存在"
         },
         "updateRole": {
-          "success": "角色更新成功"
+          "success": "角色更新成功",
+          "roleNotFound": "角色不存在",
+          "roleNameAlreadyExists": "角色名稱已存在"
         },
         "deleteRole": {
-          "success": "角色刪除成功"
+          "success": "角色刪除成功",
+          "roleNotFound": "角色不存在",
+          "roleInUse": "無法刪除已分配給使用者的角色"
+        },
+        "getRoleAttributes": {
+          "success": "角色屬性取得成功",
+          "roleNotFound": "角色不存在"
         },
         "updateRoleAttributes": {
-          "success": "角色屬性更新成功"
+          "success": "角色屬性更新成功",
+          "roleAttributesFailed": "角色屬性更新失敗",
+          "roleNotFound": "角色不存在"
         }
       }
     }

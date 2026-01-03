@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 import { Alert, AlertDescription, AlertIcon } from '@/components/ui/alert';
 import {
   AlertDialog,
@@ -177,7 +178,7 @@ export function DeleteUserDialog({
                 variant="destructive"
               >
                 {isDeleting
-                  ? t('common.actions.deleting', 'Deleting...')
+                  ? <Spinner className="size-4" />
                   : t('common.actions.delete', 'Delete')}
               </AlertDialogAction>
             </>
