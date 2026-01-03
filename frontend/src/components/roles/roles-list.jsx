@@ -21,6 +21,31 @@ export function RolesList({
   const { t } = useTranslation();
   const scrollerRef = React.useRef(null);
   const [scrollbarWidth, setScrollbarWidth] = React.useState(0);
+  const [delayedLoading, setDelayedLoading] = React.useState(false);
+
+  const rawIsLoading = !!isLoading;
+  const loadingDelayMs = 100;
+
+  // Delay showing the loading spinner to avoid flash on quick responses
+  React.useEffect(() => {
+    if (!rawIsLoading) {
+      setDelayedLoading(false);
+      return undefined;
+    }
+
+    if (!loadingDelayMs || loadingDelayMs <= 0) {
+      setDelayedLoading(true);
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => {
+      setDelayedLoading(true);
+    }, loadingDelayMs);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [rawIsLoading, loadingDelayMs]);
 
   const recomputeScrollbar = React.useCallback(() => {
     const el = scrollerRef.current;
@@ -93,7 +118,7 @@ export function RolesList({
             scrollbarGutter: "stable",
           }}
         >
-          {isLoading ? (
+          {delayedLoading ? (
             <div className="flex items-center justify-center py-12">
               <Spinner className="size-6" />
             </div>

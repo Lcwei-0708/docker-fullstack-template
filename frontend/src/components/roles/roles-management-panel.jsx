@@ -21,7 +21,6 @@ export function RolesManagementPanel({ canManageRoles = false }) {
   });
   const initialAttributesRef = React.useRef({});
   const selectedRoleIdRef = React.useRef(null);
-  const roleAttributesCacheRef = React.useRef(new Map());
 
   React.useEffect(() => {
     selectedRoleIdRef.current = selectedRole?.id ?? null;
@@ -81,7 +80,7 @@ export function RolesManagementPanel({ canManageRoles = false }) {
     const result = await rolesService.getRoleAttributes(roleId, { returnStatus: true });
     const payload = result?.data || {};
     const groups = payload?.groups || [];
-    const hasCached = roleAttributesCacheRef.current.has(roleId);
+
     // Support grouped permissions from the new API.
     if (result.status === "success" && Array.isArray(groups) && groups.length > 0) {
       const flat = {};
@@ -96,7 +95,6 @@ export function RolesManagementPanel({ canManageRoles = false }) {
           });
         });
       });
-      roleAttributesCacheRef.current.set(roleId, { groups, attributes: flat });
       if (selectedRoleIdRef.current === roleId) {
         setAttributeGroups(groups);
         setAttributes(flat);
@@ -110,7 +108,6 @@ export function RolesManagementPanel({ canManageRoles = false }) {
     if (result.status === "success") {
       // Support flat permissions from the legacy API.
       const attrs = payload?.attributes || {};
-      roleAttributesCacheRef.current.set(roleId, { groups: [], attributes: attrs });
       if (selectedRoleIdRef.current === roleId) {
         setAttributeGroups([]);
         setAttributes(attrs);
@@ -123,12 +120,10 @@ export function RolesManagementPanel({ canManageRoles = false }) {
 
     // Reset on error.
     if (selectedRoleIdRef.current === roleId) {
-      if (!hasCached) {
-        setAttributes({});
-        setAttributeGroups([]);
-        initialAttributesRef.current = {};
-        setHasChanges(false);
-      }
+      setAttributes({});
+      setAttributeGroups([]);
+      initialAttributesRef.current = {};
+      setHasChanges(false);
       setIsLoadingAttributes(false);
     }
   }, []);
@@ -136,13 +131,7 @@ export function RolesManagementPanel({ canManageRoles = false }) {
   // Load role details when selection changes.
   React.useEffect(() => {
     if (selectedRole?.id) {
-      const cached = roleAttributesCacheRef.current.get(selectedRole.id);
-      if (cached) {
-        setAttributeGroups(cached.groups || []);
-        setAttributes(cached.attributes || {});
-        initialAttributesRef.current = { ...(cached.attributes || {}) };
-        setHasChanges(false);
-      }
+      setIsLoadingAttributes(true);
       fetchRoleAttributes(selectedRole.id);
       setEditedRoleData({
         name: selectedRole.name || "",
