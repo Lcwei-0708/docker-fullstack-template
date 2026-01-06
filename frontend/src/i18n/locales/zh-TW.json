@@ -506,6 +506,7 @@
       "noRoles": "目前沒有角色",
       "selectRole": "請選擇角色",
       "selectRoleFromLeft": "請從左側選擇一個角色",
+      "rolePermissionsFor": "{{role}}的權限設定",
       "noDescription": "無描述",
       "actions": {
         "selectAll": "全選",

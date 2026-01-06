@@ -233,6 +233,7 @@ function Scroller(props) {
     // Initial compute (and re-compute after layout settles)
     scheduleRecompute();
     scheduleRecompute();
+    const timeoutId = window.setTimeout(scheduleRecompute, 100);
 
     container.addEventListener("scroll", scheduleRecompute);
     window.addEventListener("resize", scheduleRecompute);
@@ -249,6 +250,7 @@ function Scroller(props) {
 
     return () => {
       if (rafId !== null) window.cancelAnimationFrame(rafId);
+      window.clearTimeout(timeoutId);
       container.removeEventListener("scroll", scheduleRecompute);
       window.removeEventListener("resize", scheduleRecompute);
       document.removeEventListener("visibilitychange", scheduleRecompute);

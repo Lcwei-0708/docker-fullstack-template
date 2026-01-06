@@ -7,12 +7,8 @@ import { Spinner } from "@/components/ui/spinner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Scroller } from "@/components/ui/scroller"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { AlertDialog, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { DeleteRoleDialog } from "@/components/roles/delete-role-dialog"
-import { RoleFormDialog } from "@/components/roles/role-form-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Edit, Trash2, Shield, CheckCircle2, Circle, ChevronRight } from "lucide-react"
+import { Shield, CheckCircle2, Circle, ChevronRight } from "lucide-react"
 
 const toCamelKey = (input) => {
   if (!input || typeof input !== "string") return "";
@@ -57,34 +53,24 @@ const normalizeLegacyAttributesForDisplay = (attributesFlat = {}) => {
   return Object.entries(attributesFlat).map(([name, value]) => ({ name, value: !!value }));
 };
 
-export function RoleDetails({
+export function RolePermissionsDesktop({
   selectedRole,
-  isEditingRole = false,
-  editedRoleData = {
-    name: "",
-    description: "",
-  },
   attributes = {},
   attributeGroups = [],
   isLoadingAttributes = false,
+  isLoadingRoles = false,
   hasChanges = false,
   isSubmitting = false,
   canManageRoles = false,
-  onDeleteClick,
-  onRoleDataChange,
   onAttributeToggle,
-  onSaveRole,
-  onSaveRoleFromDialog,
   onSaveAttributes,
   onResetAttributes,
-  onCancelEdit,
 }) {
   const { t } = useTranslation();
-  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
-  const [isEditTooltipOpen, setIsEditTooltipOpen] = React.useState(false);
   const [openGroups, setOpenGroups] = React.useState({});
   const [delayedLoadingAttrs, setDelayedLoadingAttrs] = React.useState(false);
+  const detailsScrollerRef = React.useRef(null);
+  const [scrollbarWidth, setScrollbarWidth] = React.useState(0);
 
   const rawIsLoadingAttrs = !!isLoadingAttributes;
   const loadingDelayMs = 100;
@@ -130,6 +116,32 @@ export function RoleDetails({
   // Only show skeleton after the delay to avoid flicker on very fast loads
   const showSkeletonView = rawIsLoadingAttrs && delayedLoadingAttrs;
 
+  const recomputeScrollbar = React.useCallback(() => {
+    const el = detailsScrollerRef.current;
+    if (!el) return;
+    const width = Math.max(0, el.offsetWidth - el.clientWidth);
+    setScrollbarWidth(width);
+  }, []);
+
+  React.useLayoutEffect(() => {
+    // Recompute after layout.
+    const raf = window.requestAnimationFrame(recomputeScrollbar);
+    return () => window.cancelAnimationFrame(raf);
+  }, [
+    recomputeScrollbar,
+    selectedRole?.id,
+    showEmptyState,
+    showSkeletonView,
+    organizedGroups.length,
+    legacyAttributes.length,
+    openGroups,
+  ]);
+
+  React.useEffect(() => {
+    window.addEventListener("resize", recomputeScrollbar);
+    return () => window.removeEventListener("resize", recomputeScrollbar);
+  }, [recomputeScrollbar]);
+
   // Open all groups by default, but keep the user's open/close state.
   React.useEffect(() => {
     if (organizedGroups.length === 0) return;
@@ -141,21 +153,6 @@ export function RoleDetails({
       return next;
     });
   }, [organizedGroups]);
-  // Open the role form dialog when user enters create mode.
-  React.useEffect(() => {
-    if (!canManageRoles) return;
-
-    if (isEditingRole) {
-      setIsEditDialogOpen(true);
-    }
-  }, [isEditingRole, selectedRole, canManageRoles]);
-  // Close dialogs when switching roles.
-  React.useEffect(() => {
-    setIsDeleteDialogOpen(false);
-  }, [selectedRole?.id]);
-  React.useEffect(() => {
-    setIsEditTooltipOpen(false);
-  }, [selectedRole?.id]);
   const getGroupLabel = (name) => {
     const key = toCamelKey(name);
     return t(`pages.rolesManagement.groups.${key}`, name);
@@ -207,137 +204,52 @@ export function RoleDetails({
       }
     });
   }, [legacyAttributes, attributes, onAttributeToggle]);
-  // Submit role form (create/edit).
-  const handleRoleFormSubmit = React.useCallback(
-    async (data) => {
-      if (!data?.name?.trim()) return;
 
-      // Save via parent handler when available.
-      if (onSaveRoleFromDialog) {
-        const targetRoleId = isEditingRole ? null : (selectedRole?.id || null);
-        const ok = await onSaveRoleFromDialog(targetRoleId, data);
-        setIsEditDialogOpen(false);
-        if (ok === false && isEditingRole) {
-          onCancelEdit?.();
-        }
-        return;
-      }
-      // Fallback: update state then call legacy save.
-      onRoleDataChange?.(data);
-      setTimeout(() => {
-        onSaveRole?.();
-      }, 0);
-      setIsEditDialogOpen(false);
-    },
-    [isEditingRole, selectedRole, onRoleDataChange, onSaveRole, onSaveRoleFromDialog, onCancelEdit]
-  );
-  // Cancel role form.
-  const handleRoleFormCancel = React.useCallback(() => {
-    if (isEditingRole) {
-      onCancelEdit?.();
-    }
-    setIsEditDialogOpen(false);
-  }, [isEditingRole, onCancelEdit]);
-  // Open edit dialog.
-  const handleEditButtonClick = React.useCallback(() => {
-    setIsEditTooltipOpen(false);
-    setIsEditDialogOpen(true);
-  }, []);
+  const baseXPaddingPx = 20;
+  const scrollerPaddingRightPx = Math.max(0, baseXPaddingPx - scrollbarWidth - 2);
+  const roleTitle = selectedRole?.name || t("pages.rolesManagement.selectRoleFromLeft", "Select a role from the left");
+
   return (
     <>
       <Card className="flex-1 flex flex-col py-0 gap-0">
-        <CardHeader className="border-b !p-5 flex items-center justify-between">
-          <div className="flex flex-1 items-center justify-between">
-            <div className="flex-1 min-w-0">
-              {" "}
-              {selectedRole ? (
-                <>
-                  <CardTitle className="mb-2"> {selectedRole.name} </CardTitle>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {selectedRole.description || t("pages.rolesManagement.noDescription", "No description")}
-                  </p>
-                </>
-              ) : (
-                <CardTitle>
-                  {isEditingRole
-                    ? t("pages.rolesManagement.dialog.createTitle", "Create role")
-                    : t("pages.rolesManagement.selectRole", "Select a role")}
-                </CardTitle>
-              )}{" "}
+        <CardHeader className="border-b px-5 !py-4 h-20 flex items-center justify-between gap-3">
+          <CardTitle className="text-base font-semibold leading-none tracking-tight">
+            {selectedRole
+              ? t("pages.rolesManagement.rolePermissionsFor", "Permissions for {{role}}", { role: roleTitle })
+              : t("pages.rolesManagement.selectRoleFromLeft", "Select a role from the left")}
+          </CardTitle>
+          {hasChanges && canManageRoles && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                disabled={isSubmitting}
+                onClick={onResetAttributes}
+              >
+                {t("common.actions.cancel", "Cancel")}
+              </Button>
+              <Button
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                disabled={isSubmitting}
+                onClick={onSaveAttributes}
+              >
+                {isSubmitting ? <Spinner className="size-4" /> : t("common.actions.save", "Save")}
+              </Button>
             </div>
-            {selectedRole && canManageRoles && !isEditingRole && (
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Tooltip
-                  open={isEditTooltipOpen}
-                  onOpenChange={setIsEditTooltipOpen}
-                  disableHoverableContent={false}
-                >
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onPointerDown={() => setIsEditTooltipOpen(false)}
-                      onClick={() => {
-                        setIsEditTooltipOpen(false);
-                        handleEditButtonClick();
-                      }}
-                      aria-label={t("common.actions.edit", "Edit")}
-                    >
-                      <Edit className="size-4.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent sideOffset={3}>
-                    <p>{t("common.actions.edit", "Edit")}</p>
-                  </TooltipContent>
-                </Tooltip>
-                <AlertDialog
-                  open={isDeleteDialogOpen}
-                  onOpenChange={(next) => {
-                    setIsDeleteDialogOpen(next);
-                  }}
-                >
-                  <Tooltip disableHoverableContent={false}>
-                    <TooltipTrigger asChild>
-                      <span
-                        className="inline-flex"
-                      >
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={isSubmitting}
-                            aria-label={t("common.actions.delete", "Delete")}
-                          >
-                            <Trash2 className="size-4.5" />
-                          </Button>
-                        </AlertDialogTrigger>
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent sideOffset={3}>
-                      <p>{t("common.actions.delete", "Delete")}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <DeleteRoleDialog
-                    roleName={selectedRole?.name || ""}
-                    isSubmitting={isSubmitting}
-                    onConfirm={onDeleteClick}
-                  />
-                </AlertDialog>
-              </div>
-            )}{" "}
-          </div>
+          )}
         </CardHeader>
-        <CardContent className="flex-1 p-0">
+        <CardContent className="flex flex-col flex-1 p-0 px-0.5 overflow-hidden">
           <Scroller
-            hideScrollbar={false}
-            className="h-full max-h-[calc(100dvh-290px)]"
+            ref={detailsScrollerRef}
+            hideScrollbar="hover"
+            className="h-full max-h-[calc(100dvh-190px)]"
             style={{
-              paddingLeft: 20,
-              paddingRight: 20,
+              paddingLeft: baseXPaddingPx,
+              paddingRight: scrollerPaddingRightPx,
+              scrollbarGutter: "stable",
             }}
           >
-            {selectedRole || isEditingRole ? (
-              <div className="flex flex-col py-5">
+            {selectedRole ? (
+              <div className="flex flex-col pt-5 pb-5">
                 {selectedRole && (
                   <div className="relative">
                     {showEmptyState ? (
@@ -446,12 +358,12 @@ export function RoleDetails({
                                                     "inline-flex items-center justify-center gap-2 rounded-md px-3 h-9 text-sm font-normal",
                                                     "border",
                                                     isEnabled
-                                                      ? "bg-primary/10 border-primary/50 text-primary hover:text-primary hover:border-primary/75 hover:bg-primary/15"
-                                                      : "bg-background border-border text-muted-foreground",
-                                                    (!canManageRoles || isSubmitting) && "pointer-events-none opacity-60"
+                                                      ? "bg-primary/10 border-primary/50 text-primary hover:text-primary hover:border-primary/75 hover:bg-primary/15 disabled:opacity-100"
+                                                      : "bg-background border-border text-muted-foreground disabled:opacity-70",
+                                                    (!canManageRoles || isSubmitting) && "pointer-events-none"
                                                   )}
                                                 >
-                                                  {isEnabled ? <CheckCircle2 className="size-4" /> : <Circle className="size-4 text-muted-foreground" />}
+                                                  {isEnabled ? <CheckCircle2 className="size-4" /> : <Circle className="size-4 text-muted-foreground/50" />}
                                                   <span className="truncate">{getAttributeLabel(attr.name)}</span>
                                                 </Button>
                                               );
@@ -480,7 +392,7 @@ export function RoleDetails({
                                   <div className="flex items-center justify-between p-4 bg-muted/50 border-b">
                                     <div className="flex items-center gap-3">
                                       <Shield className="size-5 text-primary" />
-                                      <h4 className="text-lg font-semibold text-primary">{t("pages.rolesManagement.categories.other", "其他")}</h4>
+                                      <h4 className="text-lg font-semibold text-primary">{t("pages.rolesManagement.categories.other", "Other")}</h4>
                                     </div>
                                     {total > 0 && (
                                       <label
@@ -533,12 +445,12 @@ export function RoleDetails({
                                               "inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 min-h-9 text-sm font-medium",
                                               "border",
                                               isEnabled
-                                                ? "bg-primary/10 border-primary/50 text-primary hover:text-primary hover:border-primary/50 hover:bg-primary/10"
-                                                : "bg-background border-border text-muted-foreground hover:text-foreground hover:bg-accent/40",
+                                                ? "bg-primary/10 border-primary/50 text-primary hover:text-primary hover:border-primary/50 hover:bg-primary/10 disabled:opacity-100"
+                                                : "bg-background border-border text-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-70",
                                               (!canManageRoles || isSubmitting) && "pointer-events-none opacity-60"
                                             )}
                                           >
-                                            {isEnabled ? <CheckCircle2 className="size-4 mt-0.5" /> : <Circle className="size-4 opacity-60 mt-0.5" />}
+                                            {isEnabled ? <CheckCircle2 className="size-4" /> : <Circle className="size-4 text-muted-foreground" />}
                                             <span className="truncate">{getAttributeLabel(attr.name)}</span>
                                           </Button>
                                         );
@@ -550,33 +462,14 @@ export function RoleDetails({
                             })()}
                         </div>
 
-                        {hasChanges && canManageRoles && (
-                          <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 py-4 px-4">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                              <span className="text-sm text-primary font-medium truncate">
-                                {t("pages.rolesManagement.dialog.hasChanges", "Unsaved changes")}
-                              </span>
-                              <div className="flex items-center gap-2 sm:shrink-0">
-                                <Button variant="outline" onClick={onResetAttributes} disabled={isSubmitting}>
-                                  {t("common.actions.cancel", "Cancel")}
-                                </Button>
-                                <Button onClick={onSaveAttributes} disabled={isSubmitting} className="bg-primary hover:bg-primary/90">
-                                  {isSubmitting ? (
-                                    <span className="inline-flex items-center gap-2">
-                                      <Spinner className="size-4" />
-                                    </span>
-                                  ) : (
-                                    <>{t("common.actions.save", "Save")}</>
-                                  )}
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
                       </>
                     )}
                   </div>
                 )}
+              </div>
+            ) : isLoadingRoles || rawIsLoadingAttrs ? (
+              <div className="flex items-center justify-center min-h-[400px]">
+                <Spinner className="size-6" />
               </div>
             ) : (
               <div className="flex items-center justify-center min-h-[400px]">
@@ -589,32 +482,8 @@ export function RoleDetails({
           </Scroller>
         </CardContent>
       </Card>
-      <RoleFormDialog
-        open={isEditDialogOpen}
-        mode={isEditingRole ? "create" : selectedRole ? "edit" : "create"}
-        isSubmitting={isSubmitting}
-        onOpenChange={setIsEditDialogOpen}
-        initialData={
-          isEditingRole
-            ? {
-              name: editedRoleData?.name || "",
-              description: editedRoleData?.description || "",
-            }
-            : selectedRole
-              ? {
-                name: selectedRole?.name || "",
-                description: selectedRole?.description || "",
-              }
-              : {
-                name: editedRoleData?.name || "",
-                description: editedRoleData?.description || "",
-              }
-        }
-        onCancel={handleRoleFormCancel}
-        onSubmit={handleRoleFormSubmit}
-      />
     </>
   );
 }
 
-export default RoleDetails;
+export default RolePermissionsDesktop;

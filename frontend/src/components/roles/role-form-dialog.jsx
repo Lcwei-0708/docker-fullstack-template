@@ -80,11 +80,13 @@ export function RoleFormDialog({
 
         <div className="space-y-5">
           <div>
-            <label className="text-sm font-medium mb-2 block">
+            <label htmlFor="role-name" className="text-sm font-medium mb-2 block">
               {t("pages.rolesManagement.fields.name.label", "Role name")}
               <span className="text-destructive ml-1">*</span>
             </label>
             <Input
+              id="role-name"
+              name="role-name"
               value={formData?.name ?? ""}
               onKeyDown={handleInputEnterSubmit}
               onChange={(e) =>
@@ -98,11 +100,13 @@ export function RoleFormDialog({
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">
+            <label htmlFor="role-description" className="text-sm font-medium mb-2 block">
               {t("pages.rolesManagement.fields.description.label", "Description")}
               <span className="text-destructive ml-1">*</span>
             </label>
             <Input
+              id="role-description"
+              name="role-description"
               value={formData?.description ?? ""}
               onKeyDown={handleInputEnterSubmit}
               onChange={(e) =>

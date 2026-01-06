@@ -1,9 +1,16 @@
 import * as React from "react";
 import { rolesService } from "@/services/roles.service";
+import { useIsMobile } from "@/hooks/useMobile";
 import { RolesList } from "./roles-list";
-import { RoleDetails } from "./role-details";
+import { RolePermissionsDesktop } from "./role-permissions-desktop";
+import { RoleSelector } from "./role-selector";
+import { RoleFormDialog } from "@/components/roles/role-form-dialog";
+import { RolePermissionsMobile } from "./role-permissions-mobile";
+import { AlertDialog } from "@/components/ui/alert-dialog";
+import { DeleteRoleDialog } from "@/components/roles/delete-role-dialog";
 
-export function RolesManagementPanel({ canManageRoles = false }) {
+export const RolesManagementPanel = React.forwardRef(function RolesManagementPanel({ canManageRoles = false }, ref) {
+  const isMobile = useIsMobile();
   const [roles, setRoles] = React.useState([]);
   const [filteredRoles, setFilteredRoles] = React.useState([]);
   const [selectedRole, setSelectedRole] = React.useState(null);
@@ -15,12 +22,29 @@ export function RolesManagementPanel({ canManageRoles = false }) {
   const [hasChanges, setHasChanges] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isEditingRole, setIsEditingRole] = React.useState(false);
+  const [isRoleDialogOpen, setIsRoleDialogOpen] = React.useState(false);
+  const [isRoleEditDialogOpen, setIsRoleEditDialogOpen] = React.useState(false);
+  const [isRoleDeleteDialogOpen, setIsRoleDeleteDialogOpen] = React.useState(false);
   const [editedRoleData, setEditedRoleData] = React.useState({
     name: "",
     description: "",
   });
   const initialAttributesRef = React.useRef({});
+  const hasFetchedRolesRef = React.useRef(false);
   const selectedRoleIdRef = React.useRef(null);
+
+  React.useImperativeHandle(
+    ref,
+    () => ({
+      handleCreate: () => {
+        setSelectedRole(null);
+        setEditedRoleData({ name: "", description: "" });
+        setIsEditingRole(true);
+        setIsRoleDialogOpen(true);
+      },
+    }),
+    []
+  );
 
   React.useEffect(() => {
     selectedRoleIdRef.current = selectedRole?.id ?? null;
@@ -48,7 +72,7 @@ export function RolesManagementPanel({ canManageRoles = false }) {
       setFilteredRoles(rolesList);
 
       // Pick a default role for the details panel.
-      if (rolesList.length > 0 && !selectedRole) {
+      if (rolesList.length > 0 && !selectedRoleIdRef.current) {
         setSelectedRole(rolesList[0]);
       }
     } else {
@@ -56,12 +80,13 @@ export function RolesManagementPanel({ canManageRoles = false }) {
       setFilteredRoles([]);
     }
     setIsLoading(false);
-  }, [selectedRole, parseRolesList]);
+  }, [parseRolesList]);
 
   React.useEffect(() => {
+    if (hasFetchedRolesRef.current) return;
+    hasFetchedRolesRef.current = true;
     fetchRoles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchRoles]);
 
   // Filter roles by keyword.
   React.useEffect(() => {
@@ -147,6 +172,17 @@ export function RolesManagementPanel({ canManageRoles = false }) {
     }
   }, [selectedRole?.id, selectedRole?.name, selectedRole?.description, fetchRoleAttributes]);
 
+  React.useEffect(() => {
+    if (!canManageRoles) return;
+    if (isMobile && isEditingRole) setIsRoleDialogOpen(true);
+  }, [isMobile, isEditingRole, canManageRoles]);
+
+  React.useEffect(() => {
+    if (!isMobile) return;
+    setIsRoleEditDialogOpen(false);
+    setIsRoleDeleteDialogOpen(false);
+  }, [isMobile, selectedRole?.id]);
+
   // Toggle a single permission.
   const handleAttributeToggle = React.useCallback((attributeName) => {
     setAttributes((prev) => {
@@ -177,69 +213,6 @@ export function RolesManagementPanel({ canManageRoles = false }) {
     const snapshot = initialAttributesRef.current || {};
     setAttributes({ ...snapshot });
     setHasChanges(false);
-  }, []);
-
-  // Create a new role (legacy flow).
-  const handleCreateRole = React.useCallback(async () => {
-    if (!editedRoleData.name.trim()) return;
-
-    const roleNameToSelect = editedRoleData.name;
-
-    setIsSubmitting(true);
-    const createResult = await rolesService.createRole(editedRoleData, { returnStatus: true });
-    const createdPayload = createResult?.data || null;
-    const newRole = createdPayload?.id ? createdPayload : null;
-
-    const rolesResult = await rolesService.getAllRoles({ returnStatus: true });
-    const rolesList = rolesResult.status === "success" ? parseRolesList(rolesResult.data) : [];
-
-    setRoles(rolesList);
-    setFilteredRoles(rolesList);
-
-    if (newRole?.id) {
-      setSelectedRole(newRole);
-    } else {
-      const foundRole = rolesList.find((r) => r.name === roleNameToSelect);
-      if (foundRole) setSelectedRole(foundRole);
-      else if (rolesList.length > 0) setSelectedRole(rolesList[0]);
-    }
-
-    setEditedRoleData({ name: "", description: "" });
-    setIsEditingRole(false);
-    setIsSubmitting(false);
-  }, [editedRoleData, parseRolesList]);
-
-  // Update the selected role (legacy flow).
-  const handleUpdateRole = React.useCallback(async () => {
-    if (!editedRoleData.name.trim()) return;
-
-    if (!selectedRole?.id) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    const result = await rolesService.updateRole(selectedRole.id, editedRoleData, { returnStatus: true });
-    if (result.status === "success") {
-      await fetchRoles();
-      const updatedRole = roles.find((r) => r.id === selectedRole.id);
-      if (updatedRole) setSelectedRole({ ...updatedRole, ...editedRoleData });
-      setIsEditingRole(false);
-    }
-    setIsSubmitting(false);
-  }, [selectedRole, editedRoleData, roles, fetchRoles]);
-
-  // Save role (legacy flow).
-  const handleSaveRole = React.useCallback(() => {
-    if (selectedRole) {
-      handleUpdateRole();
-    } else {
-      handleCreateRole();
-    }
-  }, [selectedRole, handleUpdateRole, handleCreateRole]);
-
-  // Sync form data from the dialog.
-  const handleRoleDataChangeFromDialog = React.useCallback((newData) => {
-    setEditedRoleData(newData);
   }, []);
 
   // Save role from the dialog (create or edit).
@@ -318,8 +291,110 @@ export function RolesManagementPanel({ canManageRoles = false }) {
     }
   }, [selectedRole]);
 
+  const handleRoleSelect = React.useCallback(
+    (role) => {
+      setSelectedRole(role);
+    },
+    []
+  );
+
+  if (isMobile) {
+    return (
+      <div className="flex h-full flex-col gap-3">
+        <RoleSelector
+          filteredRoles={filteredRoles}
+          selectedRole={selectedRole}
+          isLoading={isLoading}
+          searchKeyword={searchKeyword}
+          disabled={isSubmitting}
+          canManageRoles={canManageRoles}
+          isSubmitting={isSubmitting}
+          onRoleSelect={handleRoleSelect}
+          onSearchChange={setSearchKeyword}
+          onEditClick={() => {
+            if (!selectedRole?.id) return;
+            setIsRoleEditDialogOpen(true);
+          }}
+          onDeleteClick={() => {
+            if (!selectedRole?.id) return;
+            setIsRoleDeleteDialogOpen(true);
+          }}
+        />
+
+        <RolePermissionsMobile
+          selectedRole={selectedRole}
+          attributes={attributes}
+          attributeGroups={attributeGroups}
+          isLoadingAttributes={isLoadingAttributes}
+          hasChanges={hasChanges}
+          isSubmitting={isSubmitting}
+          canManageRoles={canManageRoles}
+          onAttributeToggle={handleAttributeToggle}
+          onSaveAttributes={handleSaveAttributes}
+          onResetAttributes={handleResetAttributes}
+        />
+
+        {/* Mobile role dialog (create) */}
+        <RoleFormDialog
+          open={isRoleDialogOpen}
+          mode="create"
+          isSubmitting={isSubmitting}
+          onOpenChange={(open) => {
+            setIsRoleDialogOpen(open);
+            if (!open) handleCancelEdit();
+          }}
+          initialData={{
+            name: editedRoleData?.name || "",
+            description: editedRoleData?.description || "",
+          }}
+          onCancel={() => {
+            handleCancelEdit();
+            setIsRoleDialogOpen(false);
+          }}
+          onSubmit={async (data) => {
+            if (!data?.name?.trim()) return;
+            const ok = await handleSaveRoleFromDialog(null, data);
+            if (ok !== false) {
+              handleCancelEdit();
+              setIsRoleDialogOpen(false);
+            }
+          }}
+        />
+
+        <RoleFormDialog
+          open={isRoleEditDialogOpen}
+          mode="edit"
+          isSubmitting={isSubmitting}
+          onOpenChange={setIsRoleEditDialogOpen}
+          initialData={{
+            name: selectedRole?.name || "",
+            description: selectedRole?.description || "",
+          }}
+          onCancel={() => setIsRoleEditDialogOpen(false)}
+          onSubmit={async (data) => {
+            if (!selectedRole?.id) return;
+            if (!data?.name?.trim()) return;
+            const ok = await handleSaveRoleFromDialog(selectedRole.id, data);
+            if (ok !== false) setIsRoleEditDialogOpen(false);
+          }}
+        />
+
+        <AlertDialog open={isRoleDeleteDialogOpen} onOpenChange={setIsRoleDeleteDialogOpen}>
+          <DeleteRoleDialog
+            roleName={selectedRole?.name || ""}
+            isSubmitting={isSubmitting}
+            onConfirm={async () => {
+              await handleDeleteRole();
+              setIsRoleDeleteDialogOpen(false);
+            }}
+          />
+        </AlertDialog>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-auto gap-4 p-6 py-0">
+    <div className="flex h-full min-h-0 gap-4 items-stretch">
       <RolesList
         roles={roles}
         filteredRoles={filteredRoles}
@@ -327,36 +402,100 @@ export function RolesManagementPanel({ canManageRoles = false }) {
         isLoading={isLoading}
         searchKeyword={searchKeyword}
         canManageRoles={canManageRoles}
-        onRoleSelect={setSelectedRole}
+        isSubmitting={isSubmitting}
+        className="w-1/3 h-full"
+        onRoleSelect={handleRoleSelect}
         onSearchChange={setSearchKeyword}
         onCreateClick={() => {
+          if (!canManageRoles) return;
+          setSelectedRole(null);
           setEditedRoleData({ name: "", description: "" });
           setIsEditingRole(true);
+          setIsRoleDialogOpen(true);
+        }}
+        onEditClick={(role) => {
+          if (!canManageRoles || isSubmitting) return;
+          if (!role?.id) return;
+          setSelectedRole(role);
+          setIsRoleEditDialogOpen(true);
+        }}
+        onDeleteClick={(role) => {
+          if (!canManageRoles || isSubmitting) return;
+          if (!role?.id) return;
+          setSelectedRole(role);
+          setIsRoleDeleteDialogOpen(true);
         }}
       />
 
-      <RoleDetails
+      <RolePermissionsDesktop
         selectedRole={selectedRole}
-        isEditingRole={isEditingRole}
-        editedRoleData={editedRoleData}
         attributes={attributes}
         attributeGroups={attributeGroups}
         isLoadingAttributes={isLoadingAttributes}
+        isLoadingRoles={isLoading}
         hasChanges={hasChanges}
         isSubmitting={isSubmitting}
         canManageRoles={canManageRoles}
-        onEditClick={() => {}}
-        onDeleteClick={handleDeleteRole}
-        onRoleDataChange={handleRoleDataChangeFromDialog}
         onAttributeToggle={handleAttributeToggle}
-        onSaveRole={handleSaveRole}
-        onSaveRoleFromDialog={handleSaveRoleFromDialog}
         onSaveAttributes={handleSaveAttributes}
         onResetAttributes={handleResetAttributes}
-        onCancelEdit={handleCancelEdit}
       />
+      <RoleFormDialog
+        open={isRoleDialogOpen}
+        mode="create"
+        isSubmitting={isSubmitting}
+        onOpenChange={(open) => {
+          setIsRoleDialogOpen(open);
+          if (!open) handleCancelEdit();
+        }}
+        initialData={{
+          name: editedRoleData?.name || "",
+          description: editedRoleData?.description || "",
+        }}
+        onCancel={() => {
+          handleCancelEdit();
+          setIsRoleDialogOpen(false);
+        }}
+        onSubmit={async (data) => {
+          if (!data?.name?.trim()) return;
+          const ok = await handleSaveRoleFromDialog(null, data);
+          if (ok !== false) {
+            handleCancelEdit();
+            setIsRoleDialogOpen(false);
+          }
+        }}
+      />
+
+      <RoleFormDialog
+        open={isRoleEditDialogOpen}
+        mode="edit"
+        isSubmitting={isSubmitting}
+        onOpenChange={setIsRoleEditDialogOpen}
+        initialData={{
+          name: selectedRole?.name || "",
+          description: selectedRole?.description || "",
+        }}
+        onCancel={() => setIsRoleEditDialogOpen(false)}
+        onSubmit={async (data) => {
+          if (!selectedRole?.id) return;
+          if (!data?.name?.trim()) return;
+          const ok = await handleSaveRoleFromDialog(selectedRole.id, data);
+          if (ok !== false) setIsRoleEditDialogOpen(false);
+        }}
+      />
+
+      <AlertDialog open={isRoleDeleteDialogOpen} onOpenChange={setIsRoleDeleteDialogOpen}>
+        <DeleteRoleDialog
+          roleName={selectedRole?.name || ""}
+          isSubmitting={isSubmitting}
+          onConfirm={async () => {
+            await handleDeleteRole();
+            setIsRoleDeleteDialogOpen(false);
+          }}
+        />
+      </AlertDialog>
     </div>
   );
-}
+});
 
 export default RolesManagementPanel;
