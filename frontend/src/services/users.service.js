@@ -6,7 +6,7 @@ const USERS_BASE = '/users';
 export const usersService = {
   // Get all users with pagination and filters
   getAllUsers: (params = {}, config = {}) => 
-    apiService.get(`${USERS_BASE}/`, params, {
+    apiService.get(`${USERS_BASE}`, params, {
       showErrorToast: true,
       showSuccessToast: false,
       messageMap: {
@@ -18,7 +18,7 @@ export const usersService = {
 
   // Create user
   createUser: (userData, config = {}) => 
-    apiService.post(`${USERS_BASE}/`, userData, {
+    apiService.post(`${USERS_BASE}`, userData, {
       showErrorToast: true,
       showSuccessToast: true,
       messageMap: {
@@ -45,7 +45,7 @@ export const usersService = {
 
   // Delete users (batch)
   deleteUsers: (userIds, config = {}) => 
-    apiService.delete(`${USERS_BASE}/`, {
+    apiService.delete(`${USERS_BASE}`, {
       showErrorToast: true,
       showSuccessToast: true,
       messageMap: {

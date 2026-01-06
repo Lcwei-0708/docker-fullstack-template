@@ -19,7 +19,7 @@ from utils.custom_exception import NotFoundException, ConflictException
 router = APIRouter(tags=["Users"])
 
 @router.get(
-    "/",
+    "",
     response_model=APIResponse[UserPagination],
     summary="Get all users",
     responses=parse_responses({
@@ -55,7 +55,7 @@ async def get_users(
         raise HTTPException(status_code=500)
 
 @router.post(
-    "/",
+    "",
     response_model=APIResponse[UserResponse],
     response_model_exclude_none=True,
     summary="Create new user",
@@ -108,7 +108,7 @@ async def update_user_api(
         raise HTTPException(status_code=500)
 
 @router.delete(
-    "/",
+    "",
     response_model=APIResponse[UserDeleteBatchResponse],
     response_model_exclude_none=True,
     summary="Delete users",
