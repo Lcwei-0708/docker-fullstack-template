@@ -3,7 +3,7 @@ import { routes } from "./routes";
 import { debugWarn } from "@/lib/utils";
 import ProtectedRoute from "@/components/core/protected-route";
 import Layout from "@/components/core/layout";
-import ErrorPage from "@/pages/ErrorPages";
+import Error from "@/pages/Error";
 import Home from "@/pages/Home";
 import Profile from "@/pages/Profile";
 import Auth from "@/pages/Auth";
@@ -14,6 +14,7 @@ const elementMap = {
   Home: <Home />,
   Profile: <Profile />,
   Auth: <Auth />,
+  Error: <Error />,
   Users: <Users />,
   Roles: <Roles />,
 };
@@ -24,7 +25,7 @@ function getRouteElement(elementName) {
   }
   
   debugWarn(`Route element "${elementName}" not found. Please create the corresponding page component.`);
-  return <ErrorPage errorCode="404" customTitle="Page not found" customMessage={`Page component "${elementName}" not found`} />;
+  return <Error errorCode="404" customTitle="Page not found" customMessage={`Page component "${elementName}" not found`} />;
 }
 
 export default function AppRouter() {
@@ -43,7 +44,7 @@ export default function AppRouter() {
           }
         />
       ))}
-      <Route path="*" element={<Layout><ErrorPage errorCode="404" /></Layout>} />
+      <Route path="*" element={<Layout><Error errorCode="404" /></Layout>} />
     </Routes>
   );
 }

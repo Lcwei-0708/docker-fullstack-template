@@ -34,7 +34,7 @@ export const Layout = ({
   const [shouldDelayLoginButton, setShouldDelayLoginButton] = useState(false);
   const prevIsAuthenticatedRef = useRef(isAuthenticated);
   
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/reset-password';
   const prevIsAuthPageRef = useRef(isAuthPage);
 
   const dockPositionClasses = {

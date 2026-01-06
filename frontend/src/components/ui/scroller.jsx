@@ -1,15 +1,14 @@
-"use client";;
-import { Slot } from "@radix-ui/react-slot";
-import { cva } from "class-variance-authority";
+import * as React from "react"
+import { cn } from "@/lib/utils"
+import { Slot } from "@radix-ui/react-slot"
+import { cva } from "class-variance-authority"
+import { useComposedRefs } from "@/lib/compose-refs"
 import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-} from "lucide-react";
-import * as React from "react";
-import { useComposedRefs } from "@/lib/compose-refs";
-import { cn } from "@/lib/utils";
+} from "lucide-react"
 
 const DATA_TOP_SCROLL = "data-top-scroll";
 const DATA_BOTTOM_SCROLL = "data-bottom-scroll";
@@ -36,6 +35,30 @@ const scrollerVariants = cva("", {
     },
     hideScrollbar: {
       true: "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+      // Hide scrollbar by default; show it on hover (for better aesthetics in panels)
+      hover: [
+        // Reserve scrollbar gutter to avoid layout shift
+        "[scrollbar-width:auto]",
+        "[scrollbar-gutter:stable]",
+        // Firefox: keep width reserved but make it visually transparent until hover
+        "[scrollbar-color:transparent_transparent]",
+        "hover:[scrollbar-color:hsl(var(--muted-foreground)/0.55)_transparent]",
+        "dark:hover:[scrollbar-color:hsl(var(--muted-foreground)/0.35)_transparent]",
+        // WebKit: use a more standard width/height than w-2
+        "[&::-webkit-scrollbar]:w-3",
+        "[&::-webkit-scrollbar]:h-3",
+        "[&::-webkit-scrollbar]:bg-transparent",
+        "[&::-webkit-scrollbar-thumb]:rounded-full",
+        "[&::-webkit-scrollbar-thumb]:bg-transparent",
+        "[&::-webkit-scrollbar-thumb]:border-2",
+        "[&::-webkit-scrollbar-thumb]:border-transparent",
+        "[&::-webkit-scrollbar-thumb]:shadow-none",
+        "[&::-webkit-scrollbar-thumb]:bg-clip-padding",
+        "hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/60",
+        "dark:hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40",
+        "[&::-webkit-scrollbar-track]:bg-transparent",
+        "[&::-webkit-scrollbar-corner]:bg-transparent",
+      ].join(" "),
       false: "",
     },
   },
@@ -55,61 +78,91 @@ function Scroller(props) {
     scrollStep = 40,
     style,
     asChild,
-    withNavigation = false,
+    withNavigation: withNavigationProp,
     scrollTriggerMode = "press",
     ref,
     ...scrollerProps
   } = props;
 
+  const withNavigation = !!withNavigationProp;
+
   const containerRef = React.useRef(null);
   const composedRef = useComposedRefs(ref, containerRef);
+  const maxScrollbarWidthRef = React.useRef(0);
+  const maxScrollbarHeightRef = React.useRef(0);
   const [scrollVisibility, setScrollVisibility] =
     React.useState({
-      up: false,
-      down: false,
-      left: false,
-      right: false,
-    });
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+  });
 
   const onScrollBy = React.useCallback((direction) => {
-    const container = containerRef.current;
-    if (!container) return;
+      const container = containerRef.current;
+      if (!container) return;
 
-    const scrollMap = {
-      up: () => (container.scrollTop -= scrollStep),
-      down: () => (container.scrollTop += scrollStep),
-      left: () => (container.scrollLeft -= scrollStep),
-      right: () => (container.scrollLeft += scrollStep),
-    };
+      const scrollMap = {
+        up: () => (container.scrollTop -= scrollStep),
+        down: () => (container.scrollTop += scrollStep),
+        left: () => (container.scrollLeft -= scrollStep),
+        right: () => (container.scrollLeft += scrollStep),
+      };
 
-    scrollMap[direction]();
+      scrollMap[direction]();
   }, [scrollStep]);
 
   const scrollHandlers = React.useMemo(() => ({
-    up: () => onScrollBy("up"),
-    down: () => onScrollBy("down"),
-    left: () => onScrollBy("left"),
-    right: () => onScrollBy("right"),
+      up: () => onScrollBy("up"),
+      down: () => onScrollBy("down"),
+      left: () => onScrollBy("left"),
+      right: () => onScrollBy("right"),
   }), [onScrollBy]);
 
   React.useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
+    let rafId = null;
+    const scheduleRecompute = () => {
+      if (rafId !== null) window.cancelAnimationFrame(rafId);
+      rafId = window.requestAnimationFrame(() => {
+        onScroll();
+      });
+    };
+
     function onScroll() {
       if (!container) return;
 
+      // Tolerance for fractional scroll metrics (common under browser zoom)
+      const EPS = 1;
       const isVertical = orientation === "vertical";
+
+      // Expose scrollbar size to consumers (so they can keep padding aligned)
+      // - Windows: scrollbars take layout space -> this will be > 0
+      // - macOS overlay scrollbars: this will likely be 0
+      const measuredScrollbarWidth = Math.max(0, container.offsetWidth - container.clientWidth);
+      const measuredScrollbarHeight = Math.max(0, container.offsetHeight - container.clientHeight);
+
+      // Some browsers change the measured scrollbar size on hover (overlay vs non-overlay),
+      // which can cause content jitter if padding depends on it.
+      // Use the max observed size to keep layout stable.
+      maxScrollbarWidthRef.current = Math.max(maxScrollbarWidthRef.current, measuredScrollbarWidth);
+      maxScrollbarHeightRef.current = Math.max(maxScrollbarHeightRef.current, measuredScrollbarHeight);
+
+      container.style.setProperty("--scroller-scrollbar-width", `${maxScrollbarWidthRef.current}px`);
+      container.style.setProperty("--scroller-scrollbar-height", `${maxScrollbarHeightRef.current}px`);
 
       if (isVertical) {
         const scrollTop = container.scrollTop;
         const clientHeight = container.clientHeight;
         const scrollHeight = container.scrollHeight;
+        const bottom = scrollTop + clientHeight;
 
         if (withNavigation) {
           setScrollVisibility((prev) => {
-            const newUp = scrollTop > offset;
-            const newDown = scrollTop + clientHeight < scrollHeight;
+            const newUp = scrollTop > offset + EPS;
+            const newDown = bottom < scrollHeight - EPS;
 
             if (prev.up !== newUp || prev.down !== newDown) {
               return {
@@ -122,10 +175,9 @@ function Scroller(props) {
           });
         }
 
-        const hasTopScroll = scrollTop > offset;
-        const hasBottomScroll =
-          scrollTop + clientHeight + offset < scrollHeight;
-        const isVerticallyScrollable = scrollHeight > clientHeight;
+        const isVerticallyScrollable = scrollHeight - clientHeight > EPS;
+        const hasTopScroll = scrollTop > offset + EPS;
+        const hasBottomScroll = bottom + offset < scrollHeight - EPS;
 
         if (hasTopScroll && hasBottomScroll && isVerticallyScrollable) {
           container.setAttribute(DATA_TOP_BOTTOM_SCROLL, "true");
@@ -135,8 +187,7 @@ function Scroller(props) {
           container.removeAttribute(DATA_TOP_BOTTOM_SCROLL);
           if (hasTopScroll) container.setAttribute(DATA_TOP_SCROLL, "true");
           else container.removeAttribute(DATA_TOP_SCROLL);
-          if (hasBottomScroll && isVerticallyScrollable)
-            container.setAttribute(DATA_BOTTOM_SCROLL, "true");
+          if (hasBottomScroll && isVerticallyScrollable) container.setAttribute(DATA_BOTTOM_SCROLL, "true");
           else container.removeAttribute(DATA_BOTTOM_SCROLL);
         }
       }
@@ -144,11 +195,12 @@ function Scroller(props) {
       const scrollLeft = container.scrollLeft;
       const clientWidth = container.clientWidth;
       const scrollWidth = container.scrollWidth;
+      const right = scrollLeft + clientWidth;
 
       if (withNavigation) {
         setScrollVisibility((prev) => {
-          const newLeft = scrollLeft > offset;
-          const newRight = scrollLeft + clientWidth < scrollWidth;
+          const newLeft = scrollLeft > offset + EPS;
+          const newRight = right < scrollWidth - EPS;
 
           if (prev.left !== newLeft || prev.right !== newRight) {
             return {
@@ -161,9 +213,9 @@ function Scroller(props) {
         });
       }
 
-      const hasLeftScroll = scrollLeft > offset;
-      const hasRightScroll = scrollLeft + clientWidth + offset < scrollWidth;
-      const isHorizontallyScrollable = scrollWidth > clientWidth;
+      const isHorizontallyScrollable = scrollWidth - clientWidth > EPS;
+      const hasLeftScroll = scrollLeft > offset + EPS;
+      const hasRightScroll = right + offset < scrollWidth - EPS;
 
       if (hasLeftScroll && hasRightScroll && isHorizontallyScrollable) {
         container.setAttribute(DATA_LEFT_RIGHT_SCROLL, "true");
@@ -173,25 +225,42 @@ function Scroller(props) {
         container.removeAttribute(DATA_LEFT_RIGHT_SCROLL);
         if (hasLeftScroll) container.setAttribute(DATA_LEFT_SCROLL, "true");
         else container.removeAttribute(DATA_LEFT_SCROLL);
-        if (hasRightScroll && isHorizontallyScrollable)
-          container.setAttribute(DATA_RIGHT_SCROLL, "true");
+        if (hasRightScroll && isHorizontallyScrollable) container.setAttribute(DATA_RIGHT_SCROLL, "true");
         else container.removeAttribute(DATA_RIGHT_SCROLL);
       }
     }
 
-    onScroll();
-    container.addEventListener("scroll", onScroll);
-    window.addEventListener("resize", onScroll);
+    // Initial compute (and re-compute after layout settles)
+    scheduleRecompute();
+    scheduleRecompute();
+    const timeoutId = window.setTimeout(scheduleRecompute, 100);
+
+    container.addEventListener("scroll", scheduleRecompute);
+    window.addEventListener("resize", scheduleRecompute);
+    document.addEventListener("visibilitychange", scheduleRecompute);
+
+    // Observe size/content changes so the mask updates even before first scroll.
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => {
+        scheduleRecompute();
+      });
+      resizeObserver.observe(container);
+    }
 
     return () => {
-      container.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      if (rafId !== null) window.cancelAnimationFrame(rafId);
+      window.clearTimeout(timeoutId);
+      container.removeEventListener("scroll", scheduleRecompute);
+      window.removeEventListener("resize", scheduleRecompute);
+      document.removeEventListener("visibilitychange", scheduleRecompute);
+      resizeObserver?.disconnect?.();
     };
   }, [orientation, offset, withNavigation]);
 
   const composedStyle = React.useMemo(() => ({
-    "--scroll-shadow-size": `${size}px`,
-    ...style,
+      "--scroll-shadow-size": `${size}px`,
+      ...style,
   }), [size, style]);
 
   const activeDirections = React.useMemo(() => {
@@ -246,17 +315,17 @@ function Scroller(props) {
 const scrollButtonVariants = cva(
   "absolute z-10 transition-opacity [&>svg]:size-4 [&>svg]:opacity-80 hover:[&>svg]:opacity-100",
   {
-    variants: {
-      direction: {
-        up: "top-2 left-1/2 -translate-x-1/2",
-        down: "bottom-2 left-1/2 -translate-x-1/2",
-        left: "top-1/2 left-2 -translate-y-1/2",
-        right: "top-1/2 right-2 -translate-y-1/2",
-      },
+  variants: {
+    direction: {
+      up: "top-2 left-1/2 -translate-x-1/2",
+      down: "bottom-2 left-1/2 -translate-x-1/2",
+      left: "top-1/2 left-2 -translate-y-1/2",
+      right: "top-1/2 right-2 -translate-y-1/2",
     },
-    defaultVariants: {
-      direction: "up",
-    },
+  },
+  defaultVariants: {
+    direction: "up",
+  },
   }
 );
 
@@ -280,17 +349,17 @@ function ScrollButton(props) {
   const [autoScrollTimer, setAutoScrollTimer] = React.useState(null);
 
   const onAutoScrollStart = React.useCallback((event) => {
-    if (autoScrollTimer !== null) return;
+      if (autoScrollTimer !== null) return;
 
-    if (triggerMode === "press") {
-      const timer = window.setInterval(onClick ?? (() => {}), 50);
-      setAutoScrollTimer(timer);
-    } else if (triggerMode === "hover") {
-      const timer = window.setInterval(() => {
-        if (event) onClick?.(event);
-      }, 50);
-      setAutoScrollTimer(timer);
-    }
+      if (triggerMode === "press") {
+        const timer = window.setInterval(onClick ?? (() => {}), 50);
+        setAutoScrollTimer(timer);
+      } else if (triggerMode === "hover") {
+        const timer = window.setInterval(() => {
+          if (event) onClick?.(event);
+        }, 50);
+        setAutoScrollTimer(timer);
+      }
   }, [autoScrollTimer, onClick, triggerMode]);
 
   const onAutoScrollStop = React.useCallback(() => {

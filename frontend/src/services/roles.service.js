@@ -23,6 +23,7 @@ export const rolesService = {
       showSuccessToast: true,
       messageMap: {
         success: i18n.t('pages.rolesManagement.messages.createRole.success', 'Role created successfully'),
+        409: i18n.t('pages.rolesManagement.messages.createRole.roleNameAlreadyExists', 'Role name already exists'),
         ...config.messageMap,
       },
       ...config,
@@ -35,6 +36,8 @@ export const rolesService = {
       showSuccessToast: true,
       messageMap: {
         success: i18n.t('pages.rolesManagement.messages.updateRole.success', 'Role updated successfully'),
+        404: i18n.t('pages.rolesManagement.messages.updateRole.roleNotFound', 'Role not found'),
+        409: i18n.t('pages.rolesManagement.messages.updateRole.roleNameAlreadyExists', 'Role name already exists'),
         ...config.messageMap,
       },
       ...config,
@@ -47,6 +50,8 @@ export const rolesService = {
       showSuccessToast: true,
       messageMap: {
         success: i18n.t('pages.rolesManagement.messages.deleteRole.success', 'Role deleted successfully'),
+        404: i18n.t('pages.rolesManagement.messages.deleteRole.roleNotFound', 'Role not found'),
+        409: i18n.t('pages.rolesManagement.messages.deleteRole.roleInUse', 'Cannot delete role that is assigned to users'),
         ...config.messageMap,
       },
       ...config,
@@ -54,11 +59,12 @@ export const rolesService = {
 
   // Get role attributes
   getRoleAttributes: (roleId, config = {}) => 
-    apiService.get(`${ROLES_BASE}/${roleId}/attributes`, {
+    apiService.get(`${ROLES_BASE}/${roleId}/attributes`, {}, {
       showErrorToast: true,
       showSuccessToast: false,
       messageMap: {
         success: i18n.t('pages.rolesManagement.messages.getRoleAttributes.success', 'Role attributes retrieved successfully'),
+        404: i18n.t('pages.rolesManagement.messages.getRoleAttributes.roleNotFound', 'Role not found'),
         ...config.messageMap,
       },
       ...config,
@@ -71,6 +77,8 @@ export const rolesService = {
       showSuccessToast: true,
       messageMap: {
         success: i18n.t('pages.rolesManagement.messages.updateRoleAttributes.success', 'Role attributes updated successfully'),
+        400: i18n.t('pages.rolesManagement.messages.updateRoleAttributes.roleAttributesFailed', 'Role attributes failed to update'),
+        404: i18n.t('pages.rolesManagement.messages.updateRoleAttributes.roleNotFound', 'Role not found'),
         ...config.messageMap,
       },
       ...config,

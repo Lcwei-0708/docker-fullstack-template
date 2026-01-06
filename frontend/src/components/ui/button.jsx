@@ -32,16 +32,17 @@ const buttonVariants = cva(
   }
 )
 
-const Button = React.forwardRef(({ className, variant, size, onMouseDown, asChild = false, ...props }, ref) => {
+const Button = React.forwardRef(({ className, variant, size, onMouseDown, onTouchStart, asChild = false, ...props }, ref) => {
   const Comp = asChild ? Slot : "button"
+  // Prevent double ripples by guarding against both touchstart and synthetic mousedown events on touch devices.
+  const lastTouchTsRef = React.useRef(0)
 
-  const handleMouseDown = (e) => {
-    const button = e.currentTarget
+  const createRipple = (button, clientX, clientY) => {
     const rect = button.getBoundingClientRect()
     const rippleSize = Math.max(rect.width, rect.height)
     const rippleRadius = rippleSize / 2
-    const left = e.clientX - rect.left - rippleRadius
-    const top = e.clientY - rect.top - rippleRadius
+    const left = clientX - rect.left - rippleRadius
+    const top = clientY - rect.top - rippleRadius
 
     const ripple = document.createElement("span")
     ripple.style.width = ripple.style.height = `${rippleSize}px`
@@ -69,7 +70,7 @@ const Button = React.forwardRef(({ className, variant, size, onMouseDown, asChil
         ctx.fillRect(0, 0, 1, 1)
         const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data
         return [r, g, b]
-      } catch (e) {
+      } catch {
         const temp = document.createElement('div')
         temp.style.color = color
         temp.style.position = 'absolute'
@@ -115,7 +116,7 @@ const Button = React.forwardRef(({ className, variant, size, onMouseDown, asChil
           const opacity = isDarkMode ? 0.3 : 0.4
           ripple.style.background = `rgba(255, 255, 255, ${opacity})`
         }
-      } catch (e) {
+      } catch {
         const isDarkMode = document.documentElement.classList.contains('dark')
         if (isDarkMode) {
           ripple.style.background = 'rgba(200, 200, 200, 0.4)'
@@ -130,8 +131,24 @@ const Button = React.forwardRef(({ className, variant, size, onMouseDown, asChil
     setTimeout(() => {
       ripple.remove()
     }, 800)
+  }
 
+  const handleMouseDown = (e) => {
+    if (Date.now() - lastTouchTsRef.current < 700) {
+      if (onMouseDown) onMouseDown(e)
+      return
+    }
+    createRipple(e.currentTarget, e.clientX, e.clientY)
     if (onMouseDown) onMouseDown(e)
+  }
+
+  const handleTouchStart = (e) => {
+    lastTouchTsRef.current = Date.now()
+    const touch = e.touches[0]
+    if (touch) {
+      createRipple(e.currentTarget, touch.clientX, touch.clientY)
+    }
+    if (onTouchStart) onTouchStart(e)
   }
 
   return (
@@ -139,6 +156,7 @@ const Button = React.forwardRef(({ className, variant, size, onMouseDown, asChil
       className={cn(buttonVariants({ variant, size, className }))}
       ref={ref}
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
       {...props}
     />
   );

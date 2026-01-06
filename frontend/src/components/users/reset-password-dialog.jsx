@@ -1,8 +1,12 @@
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from 'react-i18next';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -19,9 +23,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 // Dialog for resetting user password
 export function ResetPasswordDialog({
@@ -137,7 +138,7 @@ export function ResetPasswordDialog({
                 disabled={isResetting}
               >
                 {isResetting
-                  ? t('common.actions.resetting', 'Resetting...')
+                  ? <Spinner className="size-4" />
                   : t('common.actions.reset', 'Reset')}
               </Button>
             </DialogFooter>

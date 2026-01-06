@@ -8,16 +8,15 @@
       "submit": "Submit",
       "save": "Save",
       "delete": "Delete",
-      "deleting": "Deleting...",
       "edit": "Edit",
       "create": "Create",
       "update": "Update",
       "close": "Close",
+      "clear": "Clear",
       "search": "Search",
       "filter": "Filter",
       "reset": "Reset",
       "resetPassword": "Reset Password",
-      "resetting": "Resetting...",
       "select": "Select",
       "none": "None",
       "openMenu": "Open menu",
@@ -278,8 +277,30 @@
         }
       },
       "resetPassword": {
+        "title": "Reset Password",
+        "fields": {
+          "password": {
+            "label": "New Password",
+            "validation": {
+              "required": "Please enter your new password",
+              "minLength": "Password must be at least 6 characters"
+            }
+          },
+          "confirmPassword": {
+            "label": "Confirm New Password",
+            "validation": {
+              "required": "Please confirm your new password",
+              "notMatch": "Passwords do not match"
+            }
+          }
+        },
+        "actions": {
+          "submit": "Reset Password",
+          "backToLogin": "Back to Login"
+        },
         "messages": {
-          "success": "Password reset successful"
+          "success": "Password reset successful",
+          "invalidToken": "The reset password link has expired or is invalid. Please request a new one."
         }
       },
       "validateResetToken": {
@@ -407,8 +428,8 @@
       }
     },
     "usersManagement": {
-      "title": "Users List",
-      "description": "Manage user accounts",
+      "title": "Users Management",
+      "description": "Manage system users and their information",
       "fields": {
         "firstName": {
           "label": "First Name"
@@ -487,21 +508,79 @@
       }
     },
     "rolesManagement": {
+      "title": "Roles Management",
+      "description": "Manage system roles and permissions",
+      "searchPlaceholder": "Search roles",
+      "noRolesFound": "No matching roles",
+      "noRoles": "No roles yet",
+      "selectRole": "Select a role",
+      "selectRoleFromLeft": "Select a role from the left",
+      "rolePermissionsFor": "Permissions for {{role}}",
+      "noDescription": "No description",
+      "actions": {
+        "selectAll": "Select all",
+        "deselectAll": "Deselect all"
+      },
+      "dialog": {
+        "editTitle": "Edit role",
+        "createTitle": "Create role",
+        "editDescription": "Update role info",
+        "createDescription": "Create a new role",
+        "deleteTitle": "Delete role",
+        "deleteMessage": "Are you sure you want to delete role \"{{name}}\"?",
+        "noAttributes": "No available permissions",
+        "hasChanges": "Unsaved changes"
+      },
+      "fields": {
+        "name": {
+          "label": "Role name",
+          "placeholder": "Enter role name"
+        },
+        "description": {
+          "label": "Description",
+          "placeholder": "Enter description"
+        }
+      },
+      "groups": {
+        "systemManagement": "System Management"
+      },
+      "categories": {
+        "roleManagement": "Role Management Module",
+        "userManagement": "User Management Module",
+        "other": "Other"
+      },
+      "attributes": {
+        "manageUsers": "Manage Users",
+        "viewUsers": "View Users",
+        "manageRoles": "Manage Roles",
+        "viewRoles": "View Roles"
+      },
       "messages": {
         "getAllRoles": {
           "success": "Roles retrieved successfully"
         },
         "createRole": {
-          "success": "Role created successfully"
+          "success": "Role created successfully",
+          "roleNameAlreadyExists": "Role name already exists"
         },
         "updateRole": {
-          "success": "Role updated successfully"
+          "success": "Role updated successfully",
+          "roleNotFound": "Role not found",
+          "roleNameAlreadyExists": "Role name already exists"
         },
         "deleteRole": {
-          "success": "Role deleted successfully"
+          "success": "Role deleted successfully",
+          "roleNotFound": "Role not found",
+          "roleInUse": "Cannot delete role that is assigned to users"
+        },
+        "getRoleAttributes": {
+          "success": "Role attributes retrieved successfully",
+          "roleNotFound": "Role not found"
         },
         "updateRoleAttributes": {
-          "success": "Role attributes updated successfully"
+          "success": "Role attributes updated successfully",
+          "roleAttributesFailed": "Role attributes failed to update",
+          "roleNotFound": "Role not found"
         }
       }
     }

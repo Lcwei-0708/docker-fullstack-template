@@ -72,6 +72,15 @@ export const routes = [
     },
   },
   {
+    path: "/reset-password",
+    element: "Auth",
+    requireAuth: false,
+    permissions: [],
+    sidebar: {
+      showInSidebar: false,
+    },
+  },
+  {
     path: "/profile",
     element: "Profile",
     requireAuth: true,

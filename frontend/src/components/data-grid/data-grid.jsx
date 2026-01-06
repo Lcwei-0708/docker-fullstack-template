@@ -23,6 +23,31 @@ function DataGridProvider(
   }
 ) {
   const [hasVerticalScrollbar, setHasVerticalScrollbar] = React.useState(false);
+  const [delayedLoading, setDelayedLoading] = React.useState(false);
+  const rawIsLoading = props.isLoading || false;
+
+  // Delay showing loading to avoid brief skeleton flashes on fast responses
+  React.useEffect(() => {
+    const delayMs = Number(props.loadingDelayMs ?? 0);
+
+    if (!rawIsLoading) {
+      setDelayedLoading(false);
+      return undefined;
+    }
+
+    if (!delayMs || delayMs <= 0) {
+      setDelayedLoading(true);
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => {
+      setDelayedLoading(true);
+    }, delayMs);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [rawIsLoading, props.loadingDelayMs]);
 
   return (
     <DataGridContext.Provider
@@ -30,7 +55,8 @@ function DataGridProvider(
         props,
         table,
         recordCount: props.recordCount,
-        isLoading: props.isLoading || false,
+        isLoading: delayedLoading,
+        rawIsLoading,
         hasVerticalScrollbar,
         setHasVerticalScrollbar,
       }}>
@@ -49,6 +75,7 @@ function DataGrid(
 ) {
   const defaultProps = {
     loadingMode: 'skeleton',
+    loadingDelayMs: 100,
     tableLayout: {
       dense: false,
       cellBorder: false,
@@ -111,7 +138,7 @@ function DataGridContainer({
   return (
     <div
       data-slot="data-grid"
-      className={cn('grid w-full', border && 'border border-border rounded-md overflow-hidden shadow-2xs', className)}>
+      className={cn('grid w-full', border && 'border border-border rounded-xl overflow-hidden shadow-2xs', className)}>
       {children}
     </div>
   );

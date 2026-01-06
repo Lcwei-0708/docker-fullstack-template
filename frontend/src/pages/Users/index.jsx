@@ -25,7 +25,7 @@ export default function Users() {
     <div className={cn("p-6 space-y-4", isMobile && "p-0 space-y-2")}>
       <div className={cn("px-0", isMobile && "flex items-center justify-between gap-4 px-6")}>
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl md:text-3xl font-bold">
+          <h1 className="text-xl font-bold">
             {t('pages.usersManagement.title', 'Users List')}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">

@@ -247,16 +247,9 @@ export function NavUser() {
               {t("components.sidebar.setting.logoutConfirmDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-row gap-5 sm:gap-0 mt-2">
-            <AlertDialogCancel className={cn(
-              isMobile ? "w-full" : "",
-              "text-sm mt-0"
-            )}>{t("common.actions.cancel")}</AlertDialogCancel>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
             <AlertDialogAction
-              className={cn(
-                isMobile ? "w-full" : "",
-                "text-sm mt-0"
-              )}
               onClick={() => {
                 setAlertOpen(false)
                 logout()

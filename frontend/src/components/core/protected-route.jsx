@@ -2,14 +2,14 @@ import React, { useRef, useEffect } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Spinner } from '@/components/ui/spinner';
-import ErrorPage from '@/pages/ErrorPages';
+import Error from '@/pages/Error';
 import { debugError } from '@/lib/utils';
 
 /**
  * ProtectedRoute - Protects routes by checking authentication and permissions
  */
 export const ProtectedRoute = ({ children, requireAuth = true, permissions = null }) => {
-  const { isAuthenticated, isLoading, isLoadingPermissions, checkPermissions } = useAuth();
+  const { isAuthenticated, isLoading, isLoadingPermissions, checkPermissions, logout, isResettingPasswordRef } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isInitialLoadRef = useRef(true);
@@ -22,13 +22,23 @@ export const ProtectedRoute = ({ children, requireAuth = true, permissions = nul
     }
   }, [isLoading]);
 
+  // Handle reset password page - logout authenticated users
+  const isResetPasswordPage = location.pathname === '/reset-password';
+  
+  // Auto logout authenticated users visiting reset password page (except during password reset)
+  useEffect(() => {
+    if (isResetPasswordPage && isAuthenticated && !isLoading && !isResettingPasswordRef?.current) {
+      logout(true);
+    }
+  }, [isResetPasswordPage, isAuthenticated, isLoading, logout, isResettingPasswordRef]);
+
   // Redirect to login when user becomes unauthenticated
   useEffect(() => {
-    if (wasAuthenticatedRef.current && !isAuthenticated && location.pathname !== '/login') {
+    if (wasAuthenticatedRef.current && !isAuthenticated && location.pathname !== '/login' && !isResetPasswordPage) {
       navigate('/login', { state: { from: location }, replace: true });
     }
     wasAuthenticatedRef.current = isAuthenticated;
-  }, [isAuthenticated, location, navigate]);
+  }, [isAuthenticated, location, navigate, isResetPasswordPage]);
 
   // Check if user has required permissions
   const hasPermission = React.useMemo(() => {
@@ -82,7 +92,7 @@ export const ProtectedRoute = ({ children, requireAuth = true, permissions = nul
     return React.Children.map(children, (child) => {
       if (React.isValidElement(child)) {
         return React.cloneElement(child, {
-          children: <ErrorPage errorCode="403" />
+          children: <Error errorCode="403" />
         });
       }
       return child;

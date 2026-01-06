@@ -689,7 +689,7 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
         <div className="flex-1 min-h-0 border-t-1 border-accent-foreground/20 shadow-xs">
           <div 
             ref={containerRef}
-            className="h-full bg-muted/60"
+            className="h-full bg-popover"
           >
             {isLoading && data.length === 0 ? (
               <div className="flex items-center justify-center py-12 text-muted-foreground px-0">

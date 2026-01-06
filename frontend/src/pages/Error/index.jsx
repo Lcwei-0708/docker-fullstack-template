@@ -1,19 +1,25 @@
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Home, ArrowLeft, AlertCircle, FileQuestion, ShieldAlert, Server, Lock } from "lucide-react";
 
 /**
- * ErrorPage - Universal error page component
+ * Error - Universal error page component
  * @param {string} errorCode - Error code (404, 403, 500, 401, etc.)
  * @param {string} customTitle - Custom title (optional)
  * @param {string} customMessage - Custom message (optional)
  * @returns {JSX.Element}
  */
-function ErrorPage({ errorCode = "404", customTitle, customMessage }) {
+function Error({ errorCode: propErrorCode, customTitle: propCustomTitle, customMessage: propCustomMessage }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get error info from props or location.state
+  const errorCode = propErrorCode || location.state?.errorCode || "404";
+  const customTitle = propCustomTitle || location.state?.customTitle;
+  const customMessage = propCustomMessage || location.state?.customMessage;
 
   // Get icon based on error code
   const getErrorIcon = (code) => {
@@ -90,4 +96,4 @@ function ErrorPage({ errorCode = "404", customTitle, customMessage }) {
   );
 }
 
-export default ErrorPage;
+export default Error;
