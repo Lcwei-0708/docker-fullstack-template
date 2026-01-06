@@ -37,7 +37,7 @@ class TestUsersController:
             mock_get_users.return_value = mock_pagination
 
             response = await client.get(
-                "/api/users/",
+                "/api/users",
                 headers={"Authorization": users_auth_headers["Authorization"]},
             )
 
@@ -52,7 +52,7 @@ class TestUsersController:
     @pytest.mark.asyncio
     async def test_get_users_unauthorized(self, client: AsyncClient):
         """Test users access without authentication token"""
-        response = await client.get("/api/users/")
+        response = await client.get("/api/users")
         assert response.status_code == 401
 
     @pytest.mark.asyncio
@@ -67,7 +67,7 @@ class TestUsersController:
             mock_get_users.return_value = mock_pagination
 
             response = await client.get(
-                "/api/users/?keyword=test&status=true&role=admin&page=1&per_page=5&sort_by=email&desc=true",
+                "/api/users?keyword=test&status=true&role=admin&page=1&per_page=5&sort_by=email&desc=true",
                 headers={"Authorization": users_auth_headers["Authorization"]},
             )
 
@@ -103,7 +103,7 @@ class TestUsersController:
             mock_create_user.return_value = mock_user
 
             response = await client.post(
-                "/api/users/",
+                "/api/users",
                 json=user_data,
                 headers={"Authorization": users_auth_headers["Authorization"]},
             )
@@ -132,7 +132,7 @@ class TestUsersController:
             mock_create_user.side_effect = Exception("Email already exists")
 
             response = await client.post(
-                "/api/users/",
+                "/api/users",
                 json=user_data,
                 headers={"Authorization": users_auth_headers["Authorization"]},
             )
@@ -160,7 +160,7 @@ class TestUsersController:
             mock_create_user.side_effect = Exception("Database error")
 
             response = await client.post(
-                "/api/users/",
+                "/api/users",
                 json=user_data,
                 headers={"Authorization": users_auth_headers["Authorization"]},
             )
@@ -248,7 +248,7 @@ class TestUsersController:
 
             response = await client.request(
                 "DELETE",
-                "/api/users/",
+                "/api/users",
                 json=delete_data,
                 headers={"Authorization": users_auth_headers["Authorization"]},
             )
@@ -282,7 +282,7 @@ class TestUsersController:
 
             response = await client.request(
                 "DELETE",
-                "/api/users/",
+                "/api/users",
                 json=delete_data,
                 headers={"Authorization": users_auth_headers["Authorization"]},
             )
@@ -316,7 +316,7 @@ class TestUsersController:
 
             response = await client.request(
                 "DELETE",
-                "/api/users/",
+                "/api/users",
                 json=delete_data,
                 headers={"Authorization": users_auth_headers["Authorization"]},
             )
@@ -414,7 +414,7 @@ class TestUsersControllerValidation:
         }
 
         response = await client.post(
-            "/api/users/",
+            "/api/users",
             json=user_data,
             headers={"Authorization": users_auth_headers["Authorization"]},
         )
@@ -436,7 +436,7 @@ class TestUsersControllerValidation:
         }
 
         response = await client.post(
-            "/api/users/",
+            "/api/users",
             json=user_data,
             headers={"Authorization": users_auth_headers["Authorization"]},
         )
@@ -449,7 +449,7 @@ class TestUsersControllerValidation:
     ):
         """Test users retrieval with invalid pagination parameters"""
         response = await client.get(
-            "/api/users/?page=0&per_page=101",
+            "/api/users?page=0&per_page=101",
             headers={"Authorization": users_auth_headers["Authorization"]},
         )
 
@@ -464,7 +464,7 @@ class TestUsersControllerValidation:
 
         response = await client.request(
             "DELETE",
-            "/api/users/",
+            "/api/users",
             json=delete_data,
             headers={"Authorization": users_auth_headers["Authorization"]},
         )

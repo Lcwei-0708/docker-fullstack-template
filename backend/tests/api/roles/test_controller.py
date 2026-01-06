@@ -13,7 +13,7 @@ from utils.custom_exception import ConflictException, NotFoundException, ServerE
 
 
 class TestGetRolesAPI:
-    """Test GET /api/roles/ endpoint"""
+    """Test GET /api/roles endpoint"""
 
     @pytest.mark.asyncio
     async def test_get_roles_success(
@@ -30,7 +30,7 @@ class TestGetRolesAPI:
             mock_get_roles.return_value = mock_roles
 
             response = await client.get(
-                "/api/roles/",
+                "/api/roles",
                 headers={"Authorization": users_auth_headers["Authorization"]},
             )
 
@@ -45,7 +45,7 @@ class TestGetRolesAPI:
     @pytest.mark.asyncio
     async def test_get_roles_unauthorized(self, client: AsyncClient):
         """Test roles access without authentication token"""
-        response = await client.get("/api/roles/")
+        response = await client.get("/api/roles")
         assert response.status_code == 401
 
     @pytest.mark.asyncio
@@ -58,14 +58,14 @@ class TestGetRolesAPI:
             side_effect=Exception("Database error"),
         ):
             response = await client.get(
-                "/api/roles/",
+                "/api/roles",
                 headers={"Authorization": users_auth_headers["Authorization"]},
             )
             assert response.status_code == 500
 
 
 class TestCreateRoleAPI:
-    """Test POST /api/roles/ endpoint"""
+    """Test POST /api/roles endpoint"""
 
     @pytest.mark.asyncio
     async def test_create_role_success(
@@ -86,7 +86,7 @@ class TestCreateRoleAPI:
             mock_create_role.return_value = mock_role
 
             response = await client.post(
-                "/api/roles/",
+                "/api/roles",
                 json=role_data,
                 headers={"Authorization": users_auth_headers["Authorization"]},
             )
@@ -108,7 +108,7 @@ class TestCreateRoleAPI:
             mock_create_role.side_effect = ConflictException("Role name already exists")
 
             response = await client.post(
-                "/api/roles/",
+                "/api/roles",
                 json=role_data,
                 headers={"Authorization": users_auth_headers["Authorization"]},
             )
@@ -122,7 +122,7 @@ class TestCreateRoleAPI:
     async def test_create_role_unauthorized(self, client: AsyncClient):
         """Test role creation without authentication"""
         role_data = {"name": "test-role"}
-        response = await client.post("/api/roles/", json=role_data)
+        response = await client.post("/api/roles", json=role_data)
         assert response.status_code == 401
 
     @pytest.mark.asyncio
@@ -136,7 +136,7 @@ class TestCreateRoleAPI:
             "api.roles.controller.create_role", side_effect=Exception("Database error")
         ):
             response = await client.post(
-                "/api/roles/",
+                "/api/roles",
                 json=role_data,
                 headers={"Authorization": users_auth_headers["Authorization"]},
             )

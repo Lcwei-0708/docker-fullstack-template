@@ -6,7 +6,7 @@ const ROLES_BASE = '/roles';
 export const rolesService = {
   // Get all roles
   getAllRoles: (config = {}) => 
-    apiService.get(`${ROLES_BASE}/`, {}, {
+    apiService.get(`${ROLES_BASE}`, {}, {
       showErrorToast: true,
       showSuccessToast: false,
       messageMap: {
@@ -18,7 +18,7 @@ export const rolesService = {
 
   // Create role
   createRole: (roleData, config = {}) => 
-    apiService.post(`${ROLES_BASE}/`, roleData, {
+    apiService.post(`${ROLES_BASE}`, roleData, {
       showErrorToast: true,
       showSuccessToast: true,
       messageMap: {

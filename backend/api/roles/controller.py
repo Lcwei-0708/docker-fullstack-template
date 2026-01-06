@@ -23,7 +23,7 @@ from .schema import (
 router = APIRouter(tags=["Roles"])
 
 @router.get(
-    "/",
+    "",
     response_model=APIResponse[RolesListResponse],
     response_model_exclude_none=True,
     summary="Get all custom roles",
@@ -45,7 +45,7 @@ async def get_roles(
         raise HTTPException(status_code=500)
 
 @router.post(
-    "/",
+    "",
     response_model=APIResponse[RoleResponse],
     response_model_exclude_none=True,
     summary="Create new role",
