@@ -46,22 +46,28 @@
       },
       "gridPos": {
         "h": 9,
-        "w": 9,
+        "w": 8,
         "x": 0,
         "y": 0
       },
       "id": 17,
       "options": {
-        "displayLabels": ["percent"],
+        "displayLabels": [
+          "percent"
+        ],
         "legend": {
           "displayMode": "table",
           "placement": "right",
           "showLegend": true,
-          "values": ["value"]
+          "values": [
+            "value"
+          ]
         },
         "pieType": "pie",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -80,7 +86,8 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "{job=\"backend_logs\"} |= \"\"",
+          "expr": "{job=\"backend_logs\"} |= \"${message:pipe:.*}\"",
+          "maxLines": 5000,
           "queryType": "range",
           "refId": "Backend Log"
         }
@@ -114,7 +121,9 @@
                 "operation": "groupby"
               },
               "message": {
-                "aggregations": ["count"],
+                "aggregations": [
+                  "count"
+                ],
                 "operation": "aggregate"
               }
             }
@@ -155,24 +164,30 @@
       },
       "gridPos": {
         "h": 9,
-        "w": 9,
-        "x": 9,
+        "w": 10,
+        "x": 8,
         "y": 0
       },
       "id": 5,
       "options": {
-        "displayLabels": ["percent"],
+        "displayLabels": [
+          "percent"
+        ],
         "legend": {
           "displayMode": "table",
           "placement": "right",
           "showLegend": true,
           "sortBy": "Value",
           "sortDesc": false,
-          "values": ["value"]
+          "values": [
+            "value"
+          ]
         },
         "pieType": "donut",
         "reduceOptions": {
-          "calcs": ["sum"],
+          "calcs": [
+            "sum"
+          ],
           "fields": "",
           "values": false
         },
@@ -191,7 +206,8 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "{job=\"backend_logs\"}",
+          "expr": "{job=\"backend_logs\"} |= \"${message:pipe:.*}\"",
+          "maxLines": 5000,
           "queryType": "range",
           "refId": "Backend Log"
         }
@@ -232,7 +248,9 @@
                 "operation": "groupby"
               },
               "message": {
-                "aggregations": ["count"],
+                "aggregations": [
+                  "count"
+                ],
                 "operation": "aggregate"
               },
               "path": {
@@ -260,7 +278,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed"
           },
           "custom": {
             "hideFrom": {
@@ -269,11 +287,85 @@
               "viz": false
             }
           },
-          "fieldMinMax": false,
-          "mappings": [],
-          "noValue": "No API request"
+          "mappings": []
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "DEBUG"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#a4a4a4",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "INFO"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#71bf67",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "WARNING"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#d4be35",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ERROR"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#b33947",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CRITICAL"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#9a59bb",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 11,
@@ -281,20 +373,23 @@
         "x": 18,
         "y": 0
       },
-      "id": 18,
+      "id": 4,
       "options": {
-        "displayLabels": ["percent"],
+        "displayLabels": [
+          "percent"
+        ],
         "legend": {
+          "calcs": [],
           "displayMode": "table",
           "placement": "right",
           "showLegend": true,
-          "sortBy": "Value",
-          "sortDesc": false,
-          "values": ["value"]
+          "values": []
         },
         "pieType": "donut",
         "reduceOptions": {
-          "calcs": ["sum"],
+          "calcs": [
+            "sum"
+          ],
           "fields": "",
           "values": false
         },
@@ -313,62 +408,48 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "{job=\"backend_logs\"}",
+          "expr": "(\r\n  count by(level) (rate({job=\"backend_logs\"} |= \"${message:pipe:.*}\" [$__auto]))\r\n) or (\r\n  label_replace(vector(0), \"level\", \"DEBUG\", \"\", \"\")\r\n) or (\r\n  label_replace(vector(0), \"level\", \"INFO\", \"\", \"\")\r\n) or (\r\n  label_replace(vector(0), \"level\", \"WARNING\", \"\", \"\")\r\n) or (\r\n  label_replace(vector(0), \"level\", \"ERROR\", \"\", \"\")\r\n) or (\r\n  label_replace(vector(0), \"level\", \"CRITICAL\", \"\", \"\")\r\n)",
+          "hide": false,
+          "maxLines": 50000,
           "queryType": "range",
-          "refId": "Backend Log"
+          "refId": "log data"
         }
       ],
-      "title": "API Method Distribution",
+      "title": "Level Distribution",
       "transformations": [
         {
-          "id": "extractFields",
+          "id": "renameByRegex",
           "options": {
-            "format": "json",
-            "keepTime": false,
-            "replace": true,
-            "source": "labels"
+            "regex": "{level=\"DEBUG\"}",
+            "renamePattern": "DEBUG"
           }
         },
         {
-          "id": "filterByValue",
+          "id": "renameByRegex",
           "options": {
-            "filters": [
-              {
-                "config": {
-                  "id": "isNull",
-                  "options": {}
-                },
-                "fieldName": "method"
-              }
-            ],
-            "match": "any",
-            "type": "exclude"
+            "regex": "{level=\"INFO\"}",
+            "renamePattern": "INFO"
           }
         },
         {
-          "id": "groupBy",
+          "id": "renameByRegex",
           "options": {
-            "fields": {
-              "apiPath": {
-                "aggregations": [],
-                "operation": "groupby"
-              },
-              "message": {
-                "aggregations": ["count"],
-                "operation": "aggregate"
-              },
-              "method": {
-                "aggregations": [],
-                "operation": "groupby"
-              }
-            }
+            "regex": "{level=\"WARNING\"}",
+            "renamePattern": "WARNING"
           }
         },
         {
-          "id": "transpose",
+          "id": "renameByRegex",
           "options": {
-            "firstFieldName": "",
-            "restFieldsName": ""
+            "regex": "{level=\"ERROR\"}",
+            "renamePattern": "ERROR"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "{level=\"CRITICAL\"}",
+            "renamePattern": "CRITICAL"
           }
         }
       ],
@@ -515,7 +596,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 11,
         "x": 0,
         "y": 9
       },
@@ -527,7 +608,9 @@
           "placement": "right",
           "showLegend": true
         },
-        "timezone": ["browser"],
+        "timezone": [
+          "browser"
+        ],
         "tooltip": {
           "hideZeros": false,
           "mode": "multi",
@@ -543,7 +626,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "(\r\n  count by(level) (rate({job=\"backend_logs\"} [$__auto]))\r\n) or (\r\n  label_replace(vector(0), \"level\", \"DEBUG\", \"\", \"\")\r\n) or (\r\n  label_replace(vector(0), \"level\", \"INFO\", \"\", \"\")\r\n) or (\r\n  label_replace(vector(0), \"level\", \"WARNING\", \"\", \"\")\r\n) or (\r\n  label_replace(vector(0), \"level\", \"ERROR\", \"\", \"\")\r\n) or (\r\n  label_replace(vector(0), \"level\", \"CRITICAL\", \"\", \"\")\r\n)",
+          "expr": "(\r\n  count by(level) (rate({job=\"backend_logs\"} |= \"${message:pipe:.*}\" [$__auto]))\r\n) or (\r\n  label_replace(vector(0), \"level\", \"DEBUG\", \"\", \"\")\r\n) or (\r\n  label_replace(vector(0), \"level\", \"INFO\", \"\", \"\")\r\n) or (\r\n  label_replace(vector(0), \"level\", \"WARNING\", \"\", \"\")\r\n) or (\r\n  label_replace(vector(0), \"level\", \"ERROR\", \"\", \"\")\r\n) or (\r\n  label_replace(vector(0), \"level\", \"CRITICAL\", \"\", \"\")\r\n)",
           "hide": false,
           "maxLines": 50000,
           "queryType": "range",
@@ -610,7 +693,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "fixed"
+            "mode": "palette-classic"
           },
           "custom": {
             "hideFrom": {
@@ -619,105 +702,38 @@
               "viz": false
             }
           },
-          "mappings": []
+          "fieldMinMax": false,
+          "mappings": [],
+          "noValue": "No API request"
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "DEBUG"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#a4a4a4",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "INFO"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#71bf67",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "WARNING"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#d4be35",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "ERROR"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#b33947",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "CRITICAL"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#9a59bb",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 12,
+        "w": 7,
+        "x": 11,
         "y": 9
       },
-      "id": 4,
+      "id": 18,
       "options": {
-        "displayLabels": ["percent"],
+        "displayLabels": [
+          "percent"
+        ],
         "legend": {
-          "calcs": [],
           "displayMode": "table",
           "placement": "right",
           "showLegend": true,
-          "values": []
+          "sortBy": "Value",
+          "sortDesc": false,
+          "values": [
+            "value"
+          ]
         },
         "pieType": "donut",
         "reduceOptions": {
-          "calcs": ["sum"],
+          "calcs": [
+            "sum"
+          ],
           "fields": "",
           "values": false
         },
@@ -736,48 +752,68 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "(\r\n  count by(level) (rate({job=\"backend_logs\"} [$__auto]))\r\n) or (\r\n  label_replace(vector(0), \"level\", \"DEBUG\", \"\", \"\")\r\n) or (\r\n  label_replace(vector(0), \"level\", \"INFO\", \"\", \"\")\r\n) or (\r\n  label_replace(vector(0), \"level\", \"WARNING\", \"\", \"\")\r\n) or (\r\n  label_replace(vector(0), \"level\", \"ERROR\", \"\", \"\")\r\n) or (\r\n  label_replace(vector(0), \"level\", \"CRITICAL\", \"\", \"\")\r\n)",
-          "hide": false,
-          "maxLines": 50000,
+          "expr": "{job=\"backend_logs\"} |= \"${message:pipe:.*}\"",
+          "maxLines": 5000,
           "queryType": "range",
-          "refId": "log data"
+          "refId": "Backend Log"
         }
       ],
-      "title": "Level Distribution",
+      "title": "API Client IP Statistics",
       "transformations": [
         {
-          "id": "renameByRegex",
+          "id": "extractFields",
           "options": {
-            "regex": "{level=\"DEBUG\"}",
-            "renamePattern": "DEBUG"
+            "format": "json",
+            "keepTime": false,
+            "replace": true,
+            "source": "labels"
           }
         },
         {
-          "id": "renameByRegex",
+          "id": "filterByValue",
           "options": {
-            "regex": "{level=\"INFO\"}",
-            "renamePattern": "INFO"
+            "filters": [
+              {
+                "config": {
+                  "id": "isNull",
+                  "options": {}
+                },
+                "fieldName": "method"
+              }
+            ],
+            "match": "any",
+            "type": "exclude"
           }
         },
         {
-          "id": "renameByRegex",
+          "id": "groupBy",
           "options": {
-            "regex": "{level=\"WARNING\"}",
-            "renamePattern": "WARNING"
+            "fields": {
+              "apiPath": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "ip_address": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "message": {
+                "aggregations": [
+                  "count"
+                ],
+                "operation": "aggregate"
+              },
+              "method": {
+                "aggregations": []
+              }
+            }
           }
         },
         {
-          "id": "renameByRegex",
+          "id": "transpose",
           "options": {
-            "regex": "{level=\"ERROR\"}",
-            "renamePattern": "ERROR"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "{level=\"CRITICAL\"}",
-            "renamePattern": "CRITICAL"
+            "firstFieldName": "",
+            "restFieldsName": ""
           }
         }
       ],
@@ -821,7 +857,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["sum"],
+          "calcs": [
+            "sum"
+          ],
           "fields": "/^DEBUG$/",
           "values": false
         },
@@ -905,7 +943,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["sum"],
+          "calcs": [
+            "sum"
+          ],
           "fields": "/^INFO$/",
           "values": false
         },
@@ -990,7 +1030,7 @@
           "editorMode": "code",
           "expr": "{job=\"backend_logs\"} \r\n  | level =~ \"${level:pipe:.*}\" \r\n  |= \"${message:pipe:.*}\"\r\n  | keep timestamp, level, logger, message, method, path, status_code, user_agent, ip_address",
           "legendFormat": "",
-          "maxLines": 5000,
+          "maxLines": 10000,
           "queryType": "range",
           "refId": "log data"
         }
@@ -1036,7 +1076,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["sum"],
+          "calcs": [
+            "sum"
+          ],
           "fields": "/^WARNING$/",
           "values": false
         },
@@ -1120,7 +1162,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["sum"],
+          "calcs": [
+            "sum"
+          ],
           "fields": "/^ERROR$/",
           "values": false
         },
@@ -1204,7 +1248,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["sum"],
+          "calcs": [
+            "sum"
+          ],
           "fields": "/^CRITICAL$/",
           "values": false
         },
@@ -1252,7 +1298,7 @@
     }
   ],
   "preload": true,
-  "refresh": "30m",
+  "refresh": "5s",
   "schemaVersion": 41,
   "tags": [],
   "templating": {
@@ -1260,8 +1306,20 @@
       {
         "allValue": ".*",
         "current": {
-          "text": ["INFO", "WARNING", "ERROR", "DEBUG", "CRITICAL"],
-          "value": ["INFO", "WARNING", "ERROR", "DEBUG", "CRITICAL"]
+          "text": [
+            "INFO",
+            "WARNING",
+            "ERROR",
+            "DEBUG",
+            "CRITICAL"
+          ],
+          "value": [
+            "INFO",
+            "WARNING",
+            "ERROR",
+            "DEBUG",
+            "CRITICAL"
+          ]
         },
         "description": "",
         "includeAll": false,
