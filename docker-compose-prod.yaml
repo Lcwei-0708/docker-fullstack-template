@@ -87,6 +87,7 @@ services:
       - ./backend:/app
     environment:
       - TZ=${TIMEZONE}
+      - DEBUG_MODE=false
       - LOG_LEVEL=${LOG_LEVEL}
       - SSL_ENABLE=${SSL_ENABLE}
       - SECRET_KEY=${SECRET_KEY}
@@ -117,7 +118,7 @@ services:
       - backend-network
     restart: always    
     healthcheck:
-      test: ["CMD-SHELL", "curl --silent --fail localhost:5000 || exit 1"]
+      test: ["CMD-SHELL", "curl --silent --fail localhost:5000/healthz || exit 1"]
       interval: 10s
       timeout: 10s
       retries: 5

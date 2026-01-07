@@ -1,5 +1,5 @@
 version: 1
-disable_existing_loggers: False
+disable_existing_loggers: True
 formatters:
   default:
     format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
@@ -18,16 +18,16 @@ handlers:
     level: INFO
 loggers:
   uvicorn:
-    handlers: [console]
-    level: WARNING
+    handlers: []
+    level: INFO
     propagate: no
   uvicorn.error:
-    handlers: [console]
-    level: WARNING
+    handlers: []
+    level: INFO
     propagate: no
   uvicorn.access:
-    handlers: [console]
-    level: WARNING
+    handlers: []
+    level: INFO
     propagate: no
   watchfiles:
     handlers: [console]
@@ -38,8 +38,8 @@ loggers:
     level: WARNING
     propagate: no
   sqlalchemy.engine:
-    handlers: [console]
-    level: WARNING
+    handlers: []
+    level: INFO
     propagate: no
   passlib:
     handlers: [console]
