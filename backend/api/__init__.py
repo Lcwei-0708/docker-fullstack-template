@@ -7,7 +7,7 @@ from .roles.controller import router as roles_router
 
 api_router = APIRouter()
 
-if settings.DEBUG:
+if settings.DEBUG_MODE:
     from .debug.controller import router as debug_router
     api_router.include_router(debug_router, prefix="/debug")
 

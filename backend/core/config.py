@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     PROJECT_DESCRIPTION: str = "Backend API Docs"
 
     # Basic settings
-    DEBUG: bool = True
+    DEBUG_MODE: bool = True
     LOG_LEVEL: str = "INFO"
     SSL_ENABLE: bool = False
 

@@ -16,7 +16,7 @@ def make_async_url(url: str) -> str:
 # Async engine/session for API
 async_engine = create_async_engine(
     make_async_url(settings.DATABASE_URL),
-    echo=settings.DEBUG,
+    echo=settings.DEBUG_MODE,
     future=True,
     pool_pre_ping=True,
     pool_recycle=settings.DB_POOL_RECYCLE,
@@ -34,7 +34,7 @@ AsyncSessionLocal = async_sessionmaker(
 # Sync engine/session for migration and schedule
 engine = create_engine(
     settings.DATABASE_URL,
-    echo=settings.DEBUG,
+    echo=settings.DEBUG_MODE,
     future=True,
     pool_pre_ping=True,
     pool_recycle=settings.DB_POOL_RECYCLE,

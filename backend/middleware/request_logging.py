@@ -5,7 +5,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = logging.getLogger("api_logger")
 
-HEALTH_CHECK_PATHS = {"/", "/docs", "/redoc", "/openapi.json"}
+HEALTH_CHECK_PATHS = {"/", "/docs", "/redoc", "/openapi.json", "/healthz"}
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
