@@ -1,5 +1,5 @@
 import logging
-from sqlalchemy import select
+from sqlalchemy import select, text
 from models.users import Users
 from models.roles import Roles
 from core.config import settings
@@ -12,21 +12,72 @@ from models.role_attributes_mapper import RoleAttributesMapper
 
 logger = logging.getLogger("init_db")
 
+async def is_already_initialized() -> bool:
+    """Return True if super admin role and user already exist (seed done)."""
+    async with AsyncSessionLocal() as db:
+        # Super admin role must exist
+        super_role_result = await db.execute(
+            select(Roles).where(Roles.name == settings.DEFAULT_SUPER_ADMIN_ROLE)
+        )
+        super_role = super_role_result.scalar_one_or_none()
+        if not super_role:
+            return False
+
+        # At least one attribute must exist
+        attrs_result = await db.execute(select(RoleAttributes))
+        if not attrs_result.scalars().first():
+            return False
+
+        # If any user already mapped to super admin role, consider seeded
+        super_users_result = await db.execute(
+            select(Users)
+            .join(RoleMapper, Users.id == RoleMapper.user_id)
+            .where(RoleMapper.role_id == super_role.id)
+        )
+        if super_users_result.scalars().first():
+            return True
+
+        return False
+
 async def init_database():
     """Initialize database with default data: role attributes, roles and admin account"""
-    try:
-        logger.info("Starting database initialization...")
-        
-        await create_role_attributes()
-        await create_default_roles()
-        await assign_super_admin_attributes()
-        await create_default_admin()
-        
-        logger.info("Database initialization completed")
-        
-    except Exception as e:
-        logger.error(f"Database initialization failed: {str(e)}")
-        raise
+    lock_name = "init_db_lock"
+    lock_timeout_sec = 15
+
+    # Use DB advisory lock to avoid multiple workers seeding simultaneously
+    async with AsyncSessionLocal() as lock_session:
+        lock_result = await lock_session.execute(
+            text("SELECT GET_LOCK(:name, :timeout)"),
+            {"name": lock_name, "timeout": lock_timeout_sec},
+        )
+        lock_acquired = lock_result.scalar()
+
+        if lock_acquired != 1:
+            logger.info("Skipping database initialization: another worker is seeding.")
+            return
+
+        try:
+            # Double-check after getting the lock, if already initialized, skip
+            if await is_already_initialized():
+                logger.info("Database initialization already completed, skipping.")
+                return
+
+            logger.info("Starting database initialization...")
+
+            await create_role_attributes()
+            await create_default_roles()
+            await assign_super_admin_attributes()
+            await create_default_admin()
+
+            logger.info("Database initialization completed")
+
+        except Exception as e:
+            logger.error(f"Database initialization failed: {str(e)}")
+            raise
+        finally:
+            # Always release the advisory lock
+            await lock_session.execute(text("SELECT RELEASE_LOCK(:name)"), {"name": lock_name})
+            await lock_session.commit()
 
 async def create_role_attributes():
     """Create role attributes"""

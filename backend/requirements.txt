@@ -21,7 +21,7 @@ pydantic-settings==2.10.1
 # Security & auth
 python-jose==3.5.0
 passlib==1.7.4
-bcrypt==4.3.0
+bcrypt==4.0.1
 
 # HTTP client
 requests==2.32.4
