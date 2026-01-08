@@ -1,4 +1,4 @@
-import uuid
+from uuid_utils import uuid7
 from core.database import Base
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, String, Text, TIMESTAMP, text
@@ -6,7 +6,7 @@ from sqlalchemy import Column, String, Text, TIMESTAMP, text
 class Roles(Base):
     __tablename__ = "roles"
     
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), unique=True, index=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid7()), unique=True, index=True)
     name = Column(String(100), nullable=False, unique=True, index=True)
     description = Column(Text, nullable=True)
     created_at = Column(TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
