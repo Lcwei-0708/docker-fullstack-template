@@ -2,7 +2,7 @@ import pytest
 import asyncio
 import pytest_asyncio
 import fastapi_limiter
-from uuid import uuid4
+from uuid_utils import uuid7
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, patch
 from httpx import AsyncClient, ASGITransport
@@ -193,7 +193,7 @@ async def test_user(test_db_session: AsyncSession):
     Create a test user for authentication tests.
     Automatically creates a user with hashed password in the test database.
     """
-    user_id = str(uuid4())
+    user_id = str(uuid7())
     hashed_pwd = await hash_password("TestPassword123!")
 
     user = Users(
@@ -222,7 +222,7 @@ async def test_user_session(test_db_session: AsyncSession, test_user: Users):
     Create a test user session in the database.
     Automatically creates a session record for the test user.
     """
-    session_id = str(uuid4())
+    session_id = str(uuid7())
     access_token = await create_access_token(
         {"sub": test_user.id, "sid": session_id, "email": test_user.email}
     )
@@ -293,7 +293,7 @@ async def auth_headers(test_user: Users, test_user_session: UserSessions):
 @pytest_asyncio.fixture(scope="function")
 async def account_test_user(test_db_session: AsyncSession):
     """Create a dedicated test user for account module tests"""
-    user_id = str(uuid4())
+    user_id = str(uuid7())
     hashed_pwd = await hash_password("AccountTestPassword123!")
 
     user = Users(
@@ -319,7 +319,7 @@ async def account_test_user(test_db_session: AsyncSession):
 @pytest_asyncio.fixture(scope="function")
 async def account_auth_headers(account_test_user: Users, test_db_session: AsyncSession):
     """Create authentication headers for account module tests"""
-    session_id = str(uuid4())
+    session_id = str(uuid7())
     access_token = await create_access_token(
         {
             "sub": account_test_user.id,
@@ -379,7 +379,7 @@ async def account_auth_headers(account_test_user: Users, test_db_session: AsyncS
 @pytest_asyncio.fixture(scope="function")
 async def users_test_user(test_db_session: AsyncSession):
     """Create test user for users API tests"""
-    user_id = str(uuid4())
+    user_id = str(uuid7())
     hashed_pwd = await hash_password("UsersTestPassword123!")
 
     user = Users(
@@ -405,7 +405,7 @@ async def users_test_user(test_db_session: AsyncSession):
 @pytest_asyncio.fixture(scope="function")
 async def users_test_role(test_db_session: AsyncSession):
     """Create admin role for users API tests"""
-    role_id = str(uuid4())
+    role_id = str(uuid7())
     role = Roles(
         id=role_id,
         name="admin",
@@ -422,11 +422,11 @@ async def users_test_role_attributes(test_db_session: AsyncSession, users_test_r
     """Create role attributes and mappings for users management permissions"""
     
     view_users_attr = RoleAttributes(
-        id=str(uuid4()),
+        id=str(uuid7()),
         name="view-users"
     )
     manage_users_attr = RoleAttributes(
-        id=str(uuid4()),
+        id=str(uuid7()),
         name="manage-users"
     )
     
@@ -470,7 +470,7 @@ async def users_test_role_mapping(test_db_session: AsyncSession, users_test_user
 @pytest_asyncio.fixture(scope="function")
 async def users_test_session(test_db_session: AsyncSession, users_test_user: Users):
     """Create a test user session for users API tests"""
-    session_id = str(uuid4())
+    session_id = str(uuid7())
     access_token = await create_access_token(
         {
             "sub": users_test_user.id,
@@ -543,7 +543,7 @@ async def create_password_reset_token_with_invalid_user(test_db_session: AsyncSe
     """Create a password reset token with invalid user for testing edge cases"""
     
     nonexistent_user_id = "nonexistent_user_id"
-    token_id = str(uuid4())
+    token_id = str(uuid7())
     token_string = "test_token_123"
     expires_at = datetime.now() + timedelta(minutes=30)
     
@@ -578,7 +578,7 @@ async def create_password_reset_token_with_invalid_user(test_db_session: AsyncSe
 @pytest_asyncio.fixture
 async def create_password_reset_token_with_valid_user(test_db_session: AsyncSession):
     """Create a password reset token with valid user for testing normal scenarios"""
-    user_id = str(uuid4())
+    user_id = str(uuid7())
     hashed_pwd = await hash_password("TestPassword123!")
     
     user = Users(
@@ -594,7 +594,7 @@ async def create_password_reset_token_with_valid_user(test_db_session: AsyncSess
     test_db_session.add(user)
     await test_db_session.commit()
     
-    token_id = str(uuid4())
+    token_id = str(uuid7())
     token_string = "valid_test_token_123"
     expires_at = datetime.now() + timedelta(minutes=30)
     

@@ -1,4 +1,4 @@
-import uuid
+from uuid_utils import uuid7
 from core.database import Base
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, String, TIMESTAMP, text
@@ -6,7 +6,7 @@ from sqlalchemy import Column, String, TIMESTAMP, text
 class RoleAttributes(Base):
     __tablename__ = "role_attributes"
     
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), unique=True, index=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid7()), unique=True, index=True)
     name = Column(String(100), nullable=False, unique=True, index=True)
     group = Column(String(100), nullable=True, index=True)
     category = Column(String(100), nullable=True, index=True)
