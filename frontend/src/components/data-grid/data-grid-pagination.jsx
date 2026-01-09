@@ -27,7 +27,7 @@ function DataGridPagination(props) {
     moreLimit: 5,
     more: false,
     info: 'components.pagination.info',
-    infoSkeleton: <Skeleton className="h-8 w-120" />,
+    infoSkeleton: <Skeleton className="h-8 w-108" />,
     rowsPerPageLabel: t('components.pagination.rowsPerPage', 'Rows per page'),
     previousPageLabel: t('components.pagination.previousPage', 'Previous page'),
     nextPageLabel: t('components.pagination.nextPage', 'Next page'),
@@ -48,49 +48,39 @@ function DataGridPagination(props) {
     const pages = [];
     const totalPages = pageCount;
     
-    pages.push(1);
-    
-    if (currentPage === 1) {
-      if (totalPages <= 3) {
-        for (let i = 2; i <= totalPages; i++) {
-          pages.push(i);
-        }
-      } else {
-        pages.push(2, 3);
-        pages.push('ellipsis');
-        pages.push(totalPages);
-      }
-    } else if (currentPage >= totalPages - 2) {
-      const startPage = currentPage === totalPages - 2 
-        ? Math.max(2, totalPages - 3)
-        : Math.max(2, totalPages - 2);
-      
-      if (startPage > 2) {
-        pages.push('ellipsis');
-      }
-      for (let i = startPage; i <= totalPages; i++) {
+    // If total pages <= 7, show all pages
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
-    } else {
-      const showPrev = currentPage - 1;
-      const showNext = currentPage + 1;
-      
-      if (showPrev > 2) {
-        pages.push('ellipsis');
+      return pages;
+    }
+    
+    // Always show first page
+    pages.push(1);
+    
+    // Current page is near the beginning (pages 1-4)
+    if (currentPage <= 4) {
+      for (let i = 2; i <= 5; i++) {
+        pages.push(i);
       }
-      
-      if (showPrev > 1) {
-        pages.push(showPrev);
+      pages.push('ellipsis-end');
+      pages.push(totalPages);
+    }
+    // Current page is near the end (last 4 pages)
+    else if (currentPage >= totalPages - 3) {
+      pages.push('ellipsis-start');
+      for (let i = totalPages - 4; i <= totalPages; i++) {
+        pages.push(i);
       }
+    }
+    // Current page is in the middle
+    else {
+      pages.push('ellipsis-start');
+      pages.push(currentPage - 1);
       pages.push(currentPage);
-      if (showNext < totalPages) {
-        pages.push(showNext);
-      }
-      
-      if (showNext < totalPages - 1) {
-        pages.push('ellipsis');
-      }
-      
+      pages.push(currentPage + 1);
+      pages.push('ellipsis-end');
       pages.push(totalPages);
     }
     
@@ -102,7 +92,7 @@ function DataGridPagination(props) {
   // Render pagination buttons from page numbers
   const renderPageButtons = () => {
     return pageNumbers.map((page, index) => {
-      if (page === 'ellipsis') {
+      if (page === 'ellipsis-start' || page === 'ellipsis-end') {
         return (
           <PaginationItem key={`ellipsis-${index}`}>
             <PaginationEllipsis />
