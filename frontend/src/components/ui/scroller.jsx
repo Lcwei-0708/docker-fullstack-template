@@ -22,15 +22,22 @@ const scrollerVariants = cva("", {
     orientation: {
       vertical: [
         "overflow-y-auto",
+        // mask-image for Chromium/Firefox; -webkit-mask-image for iOS Safari
         "data-[top-scroll=true]:[mask-image:linear-gradient(0deg,#000_calc(100%_-_var(--scroll-shadow-size)),transparent)]",
+        "data-[top-scroll=true]:[-webkit-mask-image:linear-gradient(0deg,#000_calc(100%_-_var(--scroll-shadow-size)),transparent)]",
         "data-[bottom-scroll=true]:[mask-image:linear-gradient(180deg,#000_calc(100%_-_var(--scroll-shadow-size)),transparent)]",
+        "data-[bottom-scroll=true]:[-webkit-mask-image:linear-gradient(180deg,#000_calc(100%_-_var(--scroll-shadow-size)),transparent)]",
         "data-[top-bottom-scroll=true]:[mask-image:linear-gradient(#000,#000,transparent_0,#000_var(--scroll-shadow-size),#000_calc(100%_-_var(--scroll-shadow-size)),transparent)]",
+        "data-[top-bottom-scroll=true]:[-webkit-mask-image:linear-gradient(#000,#000,transparent_0,#000_var(--scroll-shadow-size),#000_calc(100%_-_var(--scroll-shadow-size)),transparent)]",
       ],
       horizontal: [
         "overflow-x-auto",
         "data-[left-scroll=true]:[mask-image:linear-gradient(270deg,#000_calc(100%_-_var(--scroll-shadow-size)),transparent)]",
+        "data-[left-scroll=true]:[-webkit-mask-image:linear-gradient(270deg,#000_calc(100%_-_var(--scroll-shadow-size)),transparent)]",
         "data-[right-scroll=true]:[mask-image:linear-gradient(90deg,#000_calc(100%_-_var(--scroll-shadow-size)),transparent)]",
+        "data-[right-scroll=true]:[-webkit-mask-image:linear-gradient(90deg,#000_calc(100%_-_var(--scroll-shadow-size)),transparent)]",
         "data-[left-right-scroll=true]:[mask-image:linear-gradient(to_right,#000,#000,transparent_0,#000_var(--scroll-shadow-size),#000_calc(100%_-_var(--scroll-shadow-size)),transparent)]",
+        "data-[left-right-scroll=true]:[-webkit-mask-image:linear-gradient(to_right,#000,#000,transparent_0,#000_var(--scroll-shadow-size),#000_calc(100%_-_var(--scroll-shadow-size)),transparent)]",
       ],
     },
     hideScrollbar: {
@@ -68,7 +75,7 @@ const scrollerVariants = cva("", {
   },
 });
 
-function Scroller(props) {
+const Scroller = React.forwardRef(function Scroller(props, forwardedRef) {
   const {
     orientation = "vertical",
     hideScrollbar,
@@ -80,14 +87,13 @@ function Scroller(props) {
     asChild,
     withNavigation: withNavigationProp,
     scrollTriggerMode = "press",
-    ref,
     ...scrollerProps
   } = props;
 
   const withNavigation = !!withNavigationProp;
 
   const containerRef = React.useRef(null);
-  const composedRef = useComposedRefs(ref, containerRef);
+  const composedRef = useComposedRefs(forwardedRef, containerRef);
   const maxScrollbarWidthRef = React.useRef(0);
   const maxScrollbarHeightRef = React.useRef(0);
   const [scrollVisibility, setScrollVisibility] =
@@ -310,7 +316,7 @@ function Scroller(props) {
   }
 
   return ScrollerImpl;
-}
+});
 
 const scrollButtonVariants = cva(
   "absolute z-10 transition-opacity [&>svg]:size-4 [&>svg]:opacity-80 hover:[&>svg]:opacity-100",
@@ -336,13 +342,12 @@ const directionToIcon = {
   right: ChevronRight
 };
 
-function ScrollButton(props) {
+const ScrollButton = React.forwardRef(function ScrollButton(props, forwardedRef) {
   const {
     direction,
     className,
     triggerMode = "press",
     onClick,
-    ref,
     ...buttonProps
   } = props;
 
@@ -403,11 +408,11 @@ function ScrollButton(props) {
       type="button"
       {...buttonProps}
       {...eventHandlers}
-      ref={ref}
+      ref={forwardedRef}
       className={cn(scrollButtonVariants({ direction, className }))}>
       <Icon />
     </button>
   );
-}
+});
 
 export { Scroller };
