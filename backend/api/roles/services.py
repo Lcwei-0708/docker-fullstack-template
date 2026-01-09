@@ -17,7 +17,7 @@ from .schema import (
 async def get_all_roles(db: AsyncSession) -> RolesListResponse:
     """Get all roles"""
     try:
-        roles_query = select(Roles)
+        roles_query = select(Roles).order_by(Roles.name.asc())
         roles_result = await db.execute(roles_query)
         roles = roles_result.scalars().all()
         
@@ -154,7 +154,7 @@ async def get_role_attribute_mapping(db: AsyncSession, role_id: str) -> RoleAttr
                 RoleAttributes.id == RoleAttributesMapper.attributes_id,
                 RoleAttributesMapper.role_id == role_id
             )
-        )
+        ).order_by(RoleAttributes.id)
         
         result = await db.execute(query)
         rows = result.all()
@@ -170,16 +170,12 @@ async def get_role_attribute_mapping(db: AsyncSession, role_id: str) -> RoleAttr
                 )
             )
 
-        for categories in grouped.values():
-            for attrs in categories.values():
-                attrs.sort(key=lambda a: a.name)
-
         groups = []
-        for group, categories in sorted(grouped.items(), key=lambda x: x[0]):
+        for group, categories in grouped.items():
             groups.append(
                 RoleAttributesGroup(
                     group=group,
-                    categories={category: attrs for category, attrs in sorted(categories.items(), key=lambda x: x[0])},
+                    categories=categories,
                 )
             )
 
