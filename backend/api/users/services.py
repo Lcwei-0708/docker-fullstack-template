@@ -78,7 +78,7 @@ async def get_all_users(
                 else:
                     query = query.order_by(Users.created_at.desc())
         else:
-            query = query.order_by(Users.created_at.desc())
+            query = query.order_by(Users.id.asc())
         
         count_query = select(func.count(Users.id))
         if keyword:
