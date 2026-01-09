@@ -59,6 +59,7 @@ export function RolePermissionsDesktop({
   attributeGroups = [],
   isLoadingAttributes = false,
   isLoadingRoles = false,
+  loadingDelayMs = 0,
   hasChanges = false,
   isSubmitting = false,
   canManageRoles = false,
@@ -73,7 +74,7 @@ export function RolePermissionsDesktop({
   const [scrollbarWidth, setScrollbarWidth] = React.useState(0);
 
   const rawIsLoadingAttrs = !!isLoadingAttributes;
-  const loadingDelayMs = 100;
+  const effectiveDelayMs = Number(loadingDelayMs ?? 0);
 
   // Delay showing the attributes spinner to avoid flash on quick responses
   React.useEffect(() => {
@@ -82,19 +83,19 @@ export function RolePermissionsDesktop({
       return undefined;
     }
 
-    if (!loadingDelayMs || loadingDelayMs <= 0) {
+    if (!effectiveDelayMs || effectiveDelayMs <= 0) {
       setDelayedLoadingAttrs(true);
       return undefined;
     }
 
     const timer = window.setTimeout(() => {
       setDelayedLoadingAttrs(true);
-    }, loadingDelayMs);
+    }, effectiveDelayMs);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [rawIsLoadingAttrs, loadingDelayMs]);
+  }, [rawIsLoadingAttrs, effectiveDelayMs]);
 
   // Build grouped permissions for the UI.
   const organizedGroups = React.useMemo(() => {

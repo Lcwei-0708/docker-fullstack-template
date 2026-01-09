@@ -2,8 +2,7 @@ import * as React from 'react';
 import { createContext, useContext } from 'react';
 import { cn } from '@/lib/utils';
 
-const DataGridContext = createContext(// eslint-disable-next-line @typescript-eslint/no-explicit-any
-undefined);
+const DataGridContext = createContext(undefined);
 
 // Hook to access DataGrid context
 function useDataGrid() {
@@ -75,7 +74,7 @@ function DataGrid(
 ) {
   const defaultProps = {
     loadingMode: 'skeleton',
-    loadingDelayMs: 100,
+    loadingDelayMs: 0,
     tableLayout: {
       dense: false,
       cellBorder: false,

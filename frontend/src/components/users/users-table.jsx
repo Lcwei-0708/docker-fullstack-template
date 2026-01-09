@@ -839,7 +839,7 @@ export function UsersTable() {
         table={table}
         recordCount={pagination.total}
         isLoading={isLoading}
-        loadingDelayMs={100}
+        loadingDelayMs={0}
         emptyMessage={t("components.dataGrid.table.noData", "No data available")}
         loadingMessage={t("components.dataGrid.table.loading", "Loading...")}
         tableLayout={{
