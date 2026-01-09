@@ -31,6 +31,41 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
   const [hasMore, setHasMore] = React.useState(true);
   const perPage = 15;
   const initialLoadCompleteRef = React.useRef(false);
+  const containerRef = React.useRef(null);
+  const virtuosoRef = React.useRef(null);
+  const virtuosoScrollerRef = React.useRef(null);
+
+  const scrollToTop = React.useCallback(() => {
+    const behavior = "auto";
+
+    if (virtuosoRef.current?.scrollToIndex) {
+      virtuosoRef.current.scrollToIndex({ index: 0, align: "start", behavior });
+    }
+
+    // Virtuoso underlying scroller element
+    if (virtuosoScrollerRef.current?.scrollTo) {
+      virtuosoScrollerRef.current.scrollTo({ top: 0, behavior });
+    }
+
+    if (containerRef.current?.scrollTo) {
+      containerRef.current.scrollTo({ top: 0, behavior });
+    }
+
+    if (typeof window !== "undefined" && window.scrollTo) {
+      window.scrollTo({ top: 0, behavior });
+    }
+  }, []);
+
+  const scrollToTopSafely = React.useCallback(() => {
+    // Delay the scroll until after React commits + Virtuoso recalculates.
+    requestAnimationFrame(() => {
+      scrollToTop();
+      requestAnimationFrame(() => {
+        scrollToTop();
+        setTimeout(scrollToTop, 0);
+      });
+    });
+  }, [scrollToTop]);
 
   // Selection mode state
   const [isSelectionMode, setIsSelectionMode] = React.useState(false);
@@ -145,8 +180,7 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
   // Load roles on component mount
   React.useEffect(() => {
     fetchRoles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchRoles]);
 
   // Fetch users data from API
   const fetchUsers = React.useCallback(async (params = {}, append = false) => {
@@ -193,37 +227,35 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
       const response = await usersService.getAllUsers(apiParams, { returnStatus: true });
 
       if (response.status === "success" && response.data) {
-        if (response.data.users && Array.isArray(response.data.users)) {
-          if (append) {
-            setData((prev) => [...prev, ...response.data.users]);
-          } else {
-            setData(response.data.users);
-            // Mark initial load as complete when first page is loaded
-            if (page === 1) {
-              initialLoadCompleteRef.current = true;
-            }
-          }
-          
-          const totalPages = response.data.total_pages || 0;
-          setHasMore(page < totalPages);
-          setCurrentPage(page);
-        } else if (Array.isArray(response.data)) {
-          if (append) {
-            setData((prev) => [...prev, ...response.data]);
-          } else {
-            setData(response.data);
-            // Mark initial load as complete when first page is loaded
-            if (page === 1) {
-              initialLoadCompleteRef.current = true;
-            }
-          }
-          setHasMore(response.data.length >= perPage);
+        const usersList = response.data.users && Array.isArray(response.data.users)
+          ? response.data.users
+          : (Array.isArray(response.data) ? response.data : []);
+
+        if (append) {
+          setData((prev) => [...prev, ...usersList]);
         } else {
-          if (!append) {
-            setData([]);
+          setData(usersList);
+          scrollToTopSafely();
+          if (page === 1) {
             initialLoadCompleteRef.current = true;
           }
-          setHasMore(false);
+        }
+
+        const responsePage = response.data.page ?? page;
+        const totalPages = response.data.total_pages;
+        const total = response.data.total;
+
+        const hasNext = (typeof totalPages === "number" && totalPages > 0)
+          ? responsePage < totalPages
+          : (typeof total === "number"
+            ? responsePage * perPage < total
+            : (usersList.length >= perPage));
+
+        setHasMore(hasNext);
+        setCurrentPage(responsePage);
+
+        if (usersList.length === 0 && !append) {
+          initialLoadCompleteRef.current = true;
         }
       }
     } catch (error) {
@@ -237,7 +269,7 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
       setIsLoading(false);
       setIsLoadingMore(false);
     }
-  }, []);
+  }, [scrollToTopSafely]);
 
   // Open edit dialog for user
   const handleEdit = React.useCallback((user) => {
@@ -452,7 +484,6 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
   }, [currentPage, hasMore, isLoading, isLoadingMore, queryParams, fetchUsers]);
 
   // Virtualization: Container ref for Virtuoso
-  const containerRef = React.useRef(null);
   const [listHeight, setListHeight] = React.useState(600); // Default height
   
   // Calculate list height from container
@@ -557,7 +588,7 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
         isFetchingRef.current = false;
       });
     });
-  }, []); // Only run once on mount, not when searchParams change
+  }, [parseUrlParams]); // Only run once on mount, not when searchParams change
 
   // Update URL when query params change
   React.useEffect(() => {
@@ -607,7 +638,6 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
 
   // Track previous query params to detect changes
   const prevQueryParamsRef = React.useRef(null);
-  const isInitialMountRef = React.useRef(true);
   const fetchUsersRef = React.useRef(fetchUsers);
   const isFetchingRef = React.useRef(false);
   
@@ -701,6 +731,10 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
               </div>
             ) : (
               <Virtuoso
+                ref={virtuosoRef}
+                scrollerRef={(ref) => {
+                  virtuosoScrollerRef.current = ref;
+                }}
                 style={{ height: `${listHeight}px`, width: '100%' }}
                 data={data}
                 totalCount={data.length}
