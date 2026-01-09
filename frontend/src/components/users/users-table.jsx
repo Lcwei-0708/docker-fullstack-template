@@ -14,9 +14,7 @@ import { ResetPasswordDialog } from "./reset-password-dialog";
 import { useUsersTableColumns } from "./users-table-columns";
 import {
   getCoreRowModel,
-  getFilteredRowModel,
   getPaginationRowModel,
-  getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 
@@ -26,8 +24,10 @@ export function UsersTable() {
   const { hasPermission } = useAuthStatus();
   const { userId: currentUserId, user: currentUser } = useAuth();
   const canManageUsers = hasPermission("manage-users");
+
+  // Control when component state is allowed to write back to URL params
+  const allowUrlSyncRef = React.useRef(false);
   
-  // Get current user ID from user object if userId is not available
   const effectiveCurrentUserId = React.useMemo(() => {
     return currentUserId || currentUser?.id;
   }, [currentUserId, currentUser]);
@@ -378,7 +378,8 @@ export function UsersTable() {
         setRowSelection(updater);
       }
     }, [enableSelection]),
-    pageCount: pagination.total_pages,
+    // Avoid clamping pageIndex when total pages are not known yet
+    pageCount: pagination.total_pages > 0 ? pagination.total_pages : -1,
     manualPagination: true,
     manualSorting: true,
     manualFiltering: true,
@@ -509,22 +510,24 @@ export function UsersTable() {
   const isInitialMountRef = React.useRef(true);
   const isUpdatingUrlRef = React.useRef(false);
   const urlParamsInitializedRef = React.useRef(false);
-  const isInitializingRef = React.useRef(false);
+  const skipNextUrlUpdateRef = React.useRef(false);
+  const isHydratingFromUrlRef = React.useRef(false);
+  const [urlParamsReady, setUrlParamsReady] = React.useState(false);
 
   // Initialize state from URL params on mount
   React.useEffect(() => {
     if (urlParamsInitializedRef.current) return;
 
-    isInitializingRef.current = true;
     const urlParams = parseUrlParams();
     const hasUrlParams = urlParams.keyword || urlParams.status || urlParams.role ||
       urlParams.sort_by || urlParams.page > 1 || urlParams.per_page !== 10;
 
     if (hasUrlParams) {
-      // Prevent URL update during initialization
       isUpdatingUrlRef.current = true;
+      skipNextUrlUpdateRef.current = true;
+      isHydratingFromUrlRef.current = true;
+      allowUrlSyncRef.current = false;
 
-      // Initialize from URL params
       setPagination((prev) => ({
         ...prev,
         page: urlParams.page,
@@ -539,40 +542,55 @@ export function UsersTable() {
         desc: urlParams.desc,
       });
 
-      // Reset flag after state updates
+      setUrlParamsReady(true);
+
       requestAnimationFrame(() => {
         isUpdatingUrlRef.current = false;
-        isInitializingRef.current = false;
       });
     } else {
-      isInitializingRef.current = false;
+      setUrlParamsReady(true);
+      allowUrlSyncRef.current = true;
     }
 
     urlParamsInitializedRef.current = true;
-  }, [searchParams, parseUrlParams]);
+  }, [parseUrlParams]);
 
   // Update URL when query params or pagination changes
   React.useEffect(() => {
-    if (!urlParamsInitializedRef.current || isUpdatingUrlRef.current) {
+    if (!urlParamsReady || isUpdatingUrlRef.current || isHydratingFromUrlRef.current) {
+      return;
+    }
+
+    if (!allowUrlSyncRef.current) {
+      return;
+    }
+
+    if (skipNextUrlUpdateRef.current) {
+      skipNextUrlUpdateRef.current = false;
       return;
     }
 
     isUpdatingUrlRef.current = true;
-    updateUrlParams(queryParams, pagination);
+    updateUrlParams(queryParams, {
+      page: pagination.page,
+      per_page: pagination.per_page,
+    });
 
     // Reset flag after a short delay to allow state updates to complete
     requestAnimationFrame(() => {
       isUpdatingUrlRef.current = false;
     });
-  }, [queryParams, pagination.page, pagination.per_page, updateUrlParams]);
+  }, [queryParams, pagination.page, pagination.per_page, updateUrlParams, urlParamsReady]);
 
   // Update search keyword state
   const handleSearchChange = React.useCallback((keyword) => {
+    allowUrlSyncRef.current = true;
     setQueryParams((prev) => ({ ...prev, keyword }));
   }, []);
 
   // Execute search and fetch users
   const handleSearch = React.useCallback((keyword) => {
+    allowUrlSyncRef.current = true;
     if (table.getState().pagination.pageIndex !== 0) {
       table.setPageIndex(0);
     }
@@ -617,17 +635,21 @@ export function UsersTable() {
   }, [table, fetchUsers]);
 
   // Handle pagination, sorting, and filtering changes
+  const tableState = table.getState();
+  const tablePageIndex = tableState.pagination.pageIndex;
+  const tablePageSize = tableState.pagination.pageSize;
+  const tableSorting = tableState.sorting;
+  const tableFilters = tableState.columnFilters;
+
   React.useEffect(() => {
     // Skip if still initializing URL params
-    if (isInitializingRef.current || !urlParamsInitializedRef.current) {
+    if (!urlParamsReady) {
       return;
     }
 
-    const tableState = table.getState();
-    const tablePage = tableState.pagination.pageIndex + 1;
-    const tablePageSize = tableState.pagination.pageSize;
-    const sorting = tableState.sorting;
-    const columnFilters = tableState.columnFilters;
+    const tablePage = tablePageIndex + 1;
+    const sorting = tableSorting;
+    const columnFilters = tableFilters;
 
     let sort_by = null;
     let desc = false;
@@ -653,6 +675,8 @@ export function UsersTable() {
       tablePage !== prevTablePageRef.current || tablePageSize !== prevTablePageSizeRef.current;
     const sortingChanged = JSON.stringify(sorting) !== JSON.stringify(prevSortingRef.current);
     const filtersChanged = JSON.stringify(columnFilters) !== JSON.stringify(prevFiltersRef.current);
+    const shouldResetPage = sortingChanged || filtersChanged;
+    const targetPage = shouldResetPage ? 1 : tablePage;
 
     if (isInitialMountRef.current) {
       isInitialMountRef.current = false;
@@ -720,9 +744,7 @@ export function UsersTable() {
         desc: initialDesc,
       });
 
-      // Update table state to match URL params AFTER fetching
-      // This will trigger useEffect again, but prev refs are already updated
-      // so paginationChanged/sortingChanged/filtersChanged will be false
+      // Update table state to match URL
       if (hasUrlParams) {
         if (urlParams.page) {
           table.setPageIndex(urlParams.page - 1);
@@ -746,12 +768,23 @@ export function UsersTable() {
         if (newFilters.length > 0) {
           table.setColumnFilters(newFilters);
         }
+
+        // Allow URL sync after hydration
+        requestAnimationFrame(() => {
+          isHydratingFromUrlRef.current = false;
+          skipNextUrlUpdateRef.current = true;
+        });
       }
       return;
     }
 
     if (paginationChanged || sortingChanged || filtersChanged) {
-      prevTablePageRef.current = tablePage;
+      allowUrlSyncRef.current = true;
+      if (shouldResetPage && tablePage !== 1) {
+        table.setPageIndex(0);
+      }
+
+      prevTablePageRef.current = targetPage;
       prevTablePageSizeRef.current = tablePageSize;
       prevSortingRef.current = sorting;
       prevFiltersRef.current = columnFilters;
@@ -765,7 +798,7 @@ export function UsersTable() {
       }));
 
       fetchUsers({
-        page: tablePage,
+        page: targetPage,
         per_page: tablePageSize,
         keyword: queryParams.keyword || '',
         status,
@@ -774,12 +807,16 @@ export function UsersTable() {
         desc,
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    table.getState().pagination.pageIndex,
-    table.getState().pagination.pageSize,
-    table.getState().sorting,
-    table.getState().columnFilters,
+    tablePageIndex,
+    tablePageSize,
+    tableSorting,
+    tableFilters,
+    fetchUsers,
+    queryParams.keyword,
+    parseUrlParams,
+    table,
+    urlParamsReady,
   ]);
 
   // Sync table pagination state with server response
