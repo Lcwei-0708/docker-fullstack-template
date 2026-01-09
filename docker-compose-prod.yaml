@@ -114,6 +114,8 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - backend-network
     restart: always    
