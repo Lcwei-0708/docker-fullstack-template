@@ -13,6 +13,7 @@ export function RolesList({
   filteredRoles = [], 
   selectedRole,
   isLoading = false,
+  loadingDelayMs = 0,
   searchKeyword = "",
   canManageRoles = false,
   isSubmitting = false,
@@ -29,7 +30,7 @@ export function RolesList({
   const [delayedLoading, setDelayedLoading] = React.useState(false);
 
   const rawIsLoading = !!isLoading;
-  const loadingDelayMs = 100;
+  const effectiveDelayMs = Number(loadingDelayMs ?? 0);
 
   // Delay showing the loading spinner to avoid flash on quick responses
   React.useEffect(() => {
@@ -38,19 +39,19 @@ export function RolesList({
       return undefined;
     }
 
-    if (!loadingDelayMs || loadingDelayMs <= 0) {
+    if (!effectiveDelayMs || effectiveDelayMs <= 0) {
       setDelayedLoading(true);
       return undefined;
     }
 
     const timer = window.setTimeout(() => {
       setDelayedLoading(true);
-    }, loadingDelayMs);
+    }, effectiveDelayMs);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [rawIsLoading, loadingDelayMs]);
+  }, [rawIsLoading, effectiveDelayMs]);
 
   const recomputeScrollbar = React.useCallback(() => {
     const el = scrollerRef.current;
@@ -74,7 +75,7 @@ export function RolesList({
   const scrollerPaddingRightPx = Math.max(0, baseXPaddingPx - scrollbarWidth - 2);
   const canEditOrDelete = canManageRoles && !rawIsLoading && !isSubmitting;
 
-  const showLoading = rawIsLoading || delayedLoading;
+  const showLoading = delayedLoading;
 
   return (
     <Card className={cn("flex flex-col h-full min-h-0 py-0", className)}>

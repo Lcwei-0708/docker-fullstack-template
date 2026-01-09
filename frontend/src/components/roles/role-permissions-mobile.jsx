@@ -56,6 +56,7 @@ export function RolePermissionsMobile({
   attributes = {},
   attributeGroups = [],
   isLoadingAttributes = false,
+  loadingDelayMs = 0,
   hasChanges = false,
   isSubmitting = false,
   canManageRoles = false,
@@ -67,16 +68,22 @@ export function RolePermissionsMobile({
   const [delayedLoadingAttrs, setDelayedLoadingAttrs] = React.useState(false)
 
   const rawIsLoadingAttrs = !!isLoadingAttributes
-  const loadingDelayMs = 100
+  const effectiveDelayMs = Number(loadingDelayMs ?? 0)
 
   React.useEffect(() => {
     if (!rawIsLoadingAttrs) {
       setDelayedLoadingAttrs(false)
       return undefined
     }
-    const timer = window.setTimeout(() => setDelayedLoadingAttrs(true), loadingDelayMs)
+
+    if (!effectiveDelayMs || effectiveDelayMs <= 0) {
+      setDelayedLoadingAttrs(true)
+      return undefined
+    }
+
+    const timer = window.setTimeout(() => setDelayedLoadingAttrs(true), effectiveDelayMs)
     return () => window.clearTimeout(timer)
-  }, [rawIsLoadingAttrs, loadingDelayMs])
+  }, [rawIsLoadingAttrs, effectiveDelayMs])
 
   const organizedGroups = React.useMemo(() => {
     if (Array.isArray(attributeGroups) && attributeGroups.length > 0) {
