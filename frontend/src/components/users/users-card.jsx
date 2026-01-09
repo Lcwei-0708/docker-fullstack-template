@@ -52,6 +52,14 @@ export function UserCard({
   const longPressTimerRef = React.useRef(null);
   const isLongPressRef = React.useRef(false);
 
+  React.useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+    };
+  }, []);
+
   if (!user) return null;
 
   const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim() || "-";
@@ -73,7 +81,7 @@ export function UserCard({
   };
 
   // Handle long press to enter selection mode
-  const handlePointerDown = (e) => {
+  const handlePointerDown = () => {
     if (!canManageUsers || isSelectionMode) return;
     
     isLongPressRef.current = false;
@@ -83,14 +91,14 @@ export function UserCard({
     }, 500); // 500ms for long press
   };
 
-  const handlePointerUp = (e) => {
+  const handlePointerUp = () => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
   };
 
-  const handlePointerCancel = (e) => {
+  const handlePointerCancel = () => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
@@ -130,22 +138,13 @@ export function UserCard({
     }
   };
 
-  // Cleanup on unmount
-  React.useEffect(() => {
-    return () => {
-      if (longPressTimerRef.current) {
-        clearTimeout(longPressTimerRef.current);
-      }
-    };
-  }, []);
-
 
   return (
     <>
       <Card 
         className={cn(
-          "shadow-xs border-y-0 border-x-5 border-transparent rounded-none py-2 cursor-pointer bg-popover hover:bg-accent/50 select-none",
-          isSelectionMode && isSelected && "bg-primary/1 border-l-primary"
+          "shadow-none border-y-0 border-x-5 border-transparent rounded-none py-2 cursor-pointer bg-background hover:bg-accent select-none",
+          isSelectionMode && isSelected && "bg-primary/10 border-l-primary"
         )}
         onClick={handleCardClick}
         onPointerDown={handlePointerDown}
@@ -210,15 +209,14 @@ export function UserCard({
                 ) : (
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 rounded-sm"
+                    className="h-6 w-6 p-4 rounded-xs"
                     data-action-button
                     onClick={(e) => {
                       e.stopPropagation();
                       setIsActionsDrawerOpen(true);
                     }}
                   >
-                    <MoreHorizontal className="size-4" />
+                    <MoreHorizontal className="size-5" />
                     <span className="sr-only">
                       {t("common.actions.openMenu", "Open menu")}
                     </span>
@@ -329,7 +327,7 @@ export function UserCard({
             <div className="space-y-6">
               {/* General Actions Group */}
               <div className="space-y-2">
-                <div className="overflow-hidden rounded-lg border">
+                <div className="overflow-hidden rounded-lg border divide-y divide-border">
                   <Button
                     variant="default"
                     className="w-full justify-between gap-3 h-auto py-4 px-4 rounded-none bg-input text-card-foreground hover:bg-accent"
@@ -340,7 +338,6 @@ export function UserCard({
                     </span>
                     <Edit className="size-5 shrink-0" />
                   </Button>
-                  <Separator className="!w-[95%] mx-auto" />
                   <Button
                     variant="default"
                     className="w-full justify-between gap-3 h-auto py-4 px-4 rounded-none bg-input text-card-foreground hover:bg-accent"

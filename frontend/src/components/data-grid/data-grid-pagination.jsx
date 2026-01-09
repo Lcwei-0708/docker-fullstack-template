@@ -27,7 +27,7 @@ function DataGridPagination(props) {
     moreLimit: 5,
     more: false,
     info: 'components.pagination.info',
-    infoSkeleton: <Skeleton className="h-8 w-60" />,
+    infoSkeleton: <Skeleton className="h-8 w-120" />,
     rowsPerPageLabel: t('components.pagination.rowsPerPage', 'Rows per page'),
     previousPageLabel: t('components.pagination.previousPage', 'Previous page'),
     nextPageLabel: t('components.pagination.nextPage', 'Next page'),

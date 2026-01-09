@@ -11,6 +11,20 @@ import { UserCard } from "./users-card";
 import { Virtuoso } from "react-virtuoso";
 import { Spinner } from "@/components/ui/spinner";
 import { UsersCardListToolbar } from "./users-card-list-toolbar";
+import { Scroller } from "@/components/ui/scroller";
+
+const VirtuosoScroller = React.forwardRef(function VirtuosoScroller(props, ref) {
+  return (
+    <Scroller
+      {...props}
+      ref={ref}
+      hideScrollbar="hover"
+      className={["h-full", props?.className].filter(Boolean).join(" ")}
+    >
+      {props?.children}
+    </Scroller>
+  );
+});
 
 // Users card list view component for mobile with CRUD operations
 export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
@@ -689,7 +703,7 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
 
   return (
     <>
-      <div className="flex flex-col h-[calc(100dvh-8rem)]">
+      <div className="flex flex-col h-[calc(100dvh-120px)]">
         <div className="shrink-0 pb-2">
           <UsersCardListToolbar
             keyword={queryParams.keyword}
@@ -716,10 +730,10 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
           />
         </div>
 
-        <div className="flex-1 min-h-0 border-t-1 border-accent-foreground/20 shadow-xs">
+        <div className="flex-1">
           <div 
             ref={containerRef}
-            className="h-full bg-popover"
+            className="h-full"
           >
             {isLoading && data.length === 0 ? (
               <div className="flex items-center justify-center py-12 text-muted-foreground px-0">
@@ -742,7 +756,7 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
                   if (!user) return null;
 
                   return (
-                    <div className="px-0 bg-muted/60">
+                    <div className="px-0">
                       <UserCard
                         user={user}
                         onEdit={handleEdit}
@@ -771,6 +785,7 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
                 }}
                 overscan={200}
                 components={{
+                  Scroller: VirtuosoScroller,
                   Footer: () => {
                     if (isLoadingMore) {
                       return (

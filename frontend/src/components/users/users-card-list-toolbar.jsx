@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/useMobile";
 import {
   Dialog,
   DialogContent,
@@ -167,7 +166,6 @@ function FilterFieldPopover({
  */
 export function UsersCardListToolbar({
   keyword,
-  onSearchChange,
   onSearch,
   onClear,
   status,
@@ -186,7 +184,6 @@ export function UsersCardListToolbar({
   totalCount = 0,
 }) {
   const { t } = useTranslation();
-  const isMobile = useIsMobile();
   const [showFilterDialog, setShowFilterDialog] = React.useState(false);
   const [showSortPopover, setShowSortPopover] = React.useState(false);
   const [localKeyword, setLocalKeyword] = React.useState(keyword || '');
@@ -377,7 +374,7 @@ export function UsersCardListToolbar({
             value={localKeyword}
             onChange={(e) => setLocalKeyword(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="pl-9 pr-9"
+            className="pl-9 pr-9 h-12"
           />
           {localKeyword && (
             <Button
@@ -395,18 +392,18 @@ export function UsersCardListToolbar({
           variant="secondary"
           size="icon"
           onClick={handleSearch}
-          className="shrink-0"
+          className="shrink-0 size-12"
         >
-          <Search className="size-5" />
+          <Search className="size-6" />
           <span className="sr-only">{t("common.actions.search", "Search")}</span>
         </Button>
         <Button
           variant="secondary"
           size="icon"
           onClick={() => setShowFilterDialog(true)}
-          className={cn("shrink-0")}
+          className="shrink-0 size-12"
         >
-          <Filter className="size-5" />
+          <Filter className="size-6" />
           <span className="sr-only">{t("common.actions.filter", "Filter")}</span>
         </Button>
         <Popover open={showSortPopover} onOpenChange={setShowSortPopover}>
@@ -416,16 +413,16 @@ export function UsersCardListToolbar({
                 <Button
                   variant="secondary"
                   size="icon"
-                  className={cn("shrink-0")}
+                  className="shrink-0 size-12"
                 >
                   {hasActiveSort ? (
                     desc ? (
-                      <ArrowDownNarrowWide className="size-5" />
+                      <ArrowDownNarrowWide className="size-6" />
                     ) : (
-                      <ArrowUpWideNarrow className="size-5" />
+                      <ArrowUpWideNarrow className="size-6" />
                     )
                   ) : (
-                    <ArrowUpDown className="size-5" />
+                    <ArrowUpDown className="size-6" />
                   )}
                   <span className="sr-only">{t("common.actions.sort", "Sort")}</span>
                 </Button>
