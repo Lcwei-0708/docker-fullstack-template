@@ -35,21 +35,14 @@ This project is a ready-to-use fullstack template that leverages Docker Compose 
 
 #### 3. **Configure environment variables**
 
-   Copy `.env.example` to `.env` and edit as needed.
-
-   ```bash
-   cp .env.example .env
-   ```
+   If you want to customize settings, copy `.env.example` to `.env` and edit as needed.
 
    > Set the `COMPOSE_FILE` environment variable to switch between development and production modes.
 
 #### 4. **Set up Nginx IP whitelist and SSL certificates**
 
-   - Copy `whitelist.conf.example` to `whitelist.conf` and edit as needed.
+     If you need to restrict the range of allowed IP addresses, edit this file.
 
-      ```bash
-      cp nginx/whitelist.conf.example nginx/whitelist.conf
-      ```
   
    - To enable SSL (HTTPS), you need to configure SSL settings in your `.env` file and place your SSL certificates in the `nginx/ssl` directory.
       - Env setting: 
