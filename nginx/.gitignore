@@ -1,6 +1,3 @@
-# Whitelist
-whitelist.conf
-
 # SSL
 *.pem
 *.key
