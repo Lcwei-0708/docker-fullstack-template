@@ -69,3 +69,8 @@ class TokenException(BaseServiceException):
     """Token related exceptions"""
     def __init__(self, message: str = "Token error", details: Dict[str, Any] = None):
         super().__init__(message=message, error_code="TOKEN_ERROR", details=details, status_code=401, log_level="warning")
+
+class SMTPNotConfiguredException(BaseServiceException):
+    """SMTP configuration related exceptions"""
+    def __init__(self, message: str = "SMTP is not configured", details: Dict[str, Any] = None):
+        super().__init__(message=message, error_code="SMTP_NOT_CONFIGURED", details=details, status_code=503, log_level="warning")

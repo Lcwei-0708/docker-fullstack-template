@@ -110,6 +110,15 @@ services:
       - DB_WRITE_TIMEOUT=${DB_WRITE_TIMEOUT}
       # Redis settings
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      # SMTP settings
+      - SMTP_ENABLE=${SMTP_ENABLE}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME}
+      - SMTP_ENCRYPTION=${SMTP_ENCRYPTION}
     command: ["sh", "./init-prod.sh"]
     depends_on:
       mariadb:

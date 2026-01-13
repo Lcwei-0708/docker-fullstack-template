@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 1 day
     PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes
+    PASSWORD_RESET_EMAIL_COOLDOWN_SECONDS: int = 60  # 1 minute
 
     # Session settings
     SESSION_EXPIRE_MINUTES: int = 10080  # 7 days
@@ -54,7 +55,17 @@ class Settings(BaseSettings):
     PASSWORD_MIN_LENGTH: int = 6
     RATE_LIMIT: int = 200
     RATE_LIMIT_WINDOW_SECONDS: int = 300  # 5 minutes
-    BLOCK_TIME_SECONDS: int = 600  # 10 minutes
+    BLOCK_TIME_SECONDS: int = 600  # 10 minutes   
+
+    # SMTP setting
+    SMTP_ENABLE: bool = False
+    SMTP_HOST: str
+    SMTP_PORT: int
+    SMTP_USERNAME: str
+    SMTP_PASSWORD: str
+    SMTP_FROM_EMAIL: str
+    SMTP_FROM_NAME: str
+    SMTP_ENCRYPTION: str
 
     # Default admin user settings
     DEFAULT_ADMIN_EMAIL: str = "admin@example.com"
