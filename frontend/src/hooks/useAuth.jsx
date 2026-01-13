@@ -3,7 +3,6 @@ import { useAuth as useAuthContext } from '@/contexts/authContext';
 import authService from '@/services/auth.service';
 import accountService from '@/services/account.service';
 import rolesService from '@/services/roles.service';
-import i18n from '@/i18n';
 import { debugError } from '@/lib/utils';
 
 export const useAuth = () => {
@@ -260,8 +259,12 @@ export const useAuth = () => {
         // Fetch profile with new token
         await fetchAndUpdateProfile();
         
-        // Allow permissions to load
+        // Reset permissions load ref to allow fresh load
+        permissionsLoadRef.current = false;
+        
+        // Allow permissions to load and actively load them
         isResettingPasswordRef.current = false;
+        await loadPermissions();
         
         setLoading(false);
         return { success: true, data: result };
@@ -277,7 +280,7 @@ export const useAuth = () => {
       setLoading(false);
       return { success: false, error: errorMessage, status };
     }
-  }, [setLoading, clearError, loginSuccess, fetchAndUpdateProfile, setError]);
+  }, [setLoading, clearError, loginSuccess, fetchAndUpdateProfile, setError, loadPermissions]);
 
   // Validate password reset token
   const validateResetToken = useCallback(async (resetToken) => {
