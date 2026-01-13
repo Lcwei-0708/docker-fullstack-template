@@ -1,12 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 from httpx import AsyncClient
-from fastapi import HTTPException
 from api.auth.schema import (
-    UserRegister,
-    UserLogin,
-    ResetPasswordRequest,
-    LogoutRequest,
     PasswordResetRequiredResponse,
 )
 from utils.custom_exception import (
@@ -14,11 +9,11 @@ from utils.custom_exception import (
     AuthenticationException,
     PasswordResetRequiredException,
     NotFoundException,
+    SMTPNotConfiguredException,
+    ValidationException,
 )
 from core.security import (
-    create_password_reset_token,
     verify_password_reset_token,
-    get_token,
     verify_token,
 )
 from main import app
@@ -560,3 +555,98 @@ class TestAuthController:
                 assert "session_id" in response.cookies
             finally:
                 app.dependency_overrides.pop(verify_password_reset_token, None)
+
+    @pytest.mark.asyncio
+    async def test_forgot_password_send_email_success(self, client: AsyncClient):
+        """Test forgot password sends reset email"""
+        req_data = {"email": "john.doe@example.com"}
+        with patch("api.auth.controller.forgot_password", new_callable=AsyncMock) as mock_send:
+            mock_send.return_value = {"reset_url": "http://localhost:3000/reset-password?token=test"}
+
+            response = await client.post("/api/auth/forgot-password", json=req_data)
+            assert response.status_code == 200
+            data = response.json()
+            assert data["code"] == 200
+            assert data["message"] == "Reset password email sent"
+            mock_send.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_forgot_password_user_not_found(self, client: AsyncClient):
+        """Test forgot password returns error if user not found"""
+        req_data = {"email": "not-exist@example.com"}
+        with patch("api.auth.controller.forgot_password", new_callable=AsyncMock) as mock_send:
+            mock_send.side_effect = NotFoundException("User not found")
+
+            response = await client.post("/api/auth/forgot-password", json=req_data)
+            assert response.status_code == 404
+            data = response.json()
+            assert data["code"] == 404
+            assert data["message"] == "User not registered"
+
+    @pytest.mark.asyncio
+    async def test_forgot_password_cooldown_active(self, client: AsyncClient):
+        """Test forgot password returns 400 when cooldown is active"""
+        req_data = {"email": "john.doe@example.com"}
+        with patch("api.auth.controller.forgot_password", new_callable=AsyncMock) as mock_send:
+            mock_send.side_effect = ValidationException(
+                "Please wait 60 seconds before requesting another password reset email",
+                details={"cooldown_seconds": 60}
+            )
+
+            response = await client.post("/api/auth/forgot-password", json=req_data)
+            assert response.status_code == 400
+            data = response.json()
+            assert data["code"] == 400
+            assert data["message"] == "Please wait before requesting another password reset email"
+
+    @pytest.mark.asyncio
+    async def test_forgot_password_account_disabled(self, client: AsyncClient):
+        """Test forgot password returns 403 when account is disabled"""
+        req_data = {"email": "disabled@example.com"}
+        with patch("api.auth.controller.forgot_password", new_callable=AsyncMock) as mock_send:
+            mock_send.side_effect = AuthenticationException("Account is disabled")
+
+            response = await client.post("/api/auth/forgot-password", json=req_data)
+            assert response.status_code == 403
+            data = response.json()
+            assert data["code"] == 403
+            assert data["message"] == "Account is disabled"
+
+    @pytest.mark.asyncio
+    async def test_forgot_password_smtp_disabled(self, client: AsyncClient):
+        """Test forgot password returns 503 if SMTP disabled"""
+        req_data = {"email": "john.doe@example.com"}
+        with patch("api.auth.controller.forgot_password", new_callable=AsyncMock) as mock_send:
+            mock_send.side_effect = SMTPNotConfiguredException("SMTP is disabled")
+            response = await client.post("/api/auth/forgot-password", json=req_data)
+            assert response.status_code == 503
+            data = response.json()
+            assert data["code"] == 503
+            assert data["message"] == "SMTP is disabled"
+            mock_send.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_password_reset_cooldown_success(self, client: AsyncClient):
+        """Test get password reset cooldown returns remaining time"""
+        with patch("api.auth.controller.get_password_reset_cooldown", new_callable=AsyncMock) as mock_cooldown:
+            mock_cooldown.return_value = {"cooldown_seconds": 120}
+
+            response = await client.get("/api/auth/forgot-password/cooldown?email=test@example.com")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["code"] == 200
+            assert data["message"] == "Cooldown status retrieved"
+            assert data["data"]["cooldown_seconds"] == 120
+            mock_cooldown.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_password_reset_cooldown_no_cooldown(self, client: AsyncClient):
+        """Test get password reset cooldown returns 0 when no cooldown"""
+        with patch("api.auth.controller.get_password_reset_cooldown", new_callable=AsyncMock) as mock_cooldown:
+            mock_cooldown.return_value = {"cooldown_seconds": 0}
+
+            response = await client.get("/api/auth/forgot-password/cooldown?email=test@example.com")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["code"] == 200
+            assert data["data"]["cooldown_seconds"] == 0

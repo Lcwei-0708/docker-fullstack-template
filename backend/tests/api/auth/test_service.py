@@ -1,11 +1,12 @@
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.users import Users
 from models.user_sessions import UserSessions
 from models.password_reset_tokens import PasswordResetTokens
 from core.security import hash_password, create_access_token
+from extensions.smtp import SMTPMailer
 from api.auth.services import (
     register,
     login,
@@ -14,6 +15,8 @@ from api.auth.services import (
     token,
     reset_password,
     validate_password_reset_token,
+    forgot_password,
+    get_password_reset_cooldown,
 )
 from api.auth.schema import UserRegister, UserLogin
 from utils.custom_exception import (
@@ -22,6 +25,8 @@ from utils.custom_exception import (
     PasswordResetRequiredException,
     ServerException,
     NotFoundException,
+    SMTPNotConfiguredException,
+    ValidationException,
 )
 
 
@@ -520,16 +525,16 @@ class TestAuthService:
         with pytest.raises(AuthenticationException) as exc_info:
             await validate_password_reset_token(test_db_session, token_data)
 
-        assert "User not found or password reset not required" in str(exc_info.value)
+        assert "User not found or account disabled" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_validate_password_reset_token_not_required(
         self, test_db_session: AsyncSession
     ):
-        """Test password reset token validation when not required"""
+        """Test password reset token validation when password reset not required"""
         user_id = "test-no-reset-validate-user"
         hashed_pwd = await hash_password("TestPassword123!")
-
+        
         no_reset_user = Users(
             id=user_id,
             email="noresetvalidate@example.com",
@@ -553,7 +558,154 @@ class TestAuthService:
 
         token_data = {"sub": user_id, "token": "test_token_123"}
 
-        with pytest.raises(AuthenticationException) as exc_info:
-            await validate_password_reset_token(test_db_session, token_data)
+        # validate_password_reset_token does not check password_reset_required,
+        # it only validates token existence and user status
+        result = await validate_password_reset_token(test_db_session, token_data)
+        assert result.is_valid is True
 
-        assert "User not found or password reset not required" in str(exc_info.value)
+    @pytest.mark.asyncio
+    async def test_forgot_password_success(
+        self, test_db_session: AsyncSession, test_user: Users
+    ):
+        """Test successful forgot password flow"""
+        mock_redis = AsyncMock()
+        mock_redis.ttl.return_value = -1  # No cooldown
+        mock_redis.setex.return_value = True
+        
+        mock_mailer = MagicMock(spec=SMTPMailer)
+        mock_mailer.enabled = True
+        mock_mailer.send_text = MagicMock()
+
+        result = await forgot_password(
+            test_db_session,
+            test_user.email,
+            mock_mailer,
+            mock_redis,
+        )
+
+        assert "reset_token" in result
+        assert "reset_url" in result
+        assert "expires_at" in result
+        mock_mailer.send_text.assert_called_once()
+        mock_redis.setex.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_forgot_password_user_not_found(self, test_db_session: AsyncSession):
+        """Test forgot password with non-existent user"""
+        mock_redis = AsyncMock()
+        mock_mailer = MagicMock(spec=SMTPMailer)
+        mock_mailer.enabled = True
+
+        with pytest.raises(NotFoundException):
+            await forgot_password(
+                test_db_session,
+                "notfound@example.com",
+                mock_mailer,
+                mock_redis,
+            )
+
+    @pytest.mark.asyncio
+    async def test_forgot_password_account_disabled(
+        self, test_db_session: AsyncSession
+    ):
+        """Test forgot password with disabled account"""
+        hashed_pwd = await hash_password("TestPassword123!")
+        disabled_user = Users(
+            id="test-disabled-user",
+            email="disabled@example.com",
+            first_name="Disabled",
+            last_name="User",
+            phone="+1234567890",
+            hash_password=hashed_pwd,
+            status=False,
+            password_reset_required=False,
+        )
+        test_db_session.add(disabled_user)
+        await test_db_session.commit()
+
+        mock_redis = AsyncMock()
+        mock_redis.ttl.return_value = -1
+        
+        mock_mailer = MagicMock(spec=SMTPMailer)
+        mock_mailer.enabled = True
+
+        with pytest.raises(AuthenticationException) as exc_info:
+            await forgot_password(
+                test_db_session,
+                disabled_user.email,
+                mock_mailer,
+                mock_redis,
+            )
+        assert "Account is disabled" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_forgot_password_cooldown_active(
+        self, test_db_session: AsyncSession, test_user: Users
+    ):
+        """Test forgot password when cooldown is active"""
+        mock_redis = AsyncMock()
+        mock_redis.ttl.return_value = 60  # 60 seconds remaining
+        
+        mock_mailer = MagicMock(spec=SMTPMailer)
+        mock_mailer.enabled = True
+
+        with pytest.raises(ValidationException) as exc_info:
+            await forgot_password(
+                test_db_session,
+                test_user.email,
+                mock_mailer,
+                mock_redis,
+            )
+        assert "Please wait" in str(exc_info.value)
+        assert exc_info.value.details.get("cooldown_seconds") == 60
+
+    @pytest.mark.asyncio
+    async def test_forgot_password_smtp_disabled(
+        self, test_db_session: AsyncSession, test_user: Users
+    ):
+        """Test forgot password when SMTP is disabled"""
+        mock_redis = AsyncMock()
+        mock_redis.ttl.return_value = -1
+        
+        mock_mailer = MagicMock(spec=SMTPMailer)
+        mock_mailer.enabled = False
+
+        with pytest.raises(SMTPNotConfiguredException):
+            await forgot_password(
+                test_db_session,
+                test_user.email,
+                mock_mailer,
+                mock_redis,
+            )
+
+    @pytest.mark.asyncio
+    async def test_get_password_reset_cooldown_with_cooldown(self):
+        """Test get password reset cooldown when cooldown is active"""
+        mock_redis = AsyncMock()
+        mock_redis.ttl.return_value = 180  # 180 seconds remaining
+
+        result = await get_password_reset_cooldown("test@example.com", mock_redis)
+
+        assert result["cooldown_seconds"] == 180
+        mock_redis.ttl.assert_called_once_with("password_reset_cooldown:test@example.com")
+
+    @pytest.mark.asyncio
+    async def test_get_password_reset_cooldown_no_cooldown(self):
+        """Test get password reset cooldown when no cooldown is active"""
+        mock_redis = AsyncMock()
+        mock_redis.ttl.return_value = -2  # Key doesn't exist
+
+        result = await get_password_reset_cooldown("test@example.com", mock_redis)
+
+        assert result["cooldown_seconds"] == 0
+        mock_redis.ttl.assert_called_once_with("password_reset_cooldown:test@example.com")
+
+    @pytest.mark.asyncio
+    async def test_get_password_reset_cooldown_expired(self):
+        """Test get password reset cooldown when key exists but expired"""
+        mock_redis = AsyncMock()
+        mock_redis.ttl.return_value = -1  # Key exists but no expiry
+
+        result = await get_password_reset_cooldown("test@example.com", mock_redis)
+
+        assert result["cooldown_seconds"] == 0

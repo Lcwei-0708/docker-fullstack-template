@@ -11,6 +11,8 @@ from api.auth.schema import (
     LogoutRequest,
     ResetPasswordRequest,
     TokenValidationResponse,
+    ForgotPasswordRequest,
+    PasswordResetCooldownResponse,
     LoginResult,
     SessionResult,
 )
@@ -299,6 +301,38 @@ class TestAuthSchema:
         with pytest.raises(ValidationError) as exc_info:
             TokenValidationResponse(**data)
 
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+
+    def test_forgot_password_request_valid(self):
+        """Test forgot password request schema"""
+        data = {"email": "john.doe@example.com"}
+        req = ForgotPasswordRequest(**data)
+        assert req.email == "john.doe@example.com"
+
+    def test_forgot_password_request_invalid_email(self):
+        """Test forgot password request invalid email"""
+        data = {"email": "invalid-email"}
+        with pytest.raises(ValidationError):
+            ForgotPasswordRequest(**data)
+
+    def test_password_reset_cooldown_response_valid(self):
+        """Test password reset cooldown response with valid data"""
+        data = {"cooldown_seconds": 120}
+        cooldown_response = PasswordResetCooldownResponse(**data)
+        assert cooldown_response.cooldown_seconds == 120
+
+    def test_password_reset_cooldown_response_zero(self):
+        """Test password reset cooldown response with zero cooldown"""
+        data = {"cooldown_seconds": 0}
+        cooldown_response = PasswordResetCooldownResponse(**data)
+        assert cooldown_response.cooldown_seconds == 0
+
+    def test_password_reset_cooldown_response_missing_field(self):
+        """Test password reset cooldown response with missing field"""
+        data = {}
+        with pytest.raises(ValidationError) as exc_info:
+            PasswordResetCooldownResponse(**data)
         errors = exc_info.value.errors()
         assert len(errors) == 1
 
