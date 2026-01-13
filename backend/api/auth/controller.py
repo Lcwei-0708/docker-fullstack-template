@@ -7,8 +7,10 @@ from datetime import datetime, timedelta
 from utils.get_real_ip import get_real_ip
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.security import verify_password_reset_token, verify_token
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, Query
 from utils.response import APIResponse, parse_responses, common_responses
+from extensions.smtp import get_mailer, SMTPMailer
+from utils.custom_exception import SMTPNotConfiguredException
 from .schema import (
     UserRegister, 
     UserLogin, 
@@ -17,7 +19,9 @@ from .schema import (
     PasswordResetRequiredResponse,
     ResetPasswordRequest,
     TokenValidationResponse,
-    LogoutRequest
+    LogoutRequest,
+    ForgotPasswordRequest,
+    PasswordResetCooldownResponse,
 )
 from .services import (
     register,
@@ -26,13 +30,16 @@ from .services import (
     token,
     logout_all_devices,
     reset_password,
-    validate_password_reset_token
+    validate_password_reset_token,
+    forgot_password,
+    get_password_reset_cooldown,
 )
 from utils.custom_exception import (
     ConflictException,
     AuthenticationException,
     PasswordResetRequiredException,
-    NotFoundException
+    NotFoundException,
+    ValidationException,
 )
 
 logger = logging.getLogger(__name__)
@@ -310,5 +317,70 @@ async def validate_reset_token_api(
         return APIResponse(code=200, message="Token is valid", data=result)
     except AuthenticationException:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+    except Exception:
+        raise HTTPException(status_code=500)
+
+
+@router.post(
+    "/forgot-password",
+    response_model=APIResponse[None],
+    response_model_exclude_none=True,
+    summary="Send reset password email",
+    responses=parse_responses({
+        200: ("Reset password email sent", None),
+        400: ("Please wait before requesting another password reset email", None),
+        403: ("Account is disabled", None),
+        404: ("User not registered", None),
+        503: ("SMTP is disabled", None),
+    }, common_responses),
+)
+async def forgot_password_api(
+    request: Request,
+    request_data: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+    mailer: SMTPMailer = Depends(get_mailer),
+    redis_client = Depends(get_redis),
+):
+    """
+    Send password reset email based on input email.
+    """
+    try:
+        await forgot_password(db, request_data.email, mailer, redis_client)        
+        return APIResponse(code=200, message="Reset password email sent")
+    except ValidationException:
+        raise HTTPException(status_code=400, detail="Please wait before requesting another password reset email")
+    except AuthenticationException:
+        raise HTTPException(status_code=403, detail="Account is disabled")
+    except NotFoundException:
+        raise HTTPException(status_code=404, detail="User not registered")
+    except SMTPNotConfiguredException:
+        raise HTTPException(status_code=503, detail="SMTP is disabled")
+    except Exception:
+        raise HTTPException(status_code=500)
+
+
+@router.get(
+    "/forgot-password/cooldown",
+    response_model=APIResponse[PasswordResetCooldownResponse],
+    response_model_exclude_none=True,
+    summary="Get password reset email cooldown status",
+    responses=parse_responses({
+        200: ("Cooldown status retrieved", PasswordResetCooldownResponse),
+    }, common_responses),
+)
+async def get_password_reset_cooldown_api(
+    email: str = Query(..., description="Email address to check cooldown for"),
+    redis_client = Depends(get_redis),
+):
+    """
+    Get remaining cooldown time for password reset email.
+    Returns 0 if no cooldown is active.
+    """
+    try:
+        result = await get_password_reset_cooldown(email, redis_client)
+        response_data = PasswordResetCooldownResponse(
+            cooldown_seconds=result["cooldown_seconds"]
+        )
+        return APIResponse(code=200, message="Cooldown status retrieved", data=response_data)
     except Exception:
         raise HTTPException(status_code=500)

@@ -2,12 +2,15 @@ import ast
 import redis
 from typing import Optional
 from sqlalchemy import select
+from urllib.parse import quote
 from models.users import Users
 from core.config import settings
+from extensions.smtp import SMTPMailer
 from models.login_logs import LoginLogs
 from datetime import datetime, timedelta
 from models.user_sessions import UserSessions
 from sqlalchemy.ext.asyncio import AsyncSession
+from utils.email_templates import PASSWORD_RESET_TEMPLATE
 from models.password_reset_tokens import PasswordResetTokens
 from .schema import (
     UserRegister, 
@@ -29,9 +32,12 @@ from utils.custom_exception import (
     ConflictException,
     AuthenticationException,
     PasswordResetRequiredException,
+    NotFoundException,
+    SMTPNotConfiguredException,
     ServerException,
-    NotFoundException
+    ValidationException,
 )
+
 
 async def register(
     db: AsyncSession, 
@@ -312,8 +318,8 @@ async def validate_password_reset_token(
         )
         user = result.scalar_one_or_none()
         
-        if not user or not user.password_reset_required:
-            raise AuthenticationException("User not found or password reset not required")
+        if not user or not user.status:
+            raise AuthenticationException("User not found or account disabled")
         
         return TokenValidationResponse(
             is_valid=True
@@ -323,6 +329,89 @@ async def validate_password_reset_token(
         raise
     except Exception as e:
         raise ServerException(f"Token validation failed: {str(e)}")
+
+async def forgot_password(
+    db: AsyncSession,
+    email: str,
+    mailer: SMTPMailer,
+    redis_client: redis.Redis,
+) -> dict:
+    """
+    Forgot password and send reset password email
+    """
+    try:
+        user = await _get_user_by_email_for_password_reset(db, email)
+
+        if not getattr(mailer, "enabled", False):
+            raise SMTPNotConfiguredException("SMTP is disabled")
+
+        cooldown_key = f"password_reset_cooldown:{email}"
+        remaining_seconds = await redis_client.ttl(cooldown_key)
+        
+        if remaining_seconds > 0:
+            raise ValidationException(
+                f"Please wait {remaining_seconds} seconds before requesting another password reset email",
+                details={"cooldown_seconds": remaining_seconds}
+            )
+
+        token_meta = await _request_password_reset_email(db, user)
+        reset_token = token_meta["reset_token"]
+        reset_url = (
+            f"http{'s' if settings.SSL_ENABLE else ''}://"
+            f"{settings.HOSTNAME}:{settings.FRONTEND_PORT}"
+            f"/reset-password?token={quote(reset_token, safe='')}"
+        )
+
+        # Render email template with user name and app name
+        user_name = f"{user.first_name} {user.last_name}".strip()
+        app_name = settings.PROJECT_NAME
+        
+        email_content = PASSWORD_RESET_TEMPLATE.render(
+            reset_url=reset_url,
+            user_name=user_name,
+            app_name=app_name,
+        )
+        
+        mailer.send_text(
+            to_emails=[email],
+            subject=email_content["subject"],
+            body=email_content["body"],
+            html_body=email_content.get("html_body"),
+        )
+
+        # Set cooldown period in Redis
+        await redis_client.setex(
+            cooldown_key,
+            settings.PASSWORD_RESET_EMAIL_COOLDOWN_SECONDS,
+            "1"
+        )
+
+        return {**token_meta, "reset_url": reset_url}
+    
+    except (NotFoundException, AuthenticationException, SMTPNotConfiguredException, ValidationException):
+        raise
+    except Exception as e:
+        raise ServerException(f"Failed to send password reset email: {str(e)}")
+
+
+async def get_password_reset_cooldown(
+    email: str,
+    redis_client: redis.Redis,
+) -> dict:
+    """
+    Get remaining cooldown time for password reset email.
+    
+    Returns:
+        Dict with 'cooldown_seconds' (0 if no cooldown active)
+    """
+    cooldown_key = f"password_reset_cooldown:{email}"
+    remaining_seconds = await redis_client.ttl(cooldown_key)
+    
+    # TTL returns -1 if key exists but has no expiry, -2 if key doesn't exist
+    if remaining_seconds < 0:
+        remaining_seconds = 0
+    
+    return {"cooldown_seconds": remaining_seconds}
 
 async def _update_session_expiry(db: AsyncSession, session_id: str) -> None:
     """Update session expiry time in database"""
@@ -440,3 +529,37 @@ async def _log_login_attempt(
     )
     db.add(log)
     await db.commit()
+
+async def _get_user_by_email_for_password_reset(db: AsyncSession, email: str) -> Users:
+    result = await db.execute(select(Users).where(Users.email == email))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise NotFoundException("User not registered")
+    if not user.status:
+        raise AuthenticationException("Account is disabled")
+    return user
+
+async def _request_password_reset_email(
+    db: AsyncSession,
+    user: Users,
+) -> dict:
+    """
+    Create a password reset token record for the user and return token metadata.
+    """
+    now = datetime.now().astimezone()
+    expires_at = now + timedelta(minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES)
+
+    reset_token = await create_password_reset_token(user.id, user.email)
+    reset_token_record = PasswordResetTokens(
+        user_id=user.id,
+        token=reset_token,
+        expires_at=expires_at,
+    )
+    db.add(reset_token_record)
+    await db.commit()
+
+    return {
+        "reset_token": reset_token,
+        "expires_at": expires_at,
+        "user_id": user.id,
+    }

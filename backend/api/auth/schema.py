@@ -51,3 +51,9 @@ class ResetPasswordRequest(BaseModel):
 
 class TokenValidationResponse(BaseModel):
     is_valid: bool = Field(..., description="Whether the token is valid")
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr = Field(..., description="User email address")
+
+class PasswordResetCooldownResponse(BaseModel):
+    cooldown_seconds: int = Field(..., description="Remaining cooldown time in seconds")
