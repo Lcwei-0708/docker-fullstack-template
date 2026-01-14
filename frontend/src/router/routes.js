@@ -1,3 +1,5 @@
+import ENV from '@/config/env.config';
+
 /**
  * Route Configuration
  * @typedef {Object} RouteConfig
@@ -54,7 +56,7 @@ export const routes = [
     },
   },
   {
-    path: "/login",
+    path: "/auth/login",
     element: "Auth",
     requireAuth: false,
     permissions: [],
@@ -63,7 +65,7 @@ export const routes = [
     },
   },
   {
-    path: "/register",
+    path: "/auth/register",
     element: "Auth",
     requireAuth: false,
     permissions: [],
@@ -72,7 +74,7 @@ export const routes = [
     },
   },
   {
-    path: "/reset-password",
+    path: "/auth/reset-password",
     element: "Auth",
     requireAuth: false,
     permissions: [],
@@ -80,6 +82,16 @@ export const routes = [
       showInSidebar: false,
     },
   },
+  // Only include forgot-password route when SMTP is enabled
+  ...(ENV.SMTP_ENABLE ? [{
+    path: "/auth/forgot-password",
+    element: "Auth",
+    requireAuth: false,
+    permissions: [],
+    sidebar: {
+      showInSidebar: false,
+    },
+  }] : []),
   {
     path: "/profile",
     element: "Profile",

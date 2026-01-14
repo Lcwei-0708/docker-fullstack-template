@@ -333,7 +333,7 @@ export const RegisterForm = ({ className, redirectTo = '/', ...props }) => {
         <div className="text-center text-sm flex items-center justify-center gap-2">
           <span className="text-muted-foreground">{t('pages.auth.register.links.existingUser', { defaultValue: 'Already have an account? ' })}</span>
           <Link 
-            to="/login" 
+            to="/auth/login" 
             className="font-medium text-primary hover:underline"
             state={location.state}
           >

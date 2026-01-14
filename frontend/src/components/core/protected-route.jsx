@@ -34,8 +34,8 @@ export const ProtectedRoute = ({ children, requireAuth = true, permissions = nul
 
   // Redirect to login when user becomes unauthenticated
   useEffect(() => {
-    if (wasAuthenticatedRef.current && !isAuthenticated && location.pathname !== '/login' && !isResetPasswordPage) {
-      navigate('/login', { state: { from: location }, replace: true });
+    if (wasAuthenticatedRef.current && !isAuthenticated && location.pathname !== '/auth/login' && !isResetPasswordPage) {
+      navigate('/auth/login', { state: { from: location }, replace: true });
     }
     wasAuthenticatedRef.current = isAuthenticated;
   }, [isAuthenticated, location, navigate, isResetPasswordPage]);
@@ -78,11 +78,11 @@ export const ProtectedRoute = ({ children, requireAuth = true, permissions = nul
 
   // Redirect to login if authentication required
   if (requireAuth && !isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
   // Redirect authenticated users away from login/register pages
-  if (!requireAuth && isAuthenticated && (location.pathname === "/login" || location.pathname === "/register")) {
+  if (!requireAuth && isAuthenticated && (location.pathname === "/auth/login" || location.pathname === "/auth/register")) {
     const from = location.state?.from?.pathname;
     return <Navigate to={from || "/"} replace />;
   }

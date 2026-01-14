@@ -11,6 +11,8 @@ export const ENV = {
     // API settings
     API_HOST: import.meta.env.VITE_API_HOST || 'localhost',
     API_PORT: import.meta.env.VITE_API_PORT || 5000,
+    // SMTP settings
+    SMTP_ENABLE: import.meta.env.VITE_SMTP_ENABLE === 'true' || false,
 };
 
 export default ENV;

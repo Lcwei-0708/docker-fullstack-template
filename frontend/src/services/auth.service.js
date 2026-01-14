@@ -64,6 +64,7 @@ export const authService = {
   resetPassword: (newPassword, resetToken, config = {}) => 
     apiService.post(`${BASE_AUTH}/reset-password`, { new_password: newPassword }, {
       headers: { Authorization: `Bearer ${resetToken}` },
+      noToken: true,
       retryOn401: false,
       showErrorToast: true,
       showSuccessToast: true,
@@ -87,6 +88,35 @@ export const authService = {
         success: i18n.t('pages.auth.validateResetToken.messages.success', 'Reset token is valid'),
         ...config.messageMap,
       },
+      ...config,
+    }),
+
+  // Forgot password - send reset email
+  forgotPassword: (email, config = {}) => 
+    apiService.post(`${BASE_AUTH}/forgot-password`, { email }, {
+      noToken: true,
+      retryOn401: false,
+      showErrorToast: true,
+      showSuccessToast: true,
+      messageMap: {
+        success: i18n.t('pages.auth.forgotPassword.messages.success', 'Password reset email sent'),
+        400: i18n.t('pages.auth.forgotPassword.messages.cooldown', 'Please wait before requesting another password reset email'),
+        403: i18n.t('pages.auth.forgotPassword.messages.accountDisabled', 'Account is disabled'),
+        404: i18n.t('pages.auth.forgotPassword.messages.emailNotRegistered', 'This email is not registered'),
+        503: i18n.t('pages.auth.forgotPassword.messages.smtpDisabled', 'SMTP is disabled'),
+        ...config.messageMap,
+      },
+      ...config,
+    }),
+
+  // Get password reset cooldown status
+  getPasswordResetCooldown: (email, config = {}) => 
+    apiService.get(`${BASE_AUTH}/forgot-password/cooldown`, { email }, {
+      noToken: true,
+      retryOn401: false,
+      showErrorToast: false,
+      showSuccessToast: false,
+      returnStatus: true,
       ...config,
     }),
 };

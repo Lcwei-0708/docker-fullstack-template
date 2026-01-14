@@ -199,7 +199,8 @@
         },
         "links": {
           "newUser": "新的使用者？",
-          "register": "註冊"
+          "register": "註冊",
+          "forgotPassword": "忘記密碼？"
         },
         "messages": {
           "success": "登入成功",
@@ -305,6 +306,36 @@
       "validateResetToken": {
         "messages": {
           "success": "重設令牌有效"
+        }
+      },
+      "forgotPassword": {
+        "title": "忘記密碼",
+        "description": "請輸入您的電子信箱，我們將寄送重設密碼連結給您。",
+        "fields": {
+          "email": {
+            "label": "電子信箱",
+            "validation": {
+              "required": "請輸入您的電子信箱",
+              "invalid": "請輸入有效的電子信箱格式"
+            }
+          }
+        },
+        "actions": {
+          "backToLogin": "返回登入"
+        },
+        "messages": {
+          "success": "已寄送重設密碼郵件",
+          "cooldown": "請稍候再申請重設密碼郵件",
+          "accountDisabled": "帳號已停用",
+          "emailNotRegistered": "此信箱尚未被使用者註冊",
+          "smtpDisabled": "未啟用寄信服務"
+        }
+      },
+      "forgotPasswordConfirmation": {
+        "description": "我們已將重設密碼連結寄送至 {{email}}",
+        "actions": {
+          "resend": "重新寄送",
+          "resendCooldown": "重新寄送 ({{time}})"
         }
       }
     },
