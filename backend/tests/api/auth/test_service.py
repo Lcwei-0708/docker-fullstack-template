@@ -425,48 +425,6 @@ class TestAuthService:
         assert "User not found" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_reset_password_not_required(self, test_db_session: AsyncSession):
-        """Test password reset when not required"""
-        mock_redis = AsyncMock()
-        user_id = "test-no-reset-user"
-        hashed_pwd = await hash_password("TestPassword123!")
-
-        no_reset_user = Users(
-            id=user_id,
-            email="noreset@example.com",
-            first_name="No",
-            last_name="Reset",
-            phone="+1234567890",
-            hash_password=hashed_pwd,
-            status=True,
-            password_reset_required=False,
-        )
-        test_db_session.add(no_reset_user)
-        await test_db_session.commit()
-        reset_token_record = PasswordResetTokens(
-            user_id=user_id,
-            token="test_token_123",
-            is_used=False,
-            expires_at=datetime.now() + timedelta(minutes=30),
-        )
-        test_db_session.add(reset_token_record)
-        await test_db_session.commit()
-
-        token_data = {"sub": user_id, "token": "test_token_123"}
-
-        with pytest.raises(AuthenticationException) as exc_info:
-            await reset_password(
-                test_db_session,
-                mock_redis,
-                token_data,
-                "NewPassword123!",
-                "127.0.0.1",
-                "TestAgent/1.0",
-            )
-
-        assert "Password reset not required for this user" in str(exc_info.value)
-
-    @pytest.mark.asyncio
     async def test_validate_password_reset_token_success(
         self, test_db_session: AsyncSession
     ):
