@@ -1,7 +1,7 @@
 import ast
 import redis
 from typing import Optional
-from sqlalchemy import select
+from sqlalchemy import select, update
 from urllib.parse import quote
 from models.users import Users
 from core.config import settings
@@ -262,9 +262,6 @@ async def reset_password(
         if not user:
             raise NotFoundException("User not found")
         
-        if not user.password_reset_required:
-            raise AuthenticationException("Password reset not required for this user")
-        
         user.hash_password = await hash_password(new_password)
         user.password_reset_required = False
         
@@ -359,7 +356,7 @@ async def forgot_password(
         reset_url = (
             f"http{'s' if settings.SSL_ENABLE else ''}://"
             f"{settings.HOSTNAME}:{settings.FRONTEND_PORT}"
-            f"/reset-password?token={quote(reset_token, safe='')}"
+            f"/auth/reset-password?token={quote(reset_token, safe='')}"
         )
 
         # Render email template with user name and app name
@@ -545,9 +542,20 @@ async def _request_password_reset_email(
 ) -> dict:
     """
     Create a password reset token record for the user and return token metadata.
+    Invalidates all previous unused tokens for this user before creating a new one.
     """
     now = datetime.now().astimezone()
     expires_at = now + timedelta(minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES)
+
+    # Invalidate all previous unused tokens for this user
+    await db.execute(
+        update(PasswordResetTokens)
+        .where(
+            PasswordResetTokens.user_id == user.id,
+            PasswordResetTokens.is_used == False
+        )
+        .values(is_used=True)
+    )
 
     reset_token = await create_password_reset_token(user.id, user.email)
     reset_token_record = PasswordResetTokens(
