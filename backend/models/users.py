@@ -14,6 +14,8 @@ class Users(Base):
     hash_password = Column(String(255), nullable=True)
     status = Column(Boolean, nullable=False, default=True)
     password_reset_required = Column(Boolean, nullable=False, default=False, server_default='0')
+    email_verified = Column(Boolean, nullable=False, default=False, server_default='0')
+    pending_email = Column(String(50), nullable=True, index=True)
     created_at = Column(TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
     updated_at = Column(TIMESTAMP, nullable=False, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     
@@ -22,3 +24,4 @@ class Users(Base):
     user_sessions = relationship("UserSessions", back_populates="user")
     role_mappings = relationship("RoleMapper", back_populates="user")
     password_reset_tokens = relationship("PasswordResetTokens", back_populates="user")
+    email_verification_tokens = relationship("EmailVerificationTokens", back_populates="user")

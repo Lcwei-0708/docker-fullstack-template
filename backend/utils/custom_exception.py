@@ -45,6 +45,11 @@ class PasswordResetRequiredException(BaseServiceException):
     def __init__(self, message: str = "Password reset required", details: Dict[str, Any] = None):
         super().__init__(message=message, error_code="PASSWORD_RESET_REQUIRED", details=details, status_code=202, log_level="warning")
 
+class EmailVerificationRequiredException(BaseServiceException):
+    """Email verification required exception"""
+    def __init__(self, message: str = "Email verification required", details: Dict[str, Any] = None):
+        super().__init__(message=message, error_code="EMAIL_VERIFICATION_REQUIRED", details=details, status_code=202, log_level="warning")
+
 class AuthorizationException(BaseServiceException):
     """Authorization related exceptions"""
     def __init__(self, message: str = "Permission denied", details: Dict[str, Any] = None):

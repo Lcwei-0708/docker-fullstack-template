@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes
     PASSWORD_RESET_EMAIL_COOLDOWN_SECONDS: int = 60  # 1 minute
 
+    # Email verification settings
+    EMAIL_VERIFICATION_ENABLE: bool = False
+    EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes
+    EMAIL_VERIFICATION_COOLDOWN_SECONDS: int = 60  # 1 minute
+
     # Session settings
     SESSION_EXPIRE_MINUTES: int = 10080  # 7 days
     

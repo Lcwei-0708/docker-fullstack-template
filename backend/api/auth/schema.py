@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import TypedDict, Optional
 from datetime import datetime
 from core.config import settings
 from pydantic import BaseModel, EmailStr, Field
@@ -39,9 +39,10 @@ class TokenResponse(BaseModel):
     access_token: str = Field(..., description="JWT access token")
     expires_at: datetime = Field(..., description="Token expiration time")
 
-class PasswordResetRequiredResponse(BaseModel):
-    reset_token: str = Field(..., description="Password reset token")
-    expires_at: str = Field(..., description="Token expiration time")
+class ActionRequiredResponse(BaseModel):
+    action_type: str = Field(..., description="Action type for frontend routing: 'password_reset' or 'email_verification'")
+    token: Optional[str] = Field(default=None, description="Token for the password reset")
+    expires_at: Optional[str] = Field(default=None, description="Token expiration time (ISO format)")
 
 class LogoutRequest(BaseModel):
     logout_all: bool = Field(False, description="Whether to logout from all devices")
@@ -57,3 +58,39 @@ class ForgotPasswordRequest(BaseModel):
 
 class PasswordResetCooldownResponse(BaseModel):
     cooldown_seconds: int = Field(..., description="Remaining cooldown time in seconds")
+
+class EmailVerificationResponse(BaseModel):
+    message: str = Field(..., description="Verification result message")
+
+class EmailVerificationRequiredResponse(BaseModel):
+    expires_at: Optional[str] = Field(default=None, description="Token expiration time (ISO format)")
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr = Field(..., description="Email address to resend verification")
+
+action_required_response_examples = {
+    "passwordReset": {
+        "summary": "Password reset required",
+        "value": {
+            "code": 202,
+            "message": "Password reset required",
+            "data": {
+                "action_type": "password_reset",
+                "token": "password_reset_token",
+                "expires_at": "2024-01-01T12:00:00+00:00"
+            }
+        }
+    },
+    "emailVerification": {
+        "summary": "Email verification required",
+        "value": {
+            "code": 202,
+            "message": "Email verification required",
+            "data": {
+                "action_type": "email_verification",
+                "token": None,
+                "expires_at": "2024-01-01T12:00:00+00:00"
+            }
+        }
+    }
+}

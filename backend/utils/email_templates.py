@@ -81,3 +81,44 @@ PASSWORD_RESET_TEMPLATE = EmailTemplate(
         "</html>"
     ),
 )
+
+# Email Verification Template (for registration and email change)
+EMAIL_VERIFICATION_TEMPLATE = EmailTemplate(
+    subject="Verify your email - {app_name}",
+    body=(
+        "Hi {user_name},\n\n"
+        "{message}\n\n"
+        "Please click the link below to verify your email address:\n{verification_url}\n\n"
+        "This link will expire in {expire_minutes} minutes.\n\n"
+        "{footer_message}"
+    ),
+    html_body=(
+        "<!DOCTYPE html>"
+        "<html>"
+        "<head>"
+            "<meta charset='utf-8'>"
+            "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
+        "</head>"
+        "<body style='margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif; background-color: #ffffff;'>"
+            "<div style='max-width: 80dvw; margin: 0 auto;'>"
+                "<h3 style='margin: 0 0 16px; color: #212529; line-height: 1.6; font-weight: 500;'>Hi {user_name},</h3>"
+                "<p style='margin: 0 0 20px; color: #212529; font-size: 16px; line-height: 1.6;'>"
+                    "{message_html} <br>Please click the button below to verify your email address. This link will expire in <strong>{expire_minutes} minutes</strong>."
+                "</p>"
+                "<p style='margin:0 0 28px; user-select: none;'>"
+                    "<a href='{verification_url}' "
+                        "style='display: inline-block; background-color: #212529; "
+                        "color: #ffffff; text-decoration: none; padding: 10px 16px; border-radius: 12px; "
+                        "font-size: 16px; font-weight: 500;'"
+                    ">"
+                        "Verify Email"
+                    "</a>"
+                "</p>"
+                "<p style='width: fit-content; margin: 0; padding: 10px 18px; border-radius: 12px; border: 1px solid #e9ecef; background-color: #f8f9fa; color: #495057; font-size: 14px; line-height: 1.6;'>"
+                    "{footer_message}"
+                "</p>"
+            "</div>"
+        "</body>"
+        "</html>"
+    ),
+)

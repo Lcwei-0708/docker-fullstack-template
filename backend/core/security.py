@@ -55,6 +55,28 @@ async def create_password_reset_token(user_id: str, email: str) -> str:
     except Exception as e:
         raise ServerException(f"Failed to create password reset token: {str(e)}")
 
+async def create_email_verification_token(user_id: str, email: str, token_type: str) -> str:
+    """Create email verification token"""
+    try:
+        now = datetime.now().astimezone()
+        expire = now + timedelta(minutes=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES)
+        
+        payload = {
+            "sub": user_id,
+            "email": email,
+            "token_type": "email_verification",
+            "verification_type": token_type,  # 'registration' or 'email_change'
+            "iat": now,
+            "exp": expire
+        }
+        
+        token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+        
+        return token
+        
+    except Exception as e:
+        raise ServerException(f"Failed to create email verification token: {str(e)}")
+
 async def get_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))) -> str:
     if not credentials:
         raise HTTPException(
@@ -166,6 +188,51 @@ async def verify_password_reset_token(token: str = Depends(get_token)) -> Dict[s
         )
     except ValueError as e:
         logger.error(f"Failed to verify password reset token: {str(e)}")        
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+async def verify_email_verification_token(token: str = Depends(get_token)) -> Dict[str, Any]:
+    """Verify email verification token"""
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        
+        if payload.get("token_type") != "email_verification":
+            raise ValueError("Invalid token type")
+        
+        verification_type = payload.get("verification_type")
+        if verification_type not in ["registration", "email_change"]:
+            raise ValueError("Invalid verification type")
+
+        if payload.get("exp") < datetime.now().astimezone().timestamp():
+            raise ValueError("Token expired")
+        
+        user_id = payload.get("sub")
+        email = payload.get("email")
+        
+        if not user_id or not email:
+            raise ValueError("Invalid token payload")
+        
+        return {
+            "token": token,
+            "sub": user_id,
+            "email": email,
+            "verification_type": verification_type,
+            "exp": payload.get("exp"),
+            "iat": payload.get("iat")
+        }
+        
+    except JWTError as e:
+        logger.warning(f"JWT validation failed: {type(e).__name__}: {str(e)}")        
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    except ValueError as e:
+        logger.error(f"Failed to verify email verification token: {str(e)}")        
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",

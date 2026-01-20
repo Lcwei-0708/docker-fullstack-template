@@ -121,6 +121,8 @@ services:
       - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
       - SMTP_FROM_NAME=${SMTP_FROM_NAME}
       - SMTP_ENCRYPTION=${SMTP_ENCRYPTION}
+      # Email verification settings
+      - EMAIL_VERIFICATION_ENABLE=${EMAIL_VERIFICATION_ENABLE}
     command: ["sh", "./init-prod.sh"]
     depends_on:
       mariadb:

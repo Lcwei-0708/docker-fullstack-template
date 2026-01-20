@@ -120,6 +120,8 @@ services:
       - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL:-your-email@gmail.com}
       - SMTP_FROM_NAME=${SMTP_FROM_NAME:-Docker Fullstack Template}
       - SMTP_ENCRYPTION=${SMTP_ENCRYPTION:-tls}
+      # Email verification settings
+      - EMAIL_VERIFICATION_ENABLE=${EMAIL_VERIFICATION_ENABLE:-false}
     command: ["sh", "./init-dev.sh"]
     depends_on:
       mariadb:
