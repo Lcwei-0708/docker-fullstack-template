@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.users import Users
 from models.roles import Roles
 from models.role_mapper import RoleMapper
-from utils.custom_exception import ConflictException, NotFoundException
+from utils.custom_exception import ConflictException, NotFoundException, ServerException
 from api.users.services import (
     get_all_users,
     create_user,
@@ -15,6 +15,7 @@ from api.users.services import (
     reset_user_password,
     _assign_user_role,
     _update_user_role,
+    _delete_user_related_records,
 )
 from api.users.schema import (
     UserCreate,
@@ -277,6 +278,49 @@ class TestGetAllUsers:
         assert len(result.users) == 2
         assert result.users[0].email == "a@example.com"
         assert result.users[1].email == "b@example.com"
+
+    @pytest.mark.asyncio
+    async def test_get_all_users_sort_by_role_desc(self, test_db_session: AsyncSession):
+        """Test users retrieval with role sorting desc"""
+        user1 = Users(
+            id="user1",
+            email="a@example.com",
+            first_name="A",
+            last_name="User",
+            phone="+1234567890",
+            hash_password="hashed_password",
+            status=True,
+            created_at=datetime.now()
+        )
+        user2 = Users(
+            id="user2",
+            email="b@example.com",
+            first_name="B",
+            last_name="User",
+            phone="+1234567891",
+            hash_password="hashed_password",
+            status=True,
+            created_at=datetime.now()
+        )
+        role_admin = Roles(id="role1", name="admin", description="Admin role")
+        role_user = Roles(id="role2", name="user", description="User role")
+        test_db_session.add_all([user1, user2, role_admin, role_user])
+        await test_db_session.commit()
+
+        test_db_session.add(RoleMapper(user_id="user1", role_id="role1"))
+        test_db_session.add(RoleMapper(user_id="user2", role_id="role2"))
+        await test_db_session.commit()
+
+        result = await get_all_users(
+            db=test_db_session,
+            sort_by="role",
+            desc=True,
+            page=1,
+            per_page=10
+        )
+
+        assert result.users[0].role == "user"
+        assert result.users[1].role == "admin"
 
 
 class TestCreateUser:
@@ -600,6 +644,30 @@ class TestDeleteUsers:
             # Verify that related records deletion was called
             mock_delete_related.assert_called_once_with(test_db_session, "user1")
 
+    @pytest.mark.asyncio
+    async def test_delete_users_skip_own_account(self, test_db_session: AsyncSession):
+        """Test delete users skips current user"""
+        user = Users(
+            id="current-user",
+            email="current@example.com",
+            first_name="Current",
+            last_name="User",
+            phone="+1234567890",
+            hash_password="hashed_password",
+            status=True,
+            created_at=datetime.now()
+        )
+        test_db_session.add(user)
+        await test_db_session.commit()
+
+        mock_redis = AsyncMock()
+        token = {"sub": "current-user"}
+
+        result = await delete_users(test_db_session, mock_redis, ["current-user"], token)
+
+        assert result.failed_count == 1
+        assert result.results[0].message == "Cannot delete your own account"
+
 
 class TestResetUserPassword:
     """Test reset_user_password service function"""
@@ -649,6 +717,29 @@ class TestResetUserPassword:
         
         assert "User not found" in str(exc_info.value)
 
+    @pytest.mark.asyncio
+    async def test_reset_password_server_error(self, test_db_session: AsyncSession):
+        """Test password reset server error"""
+        user = Users(
+            id="user1",
+            email="user@example.com",
+            first_name="User",
+            last_name="Test",
+            phone="+1234567890",
+            hash_password="old_password",
+            status=True,
+            created_at=datetime.now()
+        )
+        test_db_session.add(user)
+        await test_db_session.commit()
+
+        mock_redis = AsyncMock()
+        with patch("api.users.services.clear_user_all_sessions", side_effect=Exception("Redis error")):
+            with pytest.raises(ServerException):
+                await reset_user_password(
+                    test_db_session, mock_redis, "user1", "NewPassword123!"
+                )
+
 
 class TestRoleManagement:
     """Test role management helper functions"""
@@ -692,6 +783,38 @@ class TestRoleManagement:
             await _assign_user_role(test_db_session, "user1", "nonexistent_role")
         
         assert "Role 'nonexistent_role' not found" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_assign_user_role_existing_mapping(self, test_db_session: AsyncSession):
+        """Test role assignment skips existing mapping"""
+        user = Users(
+            id="user1",
+            email="user@example.com",
+            first_name="User",
+            last_name="Test",
+            phone="+1234567890",
+            hash_password="hashed_password",
+            status=True,
+            created_at=datetime.now()
+        )
+        role = Roles(
+            id="role1",
+            name="admin",
+            description="Administrator role"
+        )
+        test_db_session.add(user)
+        test_db_session.add(role)
+        await test_db_session.commit()
+
+        test_db_session.add(RoleMapper(user_id="user1", role_id="role1"))
+        await test_db_session.commit()
+
+        await _assign_user_role(test_db_session, "user1", "admin")
+
+        result = await test_db_session.execute(
+            text("SELECT COUNT(*) FROM role_mapper WHERE user_id = 'user1' AND role_id = 'role1'")
+        )
+        assert result.scalar() == 1
 
     @pytest.mark.asyncio
     async def test_update_user_role_success(self, test_db_session: AsyncSession):
@@ -773,3 +896,17 @@ class TestRoleManagement:
         )
         mapping = result.fetchone()
         assert mapping is None
+
+    @pytest.mark.asyncio
+    async def test_update_user_role_server_error(self, test_db_session: AsyncSession):
+        """Test role update server error"""
+        with patch.object(test_db_session, "execute", side_effect=Exception("DB error")):
+            with pytest.raises(ServerException):
+                await _update_user_role(test_db_session, "user1", "admin")
+
+    @pytest.mark.asyncio
+    async def test_delete_user_related_records_server_error(self, test_db_session: AsyncSession):
+        """Test delete user related records server error"""
+        with patch.object(test_db_session, "execute", side_effect=Exception("DB error")):
+            with pytest.raises(ServerException):
+                await _delete_user_related_records(test_db_session, "user1")

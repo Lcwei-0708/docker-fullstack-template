@@ -1,12 +1,14 @@
 import pytest
 from models.users import Users
 from core.security import verify_password
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, patch, MagicMock
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from api.account.schema import UserUpdate, PasswordChange
-from utils.custom_exception import AuthenticationException, ServerException
+from utils.custom_exception import AuthenticationException, ServerException, SMTPNotConfiguredException
 from api.account.services import get_user_by_id, update_user_profile, change_password
+from extensions.smtp import SMTPMailer
+from core.config import settings
 
 
 class TestGetUserById:
@@ -58,7 +60,7 @@ class TestUpdateUserProfile:
             phone="+9876543210",
         )
 
-        updated_user = await update_user_profile(
+        updated_user, email_change_requested = await update_user_profile(
             test_db_session, test_user.id, update_data
         )
 
@@ -66,8 +68,10 @@ class TestUpdateUserProfile:
         assert updated_user.id == test_user.id
         assert updated_user.first_name == "Updated"
         assert updated_user.last_name == "Name"
-        assert updated_user.email == "updated@example.com"
+        assert updated_user.email == test_user.email
+        assert updated_user.pending_email == "updated@example.com"
         assert updated_user.phone == "+9876543210"
+        assert email_change_requested is True
 
     @pytest.mark.asyncio
     async def test_update_user_profile_success_partial_fields(
@@ -76,7 +80,7 @@ class TestUpdateUserProfile:
         """Test successful profile update with only some fields"""
         update_data = UserUpdate(first_name="PartialUpdate")
 
-        updated_user = await update_user_profile(
+        updated_user, email_change_requested = await update_user_profile(
             test_db_session, test_user.id, update_data
         )
 
@@ -85,6 +89,7 @@ class TestUpdateUserProfile:
         assert updated_user.last_name == test_user.last_name  # Unchanged
         assert updated_user.email == test_user.email  # Unchanged
         assert updated_user.phone == test_user.phone  # Unchanged
+        assert email_change_requested is False
 
     @pytest.mark.asyncio
     async def test_update_user_profile_user_not_found(
@@ -132,12 +137,13 @@ class TestUpdateUserProfile:
         """Test profile update with same email (should succeed)"""
         update_data = UserUpdate(email=test_user.email)  # Same email
 
-        updated_user = await update_user_profile(
+        updated_user, email_change_requested = await update_user_profile(
             test_db_session, test_user.id, update_data
         )
 
         assert updated_user is not None
         assert updated_user.email == test_user.email
+        assert email_change_requested is False
 
     @pytest.mark.asyncio
     async def test_update_user_profile_database_commit_error(
@@ -152,6 +158,85 @@ class TestUpdateUserProfile:
         ):
             with pytest.raises(SQLAlchemyError):
                 await update_user_profile(test_db_session, test_user.id, update_data)
+
+    @pytest.mark.asyncio
+    async def test_update_user_profile_email_change_sends_verification(
+        self, test_db_session: AsyncSession, test_user: Users
+    ):
+        """Test profile update sends email verification when needed"""
+        update_data = UserUpdate(email="verifychange@example.com")
+        mock_redis = AsyncMock()
+        mock_redis.ttl.return_value = "invalid"
+        mock_redis.setex.return_value = True
+
+        mock_mailer = MagicMock(spec=SMTPMailer)
+        mock_mailer.enabled = True
+        mock_mailer.send_text = MagicMock()
+
+        with patch.object(settings, "SMTP_ENABLE", True):
+            updated_user, email_change_requested = await update_user_profile(
+                test_db_session,
+                test_user.id,
+                update_data,
+                mock_mailer,
+                mock_redis,
+            )
+
+        assert email_change_requested is True
+        assert updated_user.pending_email == "verifychange@example.com"
+        mock_mailer.send_text.assert_called_once()
+        mock_redis.setex.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_update_user_profile_email_change_cooldown(
+        self, test_db_session: AsyncSession, test_user: Users
+    ):
+        """Test profile update skips email send during cooldown"""
+        update_data = UserUpdate(email="cooldown@example.com")
+        mock_redis = AsyncMock()
+        mock_redis.ttl.return_value = 60
+
+        mock_mailer = MagicMock(spec=SMTPMailer)
+        mock_mailer.enabled = True
+        mock_mailer.send_text = MagicMock()
+
+        with patch.object(settings, "SMTP_ENABLE", True):
+            updated_user, email_change_requested = await update_user_profile(
+                test_db_session,
+                test_user.id,
+                update_data,
+                mock_mailer,
+                mock_redis,
+            )
+
+        assert email_change_requested is True
+        assert updated_user.pending_email == "cooldown@example.com"
+        mock_mailer.send_text.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_update_user_profile_email_change_smtp_disabled(
+        self, test_db_session: AsyncSession, test_user: Users
+    ):
+        """Test profile update handles SMTP not configured exception"""
+        update_data = UserUpdate(email="smtpdown@example.com")
+        mock_redis = AsyncMock()
+        mock_redis.ttl.return_value = 0
+
+        mock_mailer = MagicMock(spec=SMTPMailer)
+        mock_mailer.enabled = True
+        mock_mailer.send_text.side_effect = SMTPNotConfiguredException("SMTP is disabled")
+
+        with patch.object(settings, "SMTP_ENABLE", True):
+            updated_user, email_change_requested = await update_user_profile(
+                test_db_session,
+                test_user.id,
+                update_data,
+                mock_mailer,
+                mock_redis,
+            )
+
+        assert email_change_requested is True
+        assert updated_user.pending_email == "smtpdown@example.com"
 
 
 class TestChangePassword:
@@ -297,12 +382,14 @@ class TestServiceIntegration:
         """Test updating profile then changing password in sequence"""
         # First update profile
         profile_update = UserUpdate(first_name="Updated", email="updated@example.com")
-        updated_user = await update_user_profile(
+        updated_user, email_change_requested = await update_user_profile(
             test_db_session, test_user.id, profile_update
         )
 
         assert updated_user.first_name == "Updated"
-        assert updated_user.email == "updated@example.com"
+        assert updated_user.email == test_user.email
+        assert updated_user.pending_email == "updated@example.com"
+        assert email_change_requested is True
 
         # Then change password
         password_data = PasswordChange(
@@ -321,7 +408,8 @@ class TestServiceIntegration:
         # Verify both changes were applied
         await test_db_session.refresh(updated_user)
         assert updated_user.first_name == "Updated"
-        assert updated_user.email == "updated@example.com"
+        assert updated_user.email == test_user.email
+        assert updated_user.pending_email == "updated@example.com"
         assert await verify_password("NewPassword123!", updated_user.hash_password)
 
     @pytest.mark.asyncio
@@ -350,8 +438,8 @@ class TestServiceIntegration:
         update2 = UserUpdate(last_name="Update2")
 
         # Apply updates sequentially (in real scenario, these might be concurrent)
-        user1 = await update_user_profile(test_db_session, test_user.id, update1)
-        user2 = await update_user_profile(test_db_session, test_user.id, update2)
+        user1, _ = await update_user_profile(test_db_session, test_user.id, update1)
+        user2, _ = await update_user_profile(test_db_session, test_user.id, update2)
 
         # Both should succeed
         assert user1 is not None
@@ -376,7 +464,7 @@ class TestServiceErrorHandling:
             # Don't set other fields to None explicitly, just omit them
         )
 
-        updated_user = await update_user_profile(
+        updated_user, email_change_requested = await update_user_profile(
             test_db_session, test_user.id, update_data
         )
 
@@ -384,6 +472,7 @@ class TestServiceErrorHandling:
         assert updated_user.last_name == test_user.last_name  # Unchanged
         assert updated_user.email == test_user.email  # Unchanged
         assert updated_user.phone == test_user.phone  # Unchanged
+        assert email_change_requested is False
 
     @pytest.mark.asyncio
     async def test_change_password_with_none_redis_client(
