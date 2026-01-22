@@ -67,6 +67,8 @@ services:
       # API settings
       - VITE_API_HOST=${API_HOST}
       - VITE_API_PORT=${API_PORT}
+      # SMTP settings
+      - VITE_SMTP_ENABLE=${SMTP_ENABLE}
     command: ["sh", "./init-prod.sh"]
     depends_on:
       backend:
@@ -110,6 +112,17 @@ services:
       - DB_WRITE_TIMEOUT=${DB_WRITE_TIMEOUT}
       # Redis settings
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      # SMTP settings
+      - SMTP_ENABLE=${SMTP_ENABLE}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME}
+      - SMTP_ENCRYPTION=${SMTP_ENCRYPTION}
+      # Email verification settings
+      - EMAIL_VERIFICATION_ENABLE=${EMAIL_VERIFICATION_ENABLE}
     command: ["sh", "./init-prod.sh"]
     depends_on:
       mariadb:

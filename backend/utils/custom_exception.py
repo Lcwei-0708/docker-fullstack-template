@@ -45,6 +45,11 @@ class PasswordResetRequiredException(BaseServiceException):
     def __init__(self, message: str = "Password reset required", details: Dict[str, Any] = None):
         super().__init__(message=message, error_code="PASSWORD_RESET_REQUIRED", details=details, status_code=202, log_level="warning")
 
+class EmailVerificationRequiredException(BaseServiceException):
+    """Email verification required exception"""
+    def __init__(self, message: str = "Email verification required", details: Dict[str, Any] = None):
+        super().__init__(message=message, error_code="EMAIL_VERIFICATION_REQUIRED", details=details, status_code=202, log_level="warning")
+
 class AuthorizationException(BaseServiceException):
     """Authorization related exceptions"""
     def __init__(self, message: str = "Permission denied", details: Dict[str, Any] = None):
@@ -69,3 +74,8 @@ class TokenException(BaseServiceException):
     """Token related exceptions"""
     def __init__(self, message: str = "Token error", details: Dict[str, Any] = None):
         super().__init__(message=message, error_code="TOKEN_ERROR", details=details, status_code=401, log_level="warning")
+
+class SMTPNotConfiguredException(BaseServiceException):
+    """SMTP configuration related exceptions"""
+    def __init__(self, message: str = "SMTP is not configured", details: Dict[str, Any] = None):
+        super().__init__(message=message, error_code="SMTP_NOT_CONFIGURED", details=details, status_code=503, log_level="warning")

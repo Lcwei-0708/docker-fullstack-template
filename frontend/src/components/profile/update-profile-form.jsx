@@ -3,7 +3,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { cn, debugError } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,12 +16,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from '@/hooks/useAuth';
-import { useIsMobile } from '@/hooks/useMobile';
 
-export function UpdateProfileForm({ user, onSuccess, onClose, onSubmittingChange }) {
+export function UpdateProfileForm({
+  user,
+  onSuccess,
+  onClose,
+  onSubmittingChange,
+  onRequiresEmailVerification,
+}) {
   const { t } = useTranslation();
   const { updateUserProfile, isLoading } = useAuth();
-  const isMobile = useIsMobile();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -80,29 +83,33 @@ export function UpdateProfileForm({ user, onSuccess, onClose, onSubmittingChange
 
   const handleSubmit = useCallback(async (formValues) => {
     setIsSubmitting(true);
-    
+
     try {
       const result = await updateUserProfile({
         first_name: formValues.first_name,
         last_name: formValues.last_name,
         email: formValues.email,
         phone: formValues.phone,
-      });
-      
-      if (result.success) {
+      }, {returnStatus: true});
+
+      if (result?.status === 'success') {
         if (onSuccess) {
           await onSuccess(result.data);
         }
-      } else {
-        toast.error(result.error || t('common.status.error'));
+      } else if (result?.requiresEmailVerification) {
+        if (onRequiresEmailVerification) {
+          await onRequiresEmailVerification({
+            email: result.email || formValues.email,
+            profile: result.data,
+          });
+        }
       }
     } catch (error) {
       debugError('Update profile error:', error);
-      toast.error(error.message || t('common.status.error'));
     } finally {
       setIsSubmitting(false);
     }
-  }, [updateUserProfile, onSuccess]);
+  }, [updateUserProfile, onSuccess, onRequiresEmailVerification]);
 
   return (
     <Form {...form}>

@@ -252,7 +252,7 @@ export const ResetPasswordForm = ({ className, token, ...props }) => {
         </div>
         <div className="flex justify-center pt-2">
           <Button asChild className="gap-2 text-sm">
-            <Link to="/login">
+            <Link to="/auth/login">
               <LogIn className="w-4 h-4" />
               {t('pages.auth.resetPassword.actions.backToLogin', { defaultValue: 'Back to Login' })}
             </Link>
@@ -324,4 +324,3 @@ export const ResetPasswordForm = ({ className, token, ...props }) => {
 }
 
 export default ResetPasswordForm
-

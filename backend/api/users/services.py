@@ -158,7 +158,12 @@ async def create_user(db: AsyncSession, user_data: UserCreate) -> UserResponse:
     try:
         # Check if the email already exists
         result = await db.execute(
-            select(Users).where(Users.email == user_data.email)
+            select(Users).where(
+                or_(
+                    Users.email == user_data.email,
+                    Users.pending_email == user_data.email
+                )
+            )
         )
         existing_user = result.scalar_one_or_none()
         if existing_user:
@@ -211,7 +216,13 @@ async def update_user(db: AsyncSession, user_id: str, user_data: UserUpdate) -> 
         # Check if the email is already used by another user
         if user_data.email and user_data.email != user.email:
             result = await db.execute(
-                select(Users).where(Users.email == user_data.email, Users.id != user_id)
+                select(Users).where(
+                    or_(
+                        Users.email == user_data.email,
+                        Users.pending_email == user_data.email
+                    ),
+                    Users.id != user_id
+                )
             )
             if result.scalar_one_or_none():
                 raise ConflictException("Email already exists")

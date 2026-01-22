@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '@/hooks/useMobile';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,7 +33,8 @@ export const Layout = ({
   const [shouldDelayLoginButton, setShouldDelayLoginButton] = useState(false);
   const prevIsAuthenticatedRef = useRef(isAuthenticated);
   
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/reset-password';
+  // Check if current path is any auth-related page
+  const isAuthPage = location.pathname.startsWith('/auth');
   const prevIsAuthPageRef = useRef(isAuthPage);
 
   const dockPositionClasses = {
@@ -55,9 +55,8 @@ export const Layout = ({
   };
 
   const handleLoginClick = () => {
-    navigate('/login');
+    navigate('/auth/login');
   };
-  const userInitials = user?.first_name?.[0]?.toUpperCase() + user?.last_name?.[0]?.toUpperCase() || 'U';
   const userName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'User' : 'User';
   const userEmail = user?.email || '';
 

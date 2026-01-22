@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime
 from httpx import AsyncClient
 from unittest.mock import patch
-from utils.custom_exception import NotFoundException
+from utils.custom_exception import NotFoundException, ConflictException
 from api.users.schema import UserResponse, UserPagination
 from api.users.schema import UserDeleteBatchResponse, UserDeleteResult
 
@@ -73,6 +73,17 @@ class TestUsersController:
 
             assert response.status_code == 200
             mock_get_users.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_users_server_error(self, client: AsyncClient, users_auth_headers: dict):
+        """Test users retrieval with server error"""
+        with patch("api.users.controller.get_all_users") as mock_get_users:
+            mock_get_users.side_effect = Exception("Database error")
+            response = await client.get(
+                "/api/users",
+                headers={"Authorization": users_auth_headers["Authorization"]},
+            )
+            assert response.status_code == 500
 
     @pytest.mark.asyncio
     async def test_create_user_success(
@@ -227,6 +238,26 @@ class TestUsersController:
             assert data["message"] == "User not found"
 
     @pytest.mark.asyncio
+    async def test_update_user_email_conflict(
+        self, client: AsyncClient, users_auth_headers: dict
+    ):
+        """Test user update with email conflict"""
+        user_id = "test-user-id"
+        update_data = {"email": "existing@example.com"}
+
+        with patch("api.users.controller.update_user") as mock_update_user:
+            mock_update_user.side_effect = ConflictException("Email already exists")
+            response = await client.put(
+                f"/api/users/{user_id}",
+                json=update_data,
+                headers={"Authorization": users_auth_headers["Authorization"]},
+            )
+            assert response.status_code == 409
+            data = response.json()
+            assert data["code"] == 409
+            assert data["message"] == "Email already exists"
+
+    @pytest.mark.asyncio
     async def test_delete_users_success(
         self, client: AsyncClient, users_auth_headers: dict
     ):
@@ -328,6 +359,20 @@ class TestUsersController:
             assert data["data"]["total_users"] == 2
             assert data["data"]["success_count"] == 0
             assert data["data"]["failed_count"] == 2
+
+    @pytest.mark.asyncio
+    async def test_delete_users_server_error(self, client: AsyncClient, users_auth_headers: dict):
+        """Test users deletion with server error"""
+        delete_data = {"user_ids": ["user1"]}
+        with patch("api.users.controller.delete_users") as mock_delete_users:
+            mock_delete_users.side_effect = Exception("Database error")
+            response = await client.request(
+                "DELETE",
+                "/api/users",
+                json=delete_data,
+                headers={"Authorization": users_auth_headers["Authorization"]},
+            )
+            assert response.status_code == 500
 
     @pytest.mark.asyncio
     async def test_reset_password_success(

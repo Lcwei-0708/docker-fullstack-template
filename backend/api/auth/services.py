@@ -1,21 +1,29 @@
 import ast
 import redis
 from typing import Optional
-from sqlalchemy import select
+from sqlalchemy import select, update, or_
+from urllib.parse import quote
 from models.users import Users
 from core.config import settings
+from extensions.smtp import SMTPMailer
 from models.login_logs import LoginLogs
 from datetime import datetime, timedelta
 from models.user_sessions import UserSessions
 from sqlalchemy.ext.asyncio import AsyncSession
+from utils.email_templates import (
+    PASSWORD_RESET_TEMPLATE,
+    EMAIL_VERIFICATION_TEMPLATE,
+)
 from models.password_reset_tokens import PasswordResetTokens
+from models.email_verification_tokens import EmailVerificationTokens
 from .schema import (
     UserRegister, 
     UserLogin, 
     LoginResult, 
     SessionResult,
     TokenValidationResponse,
-    PasswordResetRequiredResponse
+    ActionRequiredResponse,
+    PasswordResetRequiredResponse,
 )
 from core.security import (
     verify_password, 
@@ -23,25 +31,74 @@ from core.security import (
     hash_password,
     extend_session_ttl,
     clear_user_all_sessions,
-    create_password_reset_token
+    create_password_reset_token,
+    create_email_verification_token
 )
 from utils.custom_exception import (
     ConflictException,
     AuthenticationException,
     PasswordResetRequiredException,
+    NotFoundException,
+    SMTPNotConfiguredException,
     ServerException,
-    NotFoundException
+    ValidationException,
+    EmailVerificationRequiredException,
 )
+
 
 async def register(
     db: AsyncSession, 
     redis_client: redis.Redis,
     user_data: UserRegister, 
     ip_address: str, 
-    user_agent: str
+    user_agent: str,
+    mailer: Optional[SMTPMailer] = None
 ) -> LoginResult:
     """User register"""
     user = await _create_user(db, user_data)
+    
+    # Check if email verification is required
+    if settings.EMAIL_VERIFICATION_ENABLE and settings.SMTP_ENABLE and mailer:
+        # Check cooldown
+        cooldown_key = f"email_verification_cooldown:{user.email}"
+        remaining_seconds = await redis_client.ttl(cooldown_key)
+        
+        if remaining_seconds > 0:
+            # In cooldown, return 202 without data
+            await _log_login_attempt(
+                db, email=user.email,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                is_success=True,
+                user_id=user.id
+            )
+            raise EmailVerificationRequiredException(
+                message="Email verification required",
+                details=None
+            )
+        else:
+            # Not in cooldown, send verification email
+            await _send_registration_verification_email(db, mailer, user)
+            
+            # Set cooldown
+            await redis_client.setex(
+                cooldown_key,
+                settings.EMAIL_VERIFICATION_COOLDOWN_SECONDS,
+                "1"
+            )
+            
+            await _log_login_attempt(
+                db, email=user.email,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                is_success=True,
+                user_id=user.id
+            )
+            raise EmailVerificationRequiredException(
+                message="Email verification required",
+                details=None
+            )
+    
     session_result = await _create_user_session(
         db, redis_client, user, ip_address, user_agent
     )
@@ -63,7 +120,8 @@ async def login(
     redis_client: redis.Redis,
     login_data: UserLogin, 
     ip_address: str, 
-    user_agent: str
+    user_agent: str,
+    mailer: Optional[SMTPMailer] = None
 ) -> LoginResult:
     """User login"""
     result = await db.execute(
@@ -127,9 +185,64 @@ async def login(
             message="Password reset required",
             details=PasswordResetRequiredResponse(
                 reset_token=reset_token,
-                expires_at=reset_token_record.expires_at.isoformat()
+                expires_at=reset_token_record.expires_at.isoformat() if reset_token_record.expires_at else None
             )
         )
+    
+    # Check if email verification is required
+    if settings.EMAIL_VERIFICATION_ENABLE and settings.SMTP_ENABLE and mailer:
+        if not user.email_verified:
+            # Check cooldown
+            cooldown_key = f"email_verification_cooldown:{user.email}"
+            remaining_seconds = await redis_client.ttl(cooldown_key)
+            
+            if remaining_seconds > 0:
+                # In cooldown, return 202 with cooldown time
+                await _log_login_attempt(
+                    db, email=user.email,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    is_success=True,
+                    user_id=user.id
+                )
+                # Calculate expires_at from cooldown
+                expires_at = (datetime.now().astimezone() + timedelta(seconds=remaining_seconds)).isoformat()
+                raise EmailVerificationRequiredException(
+                    message="Email verification required",
+                    details=ActionRequiredResponse(
+                        action_type="email_verification",
+                        token=None,
+                        expires_at=expires_at
+                    )
+                )
+            else:
+                # Not in cooldown, send verification email
+                await _send_registration_verification_email(db, mailer, user)
+                
+                # Set cooldown
+                await redis_client.setex(
+                    cooldown_key,
+                    settings.EMAIL_VERIFICATION_COOLDOWN_SECONDS,
+                    "1"
+                )
+                
+                await _log_login_attempt(
+                    db, email=user.email,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    is_success=True,
+                    user_id=user.id
+                )
+                # Calculate expires_at from cooldown
+                expires_at = (datetime.now().astimezone() + timedelta(seconds=settings.EMAIL_VERIFICATION_COOLDOWN_SECONDS)).isoformat()
+                raise EmailVerificationRequiredException(
+                    message="Email verification required",
+                    details=ActionRequiredResponse(
+                        action_type="email_verification",
+                        token=None,
+                        expires_at=expires_at
+                    )
+                )
     
     session_result = await _create_user_session(
         db, redis_client, user, ip_address, user_agent
@@ -256,9 +369,6 @@ async def reset_password(
         if not user:
             raise NotFoundException("User not found")
         
-        if not user.password_reset_required:
-            raise AuthenticationException("Password reset not required for this user")
-        
         user.hash_password = await hash_password(new_password)
         user.password_reset_required = False
         
@@ -312,8 +422,8 @@ async def validate_password_reset_token(
         )
         user = result.scalar_one_or_none()
         
-        if not user or not user.password_reset_required:
-            raise AuthenticationException("User not found or password reset not required")
+        if not user or not user.status:
+            raise AuthenticationException("User not found or account disabled")
         
         return TokenValidationResponse(
             is_valid=True
@@ -323,6 +433,89 @@ async def validate_password_reset_token(
         raise
     except Exception as e:
         raise ServerException(f"Token validation failed: {str(e)}")
+
+async def forgot_password(
+    db: AsyncSession,
+    email: str,
+    mailer: SMTPMailer,
+    redis_client: redis.Redis,
+) -> dict:
+    """
+    Forgot password and send reset password email
+    """
+    try:
+        user = await _get_user_by_email_for_password_reset(db, email)
+
+        if not getattr(mailer, "enabled", False):
+            raise SMTPNotConfiguredException("SMTP is disabled")
+
+        cooldown_key = f"password_reset_cooldown:{email}"
+        remaining_seconds = await redis_client.ttl(cooldown_key)
+        
+        if remaining_seconds > 0:
+            raise ValidationException(
+                f"Please wait {remaining_seconds} seconds before requesting another password reset email",
+                details={"cooldown_seconds": remaining_seconds}
+            )
+
+        token_meta = await _request_password_reset_email(db, user)
+        reset_token = token_meta["reset_token"]
+        reset_url = (
+            f"http{'s' if settings.SSL_ENABLE else ''}://"
+            f"{settings.HOSTNAME}:{settings.FRONTEND_PORT}"
+            f"/auth/reset-password?token={quote(reset_token, safe='')}"
+        )
+
+        # Render email template with user name and app name
+        user_name = f"{user.first_name} {user.last_name}".strip()
+        app_name = settings.PROJECT_NAME
+        
+        email_content = PASSWORD_RESET_TEMPLATE.render(
+            reset_url=reset_url,
+            user_name=user_name,
+            app_name=app_name,
+        )
+        
+        mailer.send_text(
+            to_emails=[email],
+            subject=email_content["subject"],
+            body=email_content["body"],
+            html_body=email_content.get("html_body"),
+        )
+
+        # Set cooldown period in Redis
+        await redis_client.setex(
+            cooldown_key,
+            settings.PASSWORD_RESET_EMAIL_COOLDOWN_SECONDS,
+            "1"
+        )
+
+        return {**token_meta, "reset_url": reset_url}
+    
+    except (NotFoundException, AuthenticationException, SMTPNotConfiguredException, ValidationException):
+        raise
+    except Exception as e:
+        raise ServerException(f"Failed to send password reset email: {str(e)}")
+
+
+async def get_password_reset_cooldown(
+    email: str,
+    redis_client: redis.Redis,
+) -> dict:
+    """
+    Get remaining cooldown time for password reset email.
+    
+    Returns:
+        Dict with 'cooldown_seconds' (0 if no cooldown active)
+    """
+    cooldown_key = f"password_reset_cooldown:{email}"
+    remaining_seconds = await redis_client.ttl(cooldown_key)
+    
+    # TTL returns -1 if key exists but has no expiry, -2 if key doesn't exist
+    if remaining_seconds < 0:
+        remaining_seconds = 0
+    
+    return {"cooldown_seconds": remaining_seconds}
 
 async def _update_session_expiry(db: AsyncSession, session_id: str) -> None:
     """Update session expiry time in database"""
@@ -340,7 +533,12 @@ async def _update_session_expiry(db: AsyncSession, session_id: str) -> None:
 async def _create_user(db: AsyncSession, user_data: UserRegister) -> Users:
     try:
         result = await db.execute(
-            select(Users).where(Users.email == user_data.email)
+            select(Users).where(
+                or_(
+                    Users.email == user_data.email,
+                    Users.pending_email == user_data.email
+                )
+            )
         )
         existing_user = result.scalar_one_or_none()
         if existing_user:
@@ -440,3 +638,328 @@ async def _log_login_attempt(
     )
     db.add(log)
     await db.commit()
+
+async def _get_user_by_email_for_password_reset(db: AsyncSession, email: str) -> Users:
+    result = await db.execute(select(Users).where(Users.email == email))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise NotFoundException("User not registered")
+    if not user.status:
+        raise AuthenticationException("Account is disabled")
+    return user
+
+async def _request_password_reset_email(
+    db: AsyncSession,
+    user: Users,
+) -> dict:
+    """
+    Create a password reset token record for the user and return token metadata.
+    Invalidates all previous unused tokens for this user before creating a new one.
+    """
+    now = datetime.now().astimezone()
+    expires_at = now + timedelta(minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES)
+
+    # Invalidate all previous unused tokens for this user
+    await db.execute(
+        update(PasswordResetTokens)
+        .where(
+            PasswordResetTokens.user_id == user.id,
+            PasswordResetTokens.is_used == False
+        )
+        .values(is_used=True)
+    )
+
+    reset_token = await create_password_reset_token(user.id, user.email)
+    reset_token_record = PasswordResetTokens(
+        user_id=user.id,
+        token=reset_token,
+        expires_at=expires_at,
+    )
+    db.add(reset_token_record)
+    await db.commit()
+
+    return {
+        "reset_token": reset_token,
+        "expires_at": expires_at,
+        "user_id": user.id,
+    }
+
+async def verify_email(
+    db: AsyncSession,
+    redis_client: redis.Redis,
+    token: dict,
+    ip_address: str,
+    user_agent: str
+) -> LoginResult:
+    """Verify email using token and create session"""
+    try:
+        user_id = token.get("sub")
+        email = token.get("email")
+        verification_type = token.get("verification_type")
+        token_string = token.get("token")
+        
+        # Verify token record exists and is valid
+        result = await db.execute(
+            select(EmailVerificationTokens).where(
+                EmailVerificationTokens.token == token_string,
+                EmailVerificationTokens.user_id == user_id,
+                EmailVerificationTokens.email == email,
+                EmailVerificationTokens.token_type == verification_type,
+                EmailVerificationTokens.is_used == False,
+                EmailVerificationTokens.expires_at > datetime.now().astimezone()
+            )
+        )
+        token_record = result.scalar_one_or_none()
+        
+        if not token_record:
+            raise AuthenticationException("Invalid or expired token")
+        
+        # Get user
+        result = await db.execute(
+            select(Users).where(Users.id == user_id)
+        )
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            raise NotFoundException("User not found")
+        
+        if not user.status:
+            raise AuthenticationException("Account is disabled")
+        
+        # Mark token as used
+        token_record.is_used = True
+        
+        if verification_type == "registration":
+            # Mark email as verified
+            user.email_verified = True
+        elif verification_type == "email_change":
+            # Update email from pending_email to email
+            if user.pending_email != email:
+                raise AuthenticationException("Email mismatch")
+            
+            # Check if new email already exists
+            result = await db.execute(
+                select(Users).where(Users.email == email, Users.id != user_id)
+            )
+            if result.scalar_one_or_none():
+                raise ConflictException("Email already exists")
+            
+            user.email = email
+            user.pending_email = None
+            user.email_verified = True
+        
+        # Create session for verified user
+        session_result = await _create_user_session(
+            db, redis_client, user, ip_address, user_agent
+        )
+        
+        await db.commit()
+        
+        return {
+            "user": user,
+            "session_id": session_result["session_id"],
+            "access_token": session_result["access_token"]
+        }
+        
+    except (AuthenticationException, NotFoundException, ConflictException):
+        raise
+    except Exception as e:
+        raise ServerException(f"Failed to verify email: {str(e)}")
+
+async def resend_verification_email(
+    db: AsyncSession,
+    email: str,
+    mailer: SMTPMailer,
+    redis_client: redis.Redis,
+) -> dict:
+    """Resend email verification"""
+    try:
+        user = await _get_user_by_email_for_password_reset(db, email)
+        
+        if not settings.SMTP_ENABLE or not getattr(mailer, "enabled", False):
+            raise SMTPNotConfiguredException("SMTP is disabled")
+        
+        # Check cooldown
+        cooldown_key = f"email_verification_cooldown:{email}"
+        remaining_seconds = await redis_client.ttl(cooldown_key)
+        
+        if remaining_seconds > 0:
+            raise ValidationException(
+                f"Please wait {remaining_seconds} seconds before requesting another verification email",
+                details={"cooldown_seconds": remaining_seconds}
+            )
+        
+        # Determine verification type
+        if user.email_verified:
+            # If email is already verified but there's a pending email, resend email change verification
+            if user.pending_email:
+                token_meta = await _request_email_change_verification_email(db, user, user.pending_email)
+                verification_url = (
+                    f"http{'s' if settings.SSL_ENABLE else ''}://"
+                    f"{settings.HOSTNAME}:{settings.FRONTEND_PORT}"
+                    f"/auth/verify-email?token={quote(token_meta['verification_token'], safe='')}"
+                )
+                
+                user_name = f"{user.first_name} {user.last_name}".strip()
+                app_name = settings.PROJECT_NAME
+                
+                email_content = EMAIL_VERIFICATION_TEMPLATE.render(
+                    verification_url=verification_url,
+                    user_name=user_name,
+                    app_name=app_name,
+                    expire_minutes=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES,
+                )
+                
+                mailer.send_text(
+                    to_emails=[user.pending_email],
+                    subject=email_content["subject"],
+                    body=email_content["body"],
+                    html_body=email_content.get("html_body"),
+                )
+            else:
+                raise ValidationException("Email is already verified")
+        else:
+            # Resend registration verification
+            token_meta = await _request_registration_verification_email(db, user)
+            verification_url = (
+                f"http{'s' if settings.SSL_ENABLE else ''}://"
+                f"{settings.HOSTNAME}:{settings.FRONTEND_PORT}"
+                f"/auth/verify-email?token={quote(token_meta['verification_token'], safe='')}"
+            )
+            
+            user_name = f"{user.first_name} {user.last_name}".strip()
+            app_name = settings.PROJECT_NAME
+            
+            email_content = EMAIL_VERIFICATION_TEMPLATE.render(
+                verification_url=verification_url,
+                user_name=user_name,
+                app_name=app_name,
+                expire_minutes=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES,
+            )
+            
+            mailer.send_text(
+                to_emails=[email],
+                subject=email_content["subject"],
+                body=email_content["body"],
+                html_body=email_content.get("html_body"),
+            )
+        
+        # Set cooldown
+        await redis_client.setex(
+            cooldown_key,
+            settings.EMAIL_VERIFICATION_COOLDOWN_SECONDS,
+            "1"
+        )
+        
+        return {"message": "Verification email sent"}
+    
+    except (NotFoundException, AuthenticationException, SMTPNotConfiguredException, ValidationException):
+        raise
+    except Exception as e:
+        raise ServerException(f"Failed to send verification email: {str(e)}")
+
+async def _send_registration_verification_email(
+    db: AsyncSession,
+    mailer: SMTPMailer,
+    user: Users
+) -> None:
+    """Send registration verification email"""
+    if not settings.SMTP_ENABLE or not getattr(mailer, "enabled", False):
+        return
+    
+    token_meta = await _request_registration_verification_email(db, user)
+    verification_url = (
+        f"http{'s' if settings.SSL_ENABLE else ''}://"
+        f"{settings.HOSTNAME}:{settings.FRONTEND_PORT}"
+        f"/auth/verify-email?token={quote(token_meta['verification_token'], safe='')}"
+    )
+    
+    user_name = f"{user.first_name} {user.last_name}".strip()
+    app_name = settings.PROJECT_NAME
+    
+    email_content = EMAIL_VERIFICATION_TEMPLATE.render(
+        verification_url=verification_url,
+        user_name=user_name,
+        app_name=app_name,
+        expire_minutes=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES,
+    )
+    
+    mailer.send_text(
+        to_emails=[user.email],
+        subject=email_content["subject"],
+        body=email_content["body"],
+        html_body=email_content.get("html_body"),
+    )
+
+async def _request_registration_verification_email(
+    db: AsyncSession,
+    user: Users,
+) -> dict:
+    """Create a registration verification token record"""
+    now = datetime.now().astimezone()
+    expires_at = now + timedelta(minutes=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES)
+    
+    # Invalidate all previous unused registration tokens for this user
+    await db.execute(
+        update(EmailVerificationTokens)
+        .where(
+            EmailVerificationTokens.user_id == user.id,
+            EmailVerificationTokens.token_type == "registration",
+            EmailVerificationTokens.is_used == False
+        )
+        .values(is_used=True)
+    )
+    
+    verification_token = await create_email_verification_token(user.id, user.email, "registration")
+    token_record = EmailVerificationTokens(
+        user_id=user.id,
+        email=user.email,
+        token=verification_token,
+        token_type="registration",
+        expires_at=expires_at,
+    )
+    db.add(token_record)
+    await db.commit()
+    
+    return {
+        "verification_token": verification_token,
+        "expires_at": expires_at,
+        "user_id": user.id,
+    }
+
+async def _request_email_change_verification_email(
+    db: AsyncSession,
+    user: Users,
+    new_email: str,
+) -> dict:
+    """Create an email change verification token record"""
+    now = datetime.now().astimezone()
+    expires_at = now + timedelta(minutes=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES)
+    
+    # Invalidate all previous unused email_change tokens for this user
+    await db.execute(
+        update(EmailVerificationTokens)
+        .where(
+            EmailVerificationTokens.user_id == user.id,
+            EmailVerificationTokens.token_type == "email_change",
+            EmailVerificationTokens.is_used == False
+        )
+        .values(is_used=True)
+    )
+    
+    verification_token = await create_email_verification_token(user.id, new_email, "email_change")
+    token_record = EmailVerificationTokens(
+        user_id=user.id,
+        email=new_email,
+        token=verification_token,
+        token_type="email_change",
+        expires_at=expires_at,
+    )
+    db.add(token_record)
+    await db.commit()
+    
+    return {
+        "verification_token": verification_token,
+        "expires_at": expires_at,
+        "user_id": user.id,
+    }

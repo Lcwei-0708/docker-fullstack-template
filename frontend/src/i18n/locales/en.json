@@ -199,7 +199,8 @@
         },
         "links": {
           "newUser": "New user?",
-          "register": "Sign up"
+          "register": "Sign up",
+          "forgotPassword": "Forgot password?"
         },
         "messages": {
           "success": "Sign in successful",
@@ -307,6 +308,53 @@
         "messages": {
           "success": "Reset token is valid"
         }
+      },
+      "forgotPassword": {
+        "title": "Forgot Password",
+        "description": "Enter your email address and we'll send you a link to reset your password.",
+        "fields": {
+          "email": {
+            "label": "Email",
+            "validation": {
+              "required": "Please enter your email",
+              "invalid": "Please enter a valid email format"
+            }
+          }
+        },
+        "actions": {
+          "backToLogin": "Back to Login"
+        },
+        "messages": {
+          "success": "Password reset email sent",
+          "cooldown": "Please wait before requesting another password reset email",
+          "accountDisabled": "Account is disabled",
+          "emailNotRegistered": "This email is not registered",
+          "smtpDisabled": "Email service is disabled"
+        }
+      },
+      "forgotPasswordConfirmation": {
+        "description": "We've sent a password reset link to {{email}}",
+        "actions": {
+          "resend": "Resend email",
+          "resendCooldown": "Resend email ({{time}})"
+        }
+      },
+      "verifyEmail": {
+        "messages": {
+          "noToken": "No verification token provided",
+          "success": "Email verified successfully",
+          "pending": "A verification email has been sent to your email address. Please check your inbox and click the verification link.",
+          "invalidToken": "The verification link has expired or is invalid. Please request a new one.",
+          "verificationFailed": "Email verification failed",
+          "userNotFound": "User not found",
+          "emailExists": "Email already exists"
+        },
+        "actions": {
+          "backToHome": "Go to Home",
+          "resend": "Resend Verification Email",
+          "resendCooldown": "Resend Email ({{cooldownSeconds}}s)",
+          "backToLogin": "Back to Login"
+        }
       }
     },
     "profile": {
@@ -367,7 +415,9 @@
           "submitting": "Updating..."
         },
         "messages": {
-          "success": "Profile updated successfully"
+          "success": "Profile updated successfully",
+          "emailVerificationRequired": "Email verification required",
+          "emailAlreadyExists": "Email already exists"
         }
       },
       "security": {

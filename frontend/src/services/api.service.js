@@ -20,7 +20,8 @@ const apiClient = axios.create({
 let getTokenFunction = null;
 let logoutFunction = null;
 let getTokenFunctionFromContext = null;
-let isGettingToken = false;
+let tokenRefreshPromise = null;
+let failedQueue = [];
 
 export const setTokenGetter = (getToken, logout, getTokenFromContext = null) => {
   getTokenFunction = getToken;
@@ -56,7 +57,7 @@ apiClient.interceptors.request.use(
       } else {
         delete config.headers.Authorization;
       }
-    } catch (error) {
+    } catch {
       delete config.headers.Authorization;
     }
     
@@ -74,11 +75,19 @@ apiClient.interceptors.response.use(
     const messageMap = config?.messageMap;
     const successMessage = config?.successMessage || (messageMap && messageMap.success);
     
-    // 202 indicates password reset is required
+    // 202 indicates password reset or email verification is required
     if (response.status === 202) {
-      // Don't show success toast for 202, as it requires special handling
       if (response.data) {
-        const responseData = response.data.data !== undefined ? response.data.data : response.data;
+        let responseData;
+        if (response.data.data !== undefined && response.data.data !== null) {
+          responseData = response.data.data;
+        } else if (response.data.action_type !== undefined) {
+          responseData = response.data;
+        } else {
+          const { code: _code, message: _message, ...rest } = response.data;
+          responseData = rest;
+        }
+        
         return { ...responseData, _statusCode: 202 };
       }
       return { _statusCode: 202 };
@@ -97,7 +106,7 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
     const retryOn401 = originalRequest.retryOn401 !== false; // Default to true for backward compatibility
 
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.noToken && !isGettingToken && retryOn401) {
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.noToken && retryOn401) {
       const errorMessage = error.response?.data?.message || '';
       const isPasswordError = errorMessage.includes('Current password is incorrect') || 
                              errorMessage.includes('password is incorrect') ||
@@ -109,34 +118,80 @@ apiClient.interceptors.response.use(
       } else {
         // Token expired: try to refresh
         originalRequest._retry = true;
-        isGettingToken = true;
 
-        try {
-          if (getTokenFunctionFromContext) {
-            const tokenResult = await getTokenFunctionFromContext(false, true);
-            
+        // If token refresh is already in progress, add to queue and wait for it
+        if (tokenRefreshPromise) {
+          failedQueue.push(originalRequest);
+          
+          try {
+            const tokenResult = await tokenRefreshPromise;
             if (tokenResult?.success && tokenResult?.token) {
               originalRequest.headers.Authorization = `Bearer ${tokenResult.token}`;
-              const result = await apiClient(originalRequest);
-              isGettingToken = false;
-              return result;
+              return apiClient(originalRequest);
             }
+          } catch {
+            // Token refresh failed, error already handled in tokenRefreshPromise
+            // Reject the original request to trigger error handling
+            error.config = error.config || {};
+            error.config.showErrorToast = false;
+            handleApiError(error, logoutFunction);
+            return Promise.reject(error);
           }
+        } else {
+          failedQueue.push(originalRequest);
           
-          if (logoutFunction) {
-            // Clear local state only (skip API call to avoid loop)
-            logoutFunction(true);
+          tokenRefreshPromise = (async () => {
+            try {
+              if (getTokenFunctionFromContext) {
+                const tokenResult = await getTokenFunctionFromContext(false, true);
+                
+                if (tokenResult?.success && tokenResult?.token) {
+                  // Update all queued requests with new token
+                  failedQueue.forEach(request => {
+                    request.headers.Authorization = `Bearer ${tokenResult.token}`;
+                  });
+                  
+                  return tokenResult;
+                }
+              }
+              
+              // Token refresh failed
+              if (logoutFunction) {
+                logoutFunction(true);
+                error.config = error.config || {};
+                error.config.showErrorToast = false;
+              }
+              
+              throw new Error('Token refresh failed');
+            } catch (tokenError) {
+              if (logoutFunction) {
+                logoutFunction(true);
+                error.config = error.config || {};
+                error.config.showErrorToast = false;
+              }
+              
+              throw tokenError;
+            } finally {
+              tokenRefreshPromise = null;
+              failedQueue = [];
+            }
+          })();
+
+          try {
+            const tokenResult = await tokenRefreshPromise;
+            if (tokenResult?.success && tokenResult?.token) {
+              // Retry this request with new token
+              originalRequest.headers.Authorization = `Bearer ${tokenResult.token}`;
+              return apiClient(originalRequest);
+            }
+          } catch {
+            // Token refresh failed, error already handled in tokenRefreshPromise
+            // Reject the original request to trigger error handling
             error.config = error.config || {};
             error.config.showErrorToast = false;
+            handleApiError(error, logoutFunction);
+            return Promise.reject(error);
           }
-        } catch (tokenError) {
-          if (logoutFunction) {
-            logoutFunction(true);
-            error.config = error.config || {};
-            error.config.showErrorToast = false;
-          }
-        } finally {
-          isGettingToken = false;
         }
       }
     }

@@ -199,7 +199,8 @@
         },
         "links": {
           "newUser": "新的使用者？",
-          "register": "註冊"
+          "register": "註冊",
+          "forgotPassword": "忘記密碼？"
         },
         "messages": {
           "success": "登入成功",
@@ -306,6 +307,53 @@
         "messages": {
           "success": "重設令牌有效"
         }
+      },
+      "forgotPassword": {
+        "title": "忘記密碼",
+        "description": "請輸入您的電子信箱，我們將寄送重設密碼連結給您。",
+        "fields": {
+          "email": {
+            "label": "電子信箱",
+            "validation": {
+              "required": "請輸入您的電子信箱",
+              "invalid": "請輸入有效的電子信箱格式"
+            }
+          }
+        },
+        "actions": {
+          "backToLogin": "返回登入"
+        },
+        "messages": {
+          "success": "已寄送重設密碼郵件",
+          "cooldown": "請稍候再申請重設密碼郵件",
+          "accountDisabled": "帳號已停用",
+          "emailNotRegistered": "此信箱尚未被使用者註冊",
+          "smtpDisabled": "未啟用寄信服務"
+        }
+      },
+      "forgotPasswordConfirmation": {
+        "description": "我們已將重設密碼連結寄送至 {{email}}",
+        "actions": {
+          "resend": "重新寄送",
+          "resendCooldown": "重新寄送 ({{time}})"
+        }
+      },
+      "verifyEmail": {
+        "messages": {
+          "noToken": "未提供驗證令牌",
+          "success": "電子信箱驗證成功",
+          "pending": "已寄送驗證郵件至您的電子信箱，請查看信箱並點擊驗證連結。",
+          "invalidToken": "驗證連結已失效或無效，請重新申請。",
+          "verificationFailed": "電子信箱驗證失敗",
+          "userNotFound": "使用者不存在",
+          "emailExists": "此電子信箱已被使用"
+        },
+        "actions": {
+          "backToHome": "回到首頁",
+          "resend": "重新寄送驗證郵件",
+          "resendCooldown": "重新寄送 ({{cooldownSeconds}}秒)",
+          "backToLogin": "返回登入"
+        }
       }
     },
     "profile": {
@@ -362,7 +410,9 @@
           }
         },
         "messages": {
-          "success": "個人資料更新成功"
+          "success": "個人資料更新成功",
+          "emailVerificationRequired": "需要進行電子信箱驗證",
+          "emailAlreadyExists": "此電子信箱已被使用"
         }
       },
       "security": {

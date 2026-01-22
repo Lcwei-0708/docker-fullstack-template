@@ -24,3 +24,12 @@ def register_schedules():
         name="Cleanup Expired Sessions",
         replace_existing=True
     )
+    scheduler.add_job(
+        cleanup_tasks.cleanup_expired_email_verifications,
+        "cron",
+        hour="*/1",
+        minute=0,
+        id="cleanup_expired_email_verifications",
+        name="Cleanup Expired Email Verifications",
+        replace_existing=True
+    )

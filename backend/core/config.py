@@ -41,6 +41,12 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 1 day
     PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes
+    PASSWORD_RESET_EMAIL_COOLDOWN_SECONDS: int = 60  # 1 minute
+
+    # Email verification settings
+    EMAIL_VERIFICATION_ENABLE: bool = False
+    EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes
+    EMAIL_VERIFICATION_COOLDOWN_SECONDS: int = 60  # 1 minute
 
     # Session settings
     SESSION_EXPIRE_MINUTES: int = 10080  # 7 days
@@ -54,7 +60,17 @@ class Settings(BaseSettings):
     PASSWORD_MIN_LENGTH: int = 6
     RATE_LIMIT: int = 200
     RATE_LIMIT_WINDOW_SECONDS: int = 300  # 5 minutes
-    BLOCK_TIME_SECONDS: int = 600  # 10 minutes
+    BLOCK_TIME_SECONDS: int = 600  # 10 minutes   
+
+    # SMTP setting
+    SMTP_ENABLE: bool = False
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = ""
+    SMTP_FROM_NAME: str = "Docker Fullstack Template"
+    SMTP_ENCRYPTION: str = "tls"
 
     # Default admin user settings
     DEFAULT_ADMIN_EMAIL: str = "admin@example.com"

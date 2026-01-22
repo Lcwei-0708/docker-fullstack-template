@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from 'react'
+import ENV from '@/config/env.config'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -223,8 +224,30 @@ export const LoginForm = ({ className, redirectTo = '/', ...props }) => {
         setEmailValueRef.current('')
         formMethodsRef.current.reset({ email: '', password: '' }, { keepValues: false })
         setTimeout(() => {
-          navigateRef.current(`/reset-password?token=${encodeURIComponent(result.resetToken)}`, { replace: true })
+          navigateRef.current(`/auth/reset-password?token=${encodeURIComponent(result.resetToken)}`, { replace: true })
         }, 0)
+      } else if (result.requiresEmailVerification) {
+        // Email verification required - redirect to verification page with email
+        const emailToKeep = formValues.email || emailRef.current || emailPersistRef.current
+        
+        emailRef.current = emailToKeep
+        emailPersistRef.current = emailToKeep
+        
+        formMethodsRef.current.reset({ email: emailToKeep, password: '' }, { keepValues: false })
+        
+        setEmailValueRef.current(emailToKeep)
+        
+        setIsSubmitting(false)
+        
+        // Redirect to verification page with email in state
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            navigateRef.current('/auth/verify-email', { 
+              replace: true,
+              state: { email: emailToKeep }
+            });
+          });
+        });
       } else {
         const emailToKeep = formValues.email || emailRef.current || emailPersistRef.current
         
@@ -314,7 +337,18 @@ export const LoginForm = ({ className, redirectTo = '/', ...props }) => {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('pages.auth.login.fields.password.label', { defaultValue: 'Password' })}</FormLabel>
+              <div className="flex items-center justify-between">
+                <FormLabel>{t('pages.auth.login.fields.password.label', { defaultValue: 'Password' })}</FormLabel>
+                {ENV.SMTP_ENABLE && (
+                  <Link 
+                    to="/auth/forgot-password" 
+                    className="text-sm leading-none text-primary hover:underline !bg-transparent vertical-align: bottom;"
+                    state={location.state}
+                  >
+                    {t('pages.auth.login.links.forgotPassword', { defaultValue: 'Forgot password?' })}
+                  </Link>
+                )}
+              </div>
               <FormControl>
                 <Input 
                   type="password"
@@ -339,7 +373,7 @@ export const LoginForm = ({ className, redirectTo = '/', ...props }) => {
         <div className="text-center text-sm flex items-center justify-center gap-2">
           <span className="text-muted-foreground">{t('pages.auth.login.links.newUser', { defaultValue: 'New user? ' })}</span>
           <Link 
-            to="/register" 
+            to="/auth/register" 
             className="font-medium text-primary hover:underline"
             state={location.state}
           >

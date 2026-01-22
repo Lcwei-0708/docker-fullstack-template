@@ -6,18 +6,24 @@ from core.dependencies import get_db
 from datetime import datetime, timedelta
 from utils.get_real_ip import get_real_ip
 from sqlalchemy.ext.asyncio import AsyncSession
-from core.security import verify_password_reset_token, verify_token
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from core.security import verify_password_reset_token, verify_token, verify_email_verification_token
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, Query
 from utils.response import APIResponse, parse_responses, common_responses
+from extensions.smtp import get_mailer, SMTPMailer
+from utils.custom_exception import SMTPNotConfiguredException
 from .schema import (
     UserRegister, 
     UserLogin, 
     UserLoginResponse,
     TokenResponse,
-    PasswordResetRequiredResponse,
     ResetPasswordRequest,
     TokenValidationResponse,
-    LogoutRequest
+    LogoutRequest,
+    ForgotPasswordRequest,
+    PasswordResetCooldownResponse,
+    ResendVerificationRequest,
+    ActionRequiredResponse,
+    action_required_response_examples
 )
 from .services import (
     register,
@@ -26,13 +32,19 @@ from .services import (
     token,
     logout_all_devices,
     reset_password,
-    validate_password_reset_token
+    validate_password_reset_token,
+    forgot_password,
+    get_password_reset_cooldown,
+    verify_email,
+    resend_verification_email,
 )
 from utils.custom_exception import (
     ConflictException,
     AuthenticationException,
     PasswordResetRequiredException,
-    NotFoundException
+    NotFoundException,
+    ValidationException,
+    EmailVerificationRequiredException,
 )
 
 logger = logging.getLogger(__name__)
@@ -45,6 +57,7 @@ router = APIRouter(tags=["Auth"])
     summary="Register account",
     responses=parse_responses({
         200: ("User registered successfully", UserLoginResponse),
+        202: ("Email verification required", None),
         409: ("Email already exists", None)
     }, common_responses)
 )
@@ -53,13 +66,14 @@ async def register_api(
     request: Request,
     response: Response,
     db: AsyncSession = Depends(get_db),
-    redis_client = Depends(get_redis)
+    redis_client = Depends(get_redis),
+    mailer: SMTPMailer = Depends(get_mailer)
 ):
     try:
         client_ip = get_real_ip(request)
         user_agent = request.headers.get("user-agent", "Registration")
         
-        result = await register(db, redis_client, user_data, client_ip, user_agent)
+        result = await register(db, redis_client, user_data, client_ip, user_agent, mailer)
         
         user = result["user"]
         session_id = result["session_id"]
@@ -88,6 +102,9 @@ async def register_api(
             user=user_response
         )
         return APIResponse(code=200, message="User registered successfully", data=response_data)
+    except EmailVerificationRequiredException as e:
+        resp = APIResponse(code=202, message="Email verification required")
+        raise HTTPException(status_code=202, detail=resp.dict(exclude_none=True))
     except ConflictException:
         raise HTTPException(status_code=409, detail="Email already exists")
     except Exception:
@@ -100,7 +117,7 @@ async def register_api(
     summary="Login account",
     responses=parse_responses({
         200: ("User logged in successfully", UserLoginResponse),
-        202: ("Password reset required", PasswordResetRequiredResponse),
+        202: ("Password reset required / Email verification required", ActionRequiredResponse, action_required_response_examples),
         401: ("Invalid email or password", None)
     }, common_responses)
 )
@@ -109,13 +126,14 @@ async def login_api(
     request: Request,
     response: Response,
     db: AsyncSession = Depends(get_db),
-    redis_client = Depends(get_redis)
+    redis_client = Depends(get_redis),
+    mailer: SMTPMailer = Depends(get_mailer)
 ):
     try:
         client_ip = get_real_ip(request)
         user_agent = request.headers.get("user-agent", "")
         
-        result = await login(db, redis_client, user_data, client_ip, user_agent)
+        result = await login(db, redis_client, user_data, client_ip, user_agent, mailer)
         
         user = result["user"]
         session_id = result["session_id"]
@@ -146,6 +164,9 @@ async def login_api(
         return APIResponse(code=200, message="User logged in successfully", data=response_data)
     except PasswordResetRequiredException as e:
         resp = APIResponse(code=202, message="Password reset required", data=e.details)
+        raise HTTPException(status_code=202, detail=resp.dict(exclude_none=True))
+    except EmailVerificationRequiredException as e:
+        resp = APIResponse(code=202, message="Email verification required", data=e.details)
         raise HTTPException(status_code=202, detail=resp.dict(exclude_none=True))
     except AuthenticationException as e:
         raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -310,5 +331,199 @@ async def validate_reset_token_api(
         return APIResponse(code=200, message="Token is valid", data=result)
     except AuthenticationException:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+    except Exception:
+        raise HTTPException(status_code=500)
+
+
+@router.post(
+    "/forgot-password",
+    response_model=APIResponse[None],
+    response_model_exclude_none=True,
+    summary="Send reset password email",
+    responses=parse_responses({
+        200: ("Reset password email sent", None),
+        400: ("Please wait before requesting another password reset email", None),
+        403: ("Account is disabled", None),
+        404: ("User not registered", None),
+        503: ("SMTP is disabled", None),
+    }, common_responses),
+)
+async def forgot_password_api(
+    request: Request,
+    request_data: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+    mailer: SMTPMailer = Depends(get_mailer),
+    redis_client = Depends(get_redis),
+):
+    """
+    Send password reset email based on input email.
+    """
+    try:
+        await forgot_password(db, request_data.email, mailer, redis_client)        
+        return APIResponse(code=200, message="Reset password email sent")
+    except ValidationException:
+        raise HTTPException(status_code=400, detail="Please wait before requesting another password reset email")
+    except AuthenticationException:
+        raise HTTPException(status_code=403, detail="Account is disabled")
+    except NotFoundException:
+        raise HTTPException(status_code=404, detail="User not registered")
+    except SMTPNotConfiguredException:
+        raise HTTPException(status_code=503, detail="SMTP is disabled")
+    except Exception:
+        raise HTTPException(status_code=500)
+
+@router.get(
+    "/forgot-password/cooldown",
+    response_model=APIResponse[PasswordResetCooldownResponse],
+    response_model_exclude_none=True,
+    summary="Get password reset email cooldown status",
+    responses=parse_responses({
+        200: ("Cooldown status retrieved", PasswordResetCooldownResponse),
+    }, common_responses),
+)
+async def get_password_reset_cooldown_api(
+    email: str = Query(..., description="Email address to check cooldown for"),
+    redis_client = Depends(get_redis),
+):
+    """
+    Get remaining cooldown time for password reset email.
+    Returns 0 if no cooldown is active.
+    """
+    try:
+        result = await get_password_reset_cooldown(email, redis_client)
+        response_data = PasswordResetCooldownResponse(
+            cooldown_seconds=result["cooldown_seconds"]
+        )
+        return APIResponse(code=200, message="Cooldown status retrieved", data=response_data)
+    except Exception:
+        raise HTTPException(status_code=500)
+
+@router.get(
+    "/verify-email",
+    response_model=APIResponse[UserLoginResponse],
+    response_model_exclude_none=True,
+    summary="Verify email address",
+    responses=parse_responses({
+        200: ("Email verified successfully", UserLoginResponse),
+        401: ("Invalid or expired token", None),
+        404: ("User not found", None),
+        409: ("Email already exists", None)
+    }, common_responses)
+)
+async def verify_email_api(
+    request: Request,
+    response: Response,
+    token: dict = Depends(verify_email_verification_token),
+    db: AsyncSession = Depends(get_db),
+    redis_client = Depends(get_redis)
+):
+    """Verify email address using token and create session"""
+    try:
+        client_ip = get_real_ip(request)
+        user_agent = request.headers.get("user-agent", "")
+        
+        result = await verify_email(db, redis_client, token, client_ip, user_agent)
+        
+        user = result["user"]
+        session_id = result["session_id"]
+        access_token = result["access_token"]
+        
+        user_response = UserResponse(
+            id=user.id,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            email=user.email,
+            phone=user.phone
+        )
+        
+        response_data = UserLoginResponse(
+            access_token=access_token,
+            expires_at=datetime.now().astimezone() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+            user=user_response
+        )
+        
+        response.set_cookie(
+            key="session_id",
+            value=session_id,
+            httponly=settings.COOKIE_HTTPONLY,
+            secure=settings.COOKIE_SECURE,
+            samesite=settings.COOKIE_SAMESITE,
+            max_age=settings.SESSION_EXPIRE_MINUTES * 60
+        )
+        
+        return APIResponse(code=200, message="Email verified successfully", data=response_data)
+    except AuthenticationException:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    except NotFoundException:
+        raise HTTPException(status_code=404, detail="User not found")
+    except ConflictException:
+        raise HTTPException(status_code=409, detail="Email already exists")
+    except Exception:
+        raise HTTPException(status_code=500)
+
+@router.post(
+    "/resend-verification",
+    response_model=APIResponse[None],
+    response_model_exclude_none=True,
+    summary="Resend email verification",
+    responses=parse_responses({
+        200: ("Verification email sent", None),
+        400: ("Please wait before requesting another verification email", None),
+        403: ("Account is disabled", None),
+        404: ("User not registered", None),
+        503: ("SMTP is disabled", None),
+    }, common_responses)
+)
+async def resend_verification_api(
+    request: Request,
+    request_data: ResendVerificationRequest,
+    db: AsyncSession = Depends(get_db),
+    mailer: SMTPMailer = Depends(get_mailer),
+    redis_client = Depends(get_redis),
+):
+    """Resend email verification email"""
+    try:
+        await resend_verification_email(db, request_data.email, mailer, redis_client)
+        return APIResponse(code=200, message="Verification email sent")
+    except ValidationException:
+        raise HTTPException(status_code=400, detail="Please wait before requesting another verification email")
+    except AuthenticationException:
+        raise HTTPException(status_code=403, detail="Account is disabled")
+    except NotFoundException:
+        raise HTTPException(status_code=404, detail="User not registered")
+    except SMTPNotConfiguredException:
+        raise HTTPException(status_code=503, detail="SMTP is disabled")
+    except Exception:
+        raise HTTPException(status_code=500)
+
+@router.get(
+    "/resend-verification/cooldown",
+    response_model=APIResponse[PasswordResetCooldownResponse],
+    response_model_exclude_none=True,
+    summary="Get email verification cooldown status",
+    responses=parse_responses({
+        200: ("Cooldown status retrieved", PasswordResetCooldownResponse),
+    }, common_responses),
+)
+async def get_email_verification_cooldown_api(
+    email: str = Query(..., description="Email address to check cooldown for"),
+    redis_client = Depends(get_redis),
+):
+    """
+    Get remaining cooldown time for email verification email.
+    Returns 0 if no cooldown is active.
+    """
+    try:
+        cooldown_key = f"email_verification_cooldown:{email}"
+        remaining_seconds = await redis_client.ttl(cooldown_key)
+        
+        # TTL returns -1 if key exists but has no expiry, -2 if key doesn't exist
+        if remaining_seconds < 0:
+            remaining_seconds = 0
+        
+        response_data = PasswordResetCooldownResponse(
+            cooldown_seconds=remaining_seconds
+        )
+        return APIResponse(code=200, message="Cooldown status retrieved", data=response_data)
     except Exception:
         raise HTTPException(status_code=500)

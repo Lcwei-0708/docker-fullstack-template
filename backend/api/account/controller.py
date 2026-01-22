@@ -2,11 +2,12 @@ from core.redis import get_redis
 from core.dependencies import get_db
 from core.security import verify_token
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from .schema import UserProfile, UserUpdate, PasswordChange
 from utils.response import APIResponse, parse_responses, common_responses
 from .services import get_user_by_id, update_user_profile, change_password
 from utils.custom_exception import AuthenticationException, NotFoundException
+from extensions.smtp import get_mailer, SMTPMailer
 
 router = APIRouter(tags=["Account"])
 
@@ -54,23 +55,31 @@ async def get_user_profile_api(
     response_model_exclude_unset=True,
     summary="Update current user profile",
     responses=parse_responses({
-        200: ("User profile updated successfully", UserProfile)
+        200: ("User profile updated successfully", UserProfile),
+        202: ("Email verification required", UserProfile)
     }, common_responses)
 )
 async def update_user_profile_api(
     user_update: UserUpdate,
+    response: Response,
     token: dict = Depends(verify_token),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    redis_client = Depends(get_redis),
+    mailer: SMTPMailer = Depends(get_mailer)
 ):
     """
     Update the current authenticated user's profile information (excluding password).
     """
     try:
-        user_id = token.get("sub")        
-        user = await update_user_profile(db, user_id, user_update)
+        user_id = token.get("sub")
+        result = await update_user_profile(
+            db, user_id, user_update, mailer, redis_client
+        )
         
-        if not user:
+        if not result:
             raise NotFoundException("User not found")
+        
+        user, email_change_requested = result
         
         user_data = UserProfile(
             id=user.id,
@@ -82,6 +91,10 @@ async def update_user_profile_api(
             created_at=user.created_at
         )
 
+        if email_change_requested:
+            response.status_code = 202
+            return APIResponse(code=202, message="Email verification required", data=user_data)
+        
         return APIResponse(code=200, message="User profile updated successfully", data=user_data)
     except NotFoundException:
         raise HTTPException(status_code=404, detail="User not found")

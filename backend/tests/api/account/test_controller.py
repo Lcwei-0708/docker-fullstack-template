@@ -114,13 +114,13 @@ class TestUpdateUserProfileAPI:
             headers={"Authorization": account_auth_headers["Authorization"]},
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 202
         data = response.json()
-        assert data["code"] == 200
-        assert data["message"] == "User profile updated successfully"
+        assert data["code"] == 202
+        assert data["message"] == "Email verification required"
         assert data["data"]["first_name"] == "Updated"
         assert data["data"]["last_name"] == "Name"
-        assert data["data"]["email"] == "updated@example.com"
+        assert data["data"]["email"] == account_test_user.email
         assert data["data"]["phone"] == "+9876543210"
 
     @pytest.mark.asyncio
@@ -142,6 +142,26 @@ class TestUpdateUserProfileAPI:
         assert data["data"]["first_name"] == "PartialUpdate"
         assert data["data"]["last_name"] == account_test_user.last_name
         assert data["data"]["email"] == account_test_user.email
+
+    @pytest.mark.asyncio
+    async def test_update_user_profile_no_email_change_response(
+        self, client: AsyncClient, account_test_user: Users, account_auth_headers: dict
+    ):
+        """Test profile update returns 200 when email not changed"""
+        update_data = {"first_name": "NoEmailChange"}
+
+        with patch("api.account.controller.update_user_profile") as mock_update:
+            mock_update.return_value = (account_test_user, False)
+            response = await client.put(
+                "/api/account/profile",
+                json=update_data,
+                headers={"Authorization": account_auth_headers["Authorization"]},
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["code"] == 200
+            assert data["message"] == "User profile updated successfully"
 
     @pytest.mark.asyncio
     async def test_update_user_profile_unauthorized(self, client: AsyncClient):
@@ -308,6 +328,27 @@ class TestChangePasswordAPI:
         assert data["code"] == 200
         assert data["message"] == "Password changed successfully"
         # data field is excluded when None due to response_model_exclude_unset=True
+
+    @pytest.mark.asyncio
+    async def test_change_password_success_response(self, client: AsyncClient, account_auth_headers: dict):
+        """Test change password returns success response when service succeeds"""
+        password_data = {
+            "current_password": "AccountTestPassword123!",
+            "new_password": "NewPassword123!",
+            "logout_all_devices": False,
+        }
+
+        with patch("api.account.controller.change_password", return_value=True):
+            response = await client.put(
+                "/api/account/password",
+                json=password_data,
+                headers={"Authorization": account_auth_headers["Authorization"]},
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["code"] == 200
+            assert data["message"] == "Password changed successfully"
 
     @pytest.mark.asyncio
     async def test_change_password_wrong_current_password(
@@ -502,10 +543,10 @@ class TestControllerIntegration:
             json=update_data,
             headers={"Authorization": account_auth_headers["Authorization"]},
         )
-        assert response.status_code == 200
+        assert response.status_code == 202
         updated_data = response.json()["data"]
         assert updated_data["first_name"] == "Updated"
-        assert updated_data["email"] == "updated@example.com"
+        assert updated_data["email"] == initial_data["email"]
 
         # 3. Change password
         password_data = {
@@ -528,7 +569,7 @@ class TestControllerIntegration:
         assert response.status_code == 200
         final_data = response.json()["data"]
         assert final_data["first_name"] == "Updated"
-        assert final_data["email"] == "updated@example.com"
+        assert final_data["email"] == initial_data["email"]
 
     @pytest.mark.asyncio
     async def test_error_recovery(

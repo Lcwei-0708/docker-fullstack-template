@@ -66,6 +66,8 @@ services:
       # API settings
       - VITE_API_HOST=${API_HOST:-localhost}
       - VITE_API_PORT=${API_PORT:-5000}
+      # SMTP settings
+      - VITE_SMTP_ENABLE=${SMTP_ENABLE:-false}
     command: ["sh", "./init-dev.sh"]
     depends_on:
       backend:
@@ -109,6 +111,17 @@ services:
       - DB_WRITE_TIMEOUT=${DB_WRITE_TIMEOUT:-30}
       # Redis settings
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis}@redis:6379/0
+      # SMTP settings
+      - SMTP_ENABLE=${SMTP_ENABLE:-false}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USERNAME=${SMTP_USERNAME:-your-email@gmail.com}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-your-password}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL:-your-email@gmail.com}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-Docker Fullstack Template}
+      - SMTP_ENCRYPTION=${SMTP_ENCRYPTION:-tls}
+      # Email verification settings
+      - EMAIL_VERIFICATION_ENABLE=${EMAIL_VERIFICATION_ENABLE:-false}
     command: ["sh", "./init-dev.sh"]
     depends_on:
       mariadb:

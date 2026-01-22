@@ -22,8 +22,10 @@ export const ProtectedRoute = ({ children, requireAuth = true, permissions = nul
     }
   }, [isLoading]);
 
-  // Handle reset password page - logout authenticated users
-  const isResetPasswordPage = location.pathname === '/reset-password';
+  const isResetPasswordPage = location.pathname === '/auth/reset-password';
+  const isVerificationPage = location.pathname === '/auth/verify-email';
+  const isForgotPasswordPage = location.pathname === '/auth/forgot-password';
+  const isAuthFlowPage = isResetPasswordPage || isVerificationPage || isForgotPasswordPage;
   
   // Auto logout authenticated users visiting reset password page (except during password reset)
   useEffect(() => {
@@ -34,11 +36,11 @@ export const ProtectedRoute = ({ children, requireAuth = true, permissions = nul
 
   // Redirect to login when user becomes unauthenticated
   useEffect(() => {
-    if (wasAuthenticatedRef.current && !isAuthenticated && location.pathname !== '/login' && !isResetPasswordPage) {
-      navigate('/login', { state: { from: location }, replace: true });
+    if (wasAuthenticatedRef.current && !isAuthenticated && location.pathname !== '/auth/login' && !isAuthFlowPage) {
+      navigate('/auth/login', { state: { from: location }, replace: true });
     }
     wasAuthenticatedRef.current = isAuthenticated;
-  }, [isAuthenticated, location, navigate, isResetPasswordPage]);
+  }, [isAuthenticated, location, navigate, isAuthFlowPage]);
 
   // Check if user has required permissions
   const hasPermission = React.useMemo(() => {
@@ -78,11 +80,12 @@ export const ProtectedRoute = ({ children, requireAuth = true, permissions = nul
 
   // Redirect to login if authentication required
   if (requireAuth && !isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
-  // Redirect authenticated users away from login/register pages
-  if (!requireAuth && isAuthenticated && (location.pathname === "/login" || location.pathname === "/register")) {
+  // Redirect authenticated users away from login/register pages (but not verify-email, reset-password, or forgot-password)
+  const isAuthPage = location.pathname === "/auth/login" || location.pathname === "/auth/register";
+  if (!requireAuth && isAuthenticated && isAuthPage && !isAuthFlowPage) {
     const from = location.state?.from?.pathname;
     return <Navigate to={from || "/"} replace />;
   }
