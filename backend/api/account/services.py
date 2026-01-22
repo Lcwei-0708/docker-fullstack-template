@@ -1,10 +1,19 @@
-from typing import Optional
-from sqlalchemy import select
+import redis
+import logging
+from typing import Optional, Tuple
+from urllib.parse import quote
+from sqlalchemy import select, or_
 from models.users import Users
+from core.config import settings
+from extensions.smtp import SMTPMailer
 from .schema import UserUpdate, PasswordChange
 from sqlalchemy.ext.asyncio import AsyncSession
-from utils.custom_exception import AuthenticationException, ServerException
+from utils.custom_exception import AuthenticationException, ServerException, SMTPNotConfiguredException
 from core.security import hash_password, verify_password, clear_user_all_sessions
+from utils.email_templates import EMAIL_VERIFICATION_TEMPLATE
+from api.auth.services import _request_email_change_verification_email
+
+logger = logging.getLogger(__name__)
 
 async def get_user_by_id(db: AsyncSession, user_id: str) -> Optional[Users]:
     """Get user info by id"""
@@ -13,26 +22,92 @@ async def get_user_by_id(db: AsyncSession, user_id: str) -> Optional[Users]:
     )
     return result.scalar_one_or_none()
 
-async def update_user_profile(db: AsyncSession, user_id: str, user_update: UserUpdate) -> Optional[Users]:
+async def update_user_profile(
+    db: AsyncSession,
+    user_id: str,
+    user_update: UserUpdate,
+    mailer: Optional[SMTPMailer] = None,
+    redis_client: Optional[redis.Redis] = None
+) -> Optional[Tuple[Users, bool]]:
     """Update user info (excluding password)"""
     user = await get_user_by_id(db, user_id)
     if not user:
         return None
     
-    if user_update.email and user_update.email != user.email:
+    email_change_requested = False
+    new_email = user_update.email
+    if new_email and new_email != user.email:
         result = await db.execute(
-            select(Users).where(Users.email == user_update.email, Users.id != user_id)
+            select(Users).where(
+                or_(
+                    Users.email == new_email,
+                    Users.pending_email == new_email
+                ),
+                Users.id != user_id
+            )
         )
         if result.scalar_one_or_none():
             raise ValueError("Email already exists")
+        
+        # Defer email change until verification completes.
+        user.pending_email = new_email
+        email_change_requested = True
     
     update_data = user_update.model_dump(exclude_unset=True)
+    update_data.pop("email", None)
     for field, value in update_data.items():
         setattr(user, field, value)
     
+    if email_change_requested and settings.SMTP_ENABLE and mailer and getattr(mailer, "enabled", False):
+        should_send = True
+        if redis_client:
+            cooldown_key = f"email_verification_cooldown:{new_email}"
+            remaining_seconds = await redis_client.ttl(cooldown_key)
+            try:
+                remaining_seconds = int(remaining_seconds)
+            except (TypeError, ValueError):
+                remaining_seconds = 0
+            if remaining_seconds > 0:
+                should_send = False
+        
+        if should_send:
+            try:
+                token_meta = await _request_email_change_verification_email(db, user, new_email)
+                verification_url = (
+                    f"http{'s' if settings.SSL_ENABLE else ''}://"
+                    f"{settings.HOSTNAME}:{settings.FRONTEND_PORT}"
+                    f"/auth/verify-email?token={quote(token_meta['verification_token'], safe='')}"
+                )
+                
+                user_name = f"{user.first_name} {user.last_name}".strip()
+                app_name = settings.PROJECT_NAME
+                
+                email_content = EMAIL_VERIFICATION_TEMPLATE.render(
+                    verification_url=verification_url,
+                    user_name=user_name,
+                    app_name=app_name,
+                    expire_minutes=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES,
+                )
+                
+                mailer.send_text(
+                    to_emails=[new_email],
+                    subject=email_content["subject"],
+                    body=email_content["body"],
+                    html_body=email_content.get("html_body"),
+                )
+                
+                if redis_client:
+                    await redis_client.setex(
+                        cooldown_key,
+                        settings.EMAIL_VERIFICATION_COOLDOWN_SECONDS,
+                        "1"
+                    )
+            except SMTPNotConfiguredException as exc:
+                logger.warning("Skip email change verification send: %s", exc)
+    
     await db.commit()
     await db.refresh(user)
-    return user
+    return user, email_change_requested
 
 async def change_password(db: AsyncSession, user_id: str, password_change: PasswordChange, redis_client=None) -> bool:
     """Change user password"""

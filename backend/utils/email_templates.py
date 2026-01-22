@@ -1,11 +1,4 @@
-"""
-Email templates for the application.
-Supports variable substitution using Python string formatting.
-Supports both plain text and HTML formats with modern design.
-"""
 from typing import Dict, Any, Optional
-from core.config import settings
-
 
 class EmailTemplate:
     """Email template with subject, plain text body, and optional HTML body"""
@@ -82,15 +75,15 @@ PASSWORD_RESET_TEMPLATE = EmailTemplate(
     ),
 )
 
-# Email Verification Template (for registration and email change)
+# Email Verification Template
 EMAIL_VERIFICATION_TEMPLATE = EmailTemplate(
     subject="Verify your email - {app_name}",
     body=(
         "Hi {user_name},\n\n"
-        "{message}\n\n"
+        "Please verify your email address for your {app_name} account.\n\n"
         "Please click the link below to verify your email address:\n{verification_url}\n\n"
         "This link will expire in {expire_minutes} minutes.\n\n"
-        "{footer_message}"
+        "If you did not request this email, you can safely ignore it."
     ),
     html_body=(
         "<!DOCTYPE html>"
@@ -103,7 +96,7 @@ EMAIL_VERIFICATION_TEMPLATE = EmailTemplate(
             "<div style='max-width: 80dvw; margin: 0 auto;'>"
                 "<h3 style='margin: 0 0 16px; color: #212529; line-height: 1.6; font-weight: 500;'>Hi {user_name},</h3>"
                 "<p style='margin: 0 0 20px; color: #212529; font-size: 16px; line-height: 1.6;'>"
-                    "{message_html} <br>Please click the button below to verify your email address. This link will expire in <strong>{expire_minutes} minutes</strong>."
+                    "Please verify your email address for your <strong>{app_name}</strong> account. <br>Please click the button below to verify your email address. This link will expire in <strong>{expire_minutes} minutes</strong>."
                 "</p>"
                 "<p style='margin:0 0 28px; user-select: none;'>"
                     "<a href='{verification_url}' "
@@ -115,7 +108,7 @@ EMAIL_VERIFICATION_TEMPLATE = EmailTemplate(
                     "</a>"
                 "</p>"
                 "<p style='width: fit-content; margin: 0; padding: 10px 18px; border-radius: 12px; border: 1px solid #e9ecef; background-color: #f8f9fa; color: #495057; font-size: 14px; line-height: 1.6;'>"
-                    "{footer_message}"
+                    "If you did not request this email, you can safely ignore it."
                 "</p>"
             "</div>"
         "</body>"

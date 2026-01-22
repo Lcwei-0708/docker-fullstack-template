@@ -1,7 +1,7 @@
 import ast
 import redis
 from typing import Optional
-from sqlalchemy import select, update
+from sqlalchemy import select, update, or_
 from urllib.parse import quote
 from models.users import Users
 from core.config import settings
@@ -12,7 +12,7 @@ from models.user_sessions import UserSessions
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.email_templates import (
     PASSWORD_RESET_TEMPLATE,
-    EMAIL_VERIFICATION_TEMPLATE
+    EMAIL_VERIFICATION_TEMPLATE,
 )
 from models.password_reset_tokens import PasswordResetTokens
 from models.email_verification_tokens import EmailVerificationTokens
@@ -22,7 +22,8 @@ from .schema import (
     LoginResult, 
     SessionResult,
     TokenValidationResponse,
-    ActionRequiredResponse
+    ActionRequiredResponse,
+    PasswordResetRequiredResponse,
 )
 from core.security import (
     verify_password, 
@@ -182,9 +183,8 @@ async def login(
         
         raise PasswordResetRequiredException(
             message="Password reset required",
-            details=ActionRequiredResponse(
-                action_type="password_reset",
-                token=reset_token,
+            details=PasswordResetRequiredResponse(
+                reset_token=reset_token,
                 expires_at=reset_token_record.expires_at.isoformat() if reset_token_record.expires_at else None
             )
         )
@@ -533,7 +533,12 @@ async def _update_session_expiry(db: AsyncSession, session_id: str) -> None:
 async def _create_user(db: AsyncSession, user_data: UserRegister) -> Users:
     try:
         result = await db.execute(
-            select(Users).where(Users.email == user_data.email)
+            select(Users).where(
+                or_(
+                    Users.email == user_data.email,
+                    Users.pending_email == user_data.email
+                )
+            )
         )
         existing_user = result.scalar_one_or_none()
         if existing_user:
@@ -803,9 +808,6 @@ async def resend_verification_email(
                     user_name=user_name,
                     app_name=app_name,
                     expire_minutes=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES,
-                    message=f"You requested to change your email address to {user.pending_email} for your {app_name} account.",
-                    message_html=f"You requested to change your email address to <strong>{user.pending_email}</strong> for your <strong>{app_name}</strong> account.",
-                    footer_message="If you did not request this change, please contact support immediately."
                 )
                 
                 mailer.send_text(
@@ -833,9 +835,6 @@ async def resend_verification_email(
                 user_name=user_name,
                 app_name=app_name,
                 expire_minutes=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES,
-                message=f"Thank you for registering with {app_name}.",
-                message_html=f"Thank you for registering with <strong>{app_name}</strong>.",
-                footer_message="If you did not create an account, you can safely ignore this email."
             )
             
             mailer.send_text(
@@ -883,9 +882,6 @@ async def _send_registration_verification_email(
         user_name=user_name,
         app_name=app_name,
         expire_minutes=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES,
-        message=f"Thank you for registering with {app_name}.",
-        message_html=f"Thank you for registering with <strong>{app_name}</strong>.",
-        footer_message="If you did not create an account, you can safely ignore this email."
     )
     
     mailer.send_text(

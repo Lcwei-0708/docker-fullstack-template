@@ -65,6 +65,10 @@ class EmailVerificationResponse(BaseModel):
 class EmailVerificationRequiredResponse(BaseModel):
     expires_at: Optional[str] = Field(default=None, description="Token expiration time (ISO format)")
 
+class PasswordResetRequiredResponse(BaseModel):
+    reset_token: str = Field(..., description="Password reset token")
+    expires_at: str = Field(..., description="Token expiration time (ISO format)")
+
 class ResendVerificationRequest(BaseModel):
     email: EmailStr = Field(..., description="Email address to resend verification")
 
