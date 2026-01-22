@@ -24,6 +24,8 @@ export const accountService = {
       showSuccessToast: true,
       messageMap: {
         success: i18n.t('pages.profile.profile.messages.success'),
+        202: i18n.t('pages.profile.profile.messages.emailVerificationRequired'),
+        409: i18n.t('pages.profile.profile.messages.emailAlreadyExists'),
         ...config.messageMap,
       },
       ...config,

@@ -15,6 +15,7 @@ import { LoginForm } from '@/components/auth/login-form'
 import { RegisterForm } from '@/components/auth/register-form'
 import { ResetPasswordForm } from '@/components/auth/reset-password-form'
 import { ForgotPasswordForm } from '@/components/auth/forgot-password-form'
+import { VerifyEmailForm } from '@/components/auth/verify-email-form'
 
 const arePropsEqual = (prevProps, nextProps) => {
   const prevPath = prevProps.location?.pathname
@@ -23,12 +24,15 @@ const arePropsEqual = (prevProps, nextProps) => {
   const nextSearch = nextProps.location?.search
   const prevState = prevProps.location?.state?.from?.pathname
   const nextState = nextProps.location?.state?.from?.pathname
+  const prevStateEmail = prevProps.location?.state?.email
+  const nextStateEmail = nextProps.location?.state?.email
   const prevLanguage = prevProps.language
   const nextLanguage = nextProps.language
   
   const areEqual = prevPath === nextPath && 
                    prevSearch === nextSearch && 
                    prevState === nextState &&
+                   prevStateEmail === nextStateEmail &&
                    prevLanguage === nextLanguage
   
   return areEqual
@@ -47,7 +51,14 @@ const AuthComponent = React.memo(({ t, location, language }) => {
     return new URLSearchParams(location.search).get('token')
   }, [location.search])
 
+  const verifyToken = React.useMemo(() => {
+    return new URLSearchParams(location.search).get('token')
+  }, [location.search])
+
   const activeTab = React.useMemo(() => {
+    if (location.pathname === '/auth/verify-email') {
+      return 'verify-email'
+    }
     if (location.pathname === '/auth/reset-password') {
       return 'reset-password'
     }
@@ -111,7 +122,9 @@ const AuthComponent = React.memo(({ t, location, language }) => {
             <CardHeader>
               <AnimatePresence mode="wait">
                 <CardTitle className="text-lg tracking-tight text-center mb-2">
-                    {activeTab === 'reset-password'
+                    {activeTab === 'verify-email'
+                        ? t("pages.auth.verifyEmail.title", { defaultValue: "Verify Email" })
+                        : activeTab === 'reset-password'
                         ? t("pages.auth.resetPassword.title", { defaultValue: "Reset Password" })
                         : activeTab === 'forgot-password'
                         ? t("pages.auth.forgotPassword.title", { defaultValue: "Forgot Password" })
@@ -132,9 +145,11 @@ const AuthComponent = React.memo(({ t, location, language }) => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {activeTab === 'reset-password' ? (
+              {activeTab === 'verify-email' ? (
+                <VerifyEmailForm token={verifyToken} />
+              ) : activeTab === 'reset-password' ? (
                 <ResetPasswordForm token={resetToken} />
-              )               : activeTab === 'forgot-password' ? (
+              ) : activeTab === 'forgot-password' ? (
                 <ForgotPasswordForm onStateChange={handleForgotPasswordStateChange} />
               ) : activeTab === 'register' ? (
                 <RegisterForm redirectTo={redirect} />

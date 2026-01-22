@@ -338,6 +338,23 @@
           "resend": "Resend email",
           "resendCooldown": "Resend email ({{time}})"
         }
+      },
+      "verifyEmail": {
+        "messages": {
+          "noToken": "No verification token provided",
+          "success": "Email verified successfully",
+          "pending": "A verification email has been sent to your email address. Please check your inbox and click the verification link.",
+          "invalidToken": "The verification link has expired or is invalid. Please request a new one.",
+          "verificationFailed": "Email verification failed",
+          "userNotFound": "User not found",
+          "emailExists": "Email already exists"
+        },
+        "actions": {
+          "backToHome": "Go to Home",
+          "resend": "Resend Verification Email",
+          "resendCooldown": "Resend Email ({{cooldownSeconds}}s)",
+          "backToLogin": "Back to Login"
+        }
       }
     },
     "profile": {
@@ -398,7 +415,9 @@
           "submitting": "Updating..."
         },
         "messages": {
-          "success": "Profile updated successfully"
+          "success": "Profile updated successfully",
+          "emailVerificationRequired": "Email verification required",
+          "emailAlreadyExists": "Email already exists"
         }
       },
       "security": {

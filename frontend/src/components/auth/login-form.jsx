@@ -226,6 +226,28 @@ export const LoginForm = ({ className, redirectTo = '/', ...props }) => {
         setTimeout(() => {
           navigateRef.current(`/auth/reset-password?token=${encodeURIComponent(result.resetToken)}`, { replace: true })
         }, 0)
+      } else if (result.requiresEmailVerification) {
+        // Email verification required - redirect to verification page with email
+        const emailToKeep = formValues.email || emailRef.current || emailPersistRef.current
+        
+        emailRef.current = emailToKeep
+        emailPersistRef.current = emailToKeep
+        
+        formMethodsRef.current.reset({ email: emailToKeep, password: '' }, { keepValues: false })
+        
+        setEmailValueRef.current(emailToKeep)
+        
+        setIsSubmitting(false)
+        
+        // Redirect to verification page with email in state
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            navigateRef.current('/auth/verify-email', { 
+              replace: true,
+              state: { email: emailToKeep }
+            });
+          });
+        });
       } else {
         const emailToKeep = formValues.email || emailRef.current || emailPersistRef.current
         

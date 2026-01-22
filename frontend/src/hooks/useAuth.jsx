@@ -98,15 +98,51 @@ export const useAuth = () => {
 
       const result = await authService.login(credentials);
       
-      // Check if response indicates password reset is required (202 status)
-      if (result?._statusCode === 202 || result?.reset_token) {
-        const resetToken = result?.reset_token || result?.data?.reset_token;
+      // Check if response indicates action is required (202 status)
+      if (result?._statusCode === 202) {
+        const actionData = result;
+        const actionType = actionData?.action_type;
+        const resetToken = actionData?.token;
         
         setLoading(false);
+        
+        if (!actionType) {          
+          if (resetToken) {
+            return { 
+              success: false, 
+              requiresPasswordReset: true,
+              resetToken: resetToken,
+              data: result 
+            };
+          } else {
+            return { 
+              success: false, 
+              requiresEmailVerification: true,
+              data: result 
+            };
+          }
+        }
+        
+        if (actionType === 'password_reset' || resetToken) {
+          return { 
+            success: false, 
+            requiresPasswordReset: true,
+            resetToken: resetToken,
+            data: result 
+          };
+        } else if (actionType === 'email_verification') {
+          return { 
+            success: false, 
+            requiresEmailVerification: true,
+            data: result 
+          };
+        }
+        
+        // Fallback for unknown action types
         return { 
           success: false, 
-          requiresPasswordReset: true,
-          resetToken: resetToken,
+          requiresAction: true,
+          actionType: actionType,
           data: result 
         };
       }
@@ -124,14 +160,34 @@ export const useAuth = () => {
         throw new Error('Invalid login response format');
       }
     } catch (error) {
-      // Check if error response indicates password reset is required (202 status)
+      // Check if error response indicates action is required (202 status)
       if (error.response?.status === 202) {
-        const resetToken = error.response?.data?.data?.reset_token || error.response?.data?.reset_token;
+        // For 202 status, data is in error.response.data.data
+        const actionData = error.response?.data?.data || error.response?.data;
+        const actionType = actionData?.action_type;
+        const resetToken = actionData?.token;
+        
         setLoading(false);
+        
+        if (actionType === 'password_reset' || resetToken) {
+          return { 
+            success: false, 
+            requiresPasswordReset: true,
+            resetToken: resetToken,
+            data: error.response?.data 
+          };
+        } else if (actionType === 'email_verification') {
+          return { 
+            success: false, 
+            requiresEmailVerification: true,
+            data: error.response?.data 
+          };
+        }
+        
         return { 
           success: false, 
-          requiresPasswordReset: true,
-          resetToken: resetToken,
+          requiresAction: true,
+          actionType: actionType,
           data: error.response?.data 
         };
       }
@@ -153,6 +209,17 @@ export const useAuth = () => {
 
       const result = await authService.register(userData);
       
+      // Check if response indicates action is required (202 status)
+      if (result?._statusCode === 202) {
+        // For 202 status, email verification is required
+        setLoading(false);
+        return { 
+          success: false, 
+          requiresEmailVerification: true,
+          data: result 
+        };
+      }
+      
       if (result?.user && result?.access_token) {
         const { user, access_token: token } = result;
         
@@ -164,6 +231,17 @@ export const useAuth = () => {
       setLoading(false);
       return { success: true, data: result };
     } catch (error) {
+      // Check if error response indicates action is required (202 status)
+      if (error.response?.status === 202) {
+        // For 202 status, email verification is required
+        setLoading(false);
+        return { 
+          success: false, 
+          requiresEmailVerification: true,
+          data: error.response?.data 
+        };
+      }
+      
       const errorMessage = error.response?.data?.message || error.message || 'Registration failed';
       setError(errorMessage);
       setLoading(false);
@@ -312,14 +390,49 @@ export const useAuth = () => {
     try {
       clearError();
 
-      const result = await accountService.updateProfile(userData, { ...config });
-      setUser(result);
-      
-      return { success: true, data: result };
+      const { returnStatus, ...restConfig } = config || {};
+      const result = await accountService.updateProfile(userData, { ...restConfig, returnStatus });
+      const responseData = returnStatus ? result?.data : result;
+
+      if (returnStatus && result?.status === 'error') {
+        const errorMessage = result?.error?.message || 'Failed to update user profile';
+        setError(errorMessage);
+        return {
+          ...result,
+          success: false,
+          error: result?.error || { message: errorMessage },
+        };
+      }
+
+      if (responseData?._statusCode === 202) {
+        const { _statusCode: _ignored, ...profileData } = responseData;
+        if (profileData) {
+          setUser(profileData);
+        }
+        const baseResult = {
+          success: false,
+          requiresEmailVerification: true,
+          data: profileData,
+          email: userData?.email,
+        };
+        return returnStatus
+          ? { ...result, ...baseResult, data: profileData }
+          : baseResult;
+      }
+
+      if (responseData) {
+        setUser(responseData);
+      }
+
+      return returnStatus
+        ? { ...result, success: true, data: responseData }
+        : { success: true, data: responseData };
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update user profile';
       setError(errorMessage);
-      return { success: false, error: errorMessage };
+      return config?.returnStatus
+        ? { data: null, status: 'error', error: { message: errorMessage }, success: false }
+        : { success: false, error: errorMessage };
     }
   }, [clearError, setUser, setError]);
 

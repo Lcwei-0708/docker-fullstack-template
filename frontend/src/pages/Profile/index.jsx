@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Edit, Lock, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,6 +15,7 @@ import { ChangePasswordForm } from '@/components/profile/change-password-form';
 
 export function Profile() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { user, isLoading, loadProfile } = useAuth();
 
@@ -26,6 +28,14 @@ export function Profile() {
     setIsEditingProfile(false);
     await loadProfile();
   }, [t, loadProfile]);
+
+  const handleEmailVerificationRequired = useCallback(({ email }) => {
+    setIsEditingProfile(false);
+    navigate('/auth/verify-email', {
+      state: { email },
+      replace: false,
+    });
+  }, [navigate]);
 
   const handlePasswordChange = useCallback(async () => {
     setIsEditingSecurity(false);
@@ -106,6 +116,7 @@ export function Profile() {
                   onSuccess={handleProfileUpdate}
                   onClose={cancelProfileEdit}
                   onSubmittingChange={setIsSubmittingProfile}
+                  onRequiresEmailVerification={handleEmailVerificationRequired}
                 />
               )}
             </Card>
@@ -195,6 +206,7 @@ export function Profile() {
                 onSuccess={handleProfileUpdate}
                 onClose={cancelProfileEdit}
                 onSubmittingChange={setIsSubmittingProfile}
+                onRequiresEmailVerification={handleEmailVerificationRequired}
               />
             )}
           </Card>

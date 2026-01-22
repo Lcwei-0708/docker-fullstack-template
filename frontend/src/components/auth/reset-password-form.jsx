@@ -324,4 +324,3 @@ export const ResetPasswordForm = ({ className, token, ...props }) => {
 }
 
 export default ResetPasswordForm
-

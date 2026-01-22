@@ -119,6 +119,53 @@ export const authService = {
       returnStatus: true,
       ...config,
     }),
+
+  // Verify email address
+  verifyEmail: (verificationToken, config = {}) => 
+    apiService.get(`${BASE_AUTH}/verify-email`, {}, {
+      headers: { Authorization: `Bearer ${verificationToken}` },
+      noToken: true,
+      retryOn401: false,
+      showErrorToast: true,
+      showSuccessToast: true,
+      messageMap: {
+        success: i18n.t('pages.auth.verifyEmail.messages.success', 'Email verified successfully'),
+        401: i18n.t('pages.auth.verifyEmail.messages.invalidToken', 'The verification link has expired or is invalid. Please request a new one.'),
+        404: i18n.t('pages.auth.verifyEmail.messages.userNotFound', 'User not found'),
+        409: i18n.t('pages.auth.verifyEmail.messages.emailExists', 'Email already exists'),
+        ...config.messageMap,
+      },
+      ...config,
+    }),
+
+  // Resend verification email
+  resendVerification: (email, config = {}) => 
+    apiService.post(`${BASE_AUTH}/resend-verification`, { email }, {
+      noToken: true,
+      retryOn401: false,
+      showErrorToast: true,
+      showSuccessToast: true,
+      messageMap: {
+        success: i18n.t('pages.auth.verifyEmail.messages.emailSent', 'Verification email sent'),
+        400: i18n.t('pages.auth.verifyEmail.messages.cooldown', 'Please wait before requesting another verification email'),
+        403: i18n.t('pages.auth.verifyEmail.messages.accountDisabled', 'Account is disabled'),
+        404: i18n.t('pages.auth.verifyEmail.messages.emailNotRegistered', 'This email is not registered'),
+        503: i18n.t('pages.auth.verifyEmail.messages.smtpDisabled', 'SMTP is disabled'),
+        ...config.messageMap,
+      },
+      ...config,
+    }),
+
+  // Get email verification cooldown status
+  getEmailVerificationCooldown: (email, config = {}) => 
+    apiService.get(`${BASE_AUTH}/resend-verification/cooldown`, { email }, {
+      noToken: true,
+      retryOn401: false,
+      showErrorToast: false,
+      showSuccessToast: false,
+      returnStatus: true,
+      ...config,
+    }),
 };
 
 export default authService;

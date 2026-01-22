@@ -92,6 +92,16 @@ export const routes = [
       showInSidebar: false,
     },
   }] : []),
+  // Only include verify-email route when SMTP is enabled
+  ...(ENV.SMTP_ENABLE ? [{
+    path: "/auth/verify-email",
+    element: "Auth",
+    requireAuth: false,
+    permissions: [],
+    sidebar: {
+      showInSidebar: false,
+    },
+  }] : []),
   {
     path: "/profile",
     element: "Profile",

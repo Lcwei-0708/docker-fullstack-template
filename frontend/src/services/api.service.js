@@ -75,11 +75,19 @@ apiClient.interceptors.response.use(
     const messageMap = config?.messageMap;
     const successMessage = config?.successMessage || (messageMap && messageMap.success);
     
-    // 202 indicates password reset is required
+    // 202 indicates password reset or email verification is required
     if (response.status === 202) {
-      // Don't show success toast for 202, as it requires special handling
       if (response.data) {
-        const responseData = response.data.data !== undefined ? response.data.data : response.data;
+        let responseData;
+        if (response.data.data !== undefined && response.data.data !== null) {
+          responseData = response.data.data;
+        } else if (response.data.action_type !== undefined) {
+          responseData = response.data;
+        } else {
+          const { code: _code, message: _message, ...rest } = response.data;
+          responseData = rest;
+        }
+        
         return { ...responseData, _statusCode: 202 };
       }
       return { _statusCode: 202 };
