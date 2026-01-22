@@ -1295,11 +1295,12 @@ class TestAuthServiceInternals:
         mock_mailer = MagicMock(spec=SMTPMailer)
         mock_mailer.enabled = True
 
-        with pytest.raises(ValidationException) as exc_info:
-            await resend_verification_email(
-                test_db_session,
-                test_user.email,
-                mock_mailer,
-                mock_redis,
-            )
+        with patch.object(settings, "SMTP_ENABLE", True):
+            with pytest.raises(ValidationException) as exc_info:
+                await resend_verification_email(
+                    test_db_session,
+                    test_user.email,
+                    mock_mailer,
+                    mock_redis,
+                )
         assert "Please wait" in str(exc_info.value)
