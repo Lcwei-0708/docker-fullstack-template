@@ -64,7 +64,8 @@ export const routes = [
       showInSidebar: false,
     },
   },
-  {
+  // Only include register route when registration is enabled
+  ...(ENV.REGISTRATION_ENABLE ? [{
     path: "/auth/register",
     element: "Auth",
     requireAuth: false,
@@ -72,7 +73,7 @@ export const routes = [
     sidebar: {
       showInSidebar: false,
     },
-  },
+  }] : []),
   {
     path: "/auth/reset-password",
     element: "Auth",

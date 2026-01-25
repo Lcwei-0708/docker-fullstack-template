@@ -43,6 +43,7 @@ from utils.custom_exception import (
     ServerException,
     ValidationException,
     EmailVerificationRequiredException,
+    RegistrationDisabledException,
 )
 
 
@@ -55,6 +56,9 @@ async def register(
     mailer: Optional[SMTPMailer] = None
 ) -> LoginResult:
     """User register"""
+    if not settings.REGISTRATION_ENABLE:
+        raise RegistrationDisabledException("Registration is disabled")
+    
     user = await _create_user(db, user_data)
     
     # Check if email verification is required

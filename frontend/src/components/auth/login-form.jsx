@@ -370,16 +370,18 @@ export const LoginForm = ({ className, redirectTo = '/', ...props }) => {
           isSubmitting={isSubmitting}
         />
         
-        <div className="text-center text-sm flex items-center justify-center gap-2">
-          <span className="text-muted-foreground">{t('pages.auth.login.links.newUser', { defaultValue: 'New user? ' })}</span>
-          <Link 
-            to="/auth/register" 
-            className="font-medium text-primary hover:underline"
-            state={location.state}
-          >
-            {t('pages.auth.login.links.register', { defaultValue: 'Sign up' })}
-          </Link>
-        </div>
+        {ENV.REGISTRATION_ENABLE && (
+          <div className="text-center text-sm flex items-center justify-center gap-2">
+            <span className="text-muted-foreground">{t('pages.auth.login.links.newUser', { defaultValue: 'New user? ' })}</span>
+            <Link 
+              to="/auth/register" 
+              className="font-medium text-primary hover:underline"
+              state={location.state}
+            >
+              {t('pages.auth.login.links.register', { defaultValue: 'Sign up' })}
+            </Link>
+          </div>
+        )}
       </form>
     </Form>
   )
