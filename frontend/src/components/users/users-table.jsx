@@ -585,12 +585,18 @@ export function UsersTable() {
   // Update search keyword state
   const handleSearchChange = React.useCallback((keyword) => {
     allowUrlSyncRef.current = true;
+    if (!keyword || !keyword.trim()) {
+      skipNextUrlUpdateRef.current = false;
+    }
     setQueryParams((prev) => ({ ...prev, keyword }));
   }, []);
 
   // Execute search and fetch users
   const handleSearch = React.useCallback((keyword) => {
     allowUrlSyncRef.current = true;
+    if (!keyword || !keyword.trim()) {
+      skipNextUrlUpdateRef.current = false;
+    }
     if (table.getState().pagination.pageIndex !== 0) {
       table.setPageIndex(0);
     }
@@ -773,6 +779,7 @@ export function UsersTable() {
         requestAnimationFrame(() => {
           isHydratingFromUrlRef.current = false;
           skipNextUrlUpdateRef.current = true;
+          allowUrlSyncRef.current = true;
         });
       }
       return;
