@@ -11,7 +11,8 @@ from utils.custom_exception import (
     NotFoundException,
     SMTPNotConfiguredException,
     ValidationException,
-    EmailVerificationRequiredException
+    EmailVerificationRequiredException,
+    RegistrationDisabledException,
 )
 from core.security import (
     verify_password_reset_token,
@@ -104,6 +105,27 @@ class TestAuthController:
             data = response.json()
             assert data["code"] == 202
             assert data["message"] == "Email verification required"
+
+    @pytest.mark.asyncio
+    async def test_register_disabled(self, client: AsyncClient):
+        """Test registration when registration is disabled"""
+        register_data = {
+            "first_name": "John",
+            "last_name": "Doe",
+            "email": "john.doe@example.com",
+            "phone": "+1234567890",
+            "password": "TestPassword123!",
+        }
+
+        with patch("api.auth.controller.register") as mock_register:
+            mock_register.side_effect = RegistrationDisabledException("Registration is disabled")
+
+            response = await client.post("/api/auth/register", json=register_data)
+
+            assert response.status_code == 503
+            data = response.json()
+            assert data["code"] == 503
+            assert data["message"] == "Registration is disabled"
 
     @pytest.mark.asyncio
     async def test_register_server_error(self, client: AsyncClient):
