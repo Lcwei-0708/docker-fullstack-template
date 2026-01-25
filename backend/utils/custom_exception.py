@@ -79,3 +79,8 @@ class SMTPNotConfiguredException(BaseServiceException):
     """SMTP configuration related exceptions"""
     def __init__(self, message: str = "SMTP is not configured", details: Dict[str, Any] = None):
         super().__init__(message=message, error_code="SMTP_NOT_CONFIGURED", details=details, status_code=503, log_level="warning")
+
+class RegistrationDisabledException(BaseServiceException):
+    """Registration disabled exception"""
+    def __init__(self, message: str = "Registration is disabled", details: Dict[str, Any] = None):
+        super().__init__(message=message, error_code="REGISTRATION_DISABLED", details=details, status_code=503, log_level="warning")

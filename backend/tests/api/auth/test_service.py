@@ -38,6 +38,7 @@ from utils.custom_exception import (
     SMTPNotConfiguredException,
     ValidationException,
     EmailVerificationRequiredException,
+    RegistrationDisabledException,
 )
 from core.config import settings
 
@@ -57,17 +58,18 @@ class TestAuthService:
             password="TestPassword123!",
         )
 
-        result = await register(
-            test_db_session, mock_redis, user_data, "127.0.0.1", "TestAgent/1.0"
-        )
+        with patch.object(settings, "REGISTRATION_ENABLE", True):
+            result = await register(
+                test_db_session, mock_redis, user_data, "127.0.0.1", "TestAgent/1.0"
+            )
 
-        assert "user" in result
-        assert "session_id" in result
-        assert "access_token" in result
-        assert result["user"].email == user_data.email
-        assert result["user"].first_name == user_data.first_name
-        assert result["user"].last_name == user_data.last_name
-        assert result["user"].phone == user_data.phone
+            assert "user" in result
+            assert "session_id" in result
+            assert "access_token" in result
+            assert result["user"].email == user_data.email
+            assert result["user"].first_name == user_data.first_name
+            assert result["user"].last_name == user_data.last_name
+            assert result["user"].phone == user_data.phone
 
     @pytest.mark.asyncio
     async def test_register_email_already_exists(
@@ -83,12 +85,33 @@ class TestAuthService:
             password="TestPassword123!",
         )
 
-        with pytest.raises(ConflictException) as exc_info:
-            await register(
-                test_db_session, mock_redis, user_data, "127.0.0.1", "TestAgent/1.0"
-            )
+        with patch.object(settings, "REGISTRATION_ENABLE", True):
+            with pytest.raises(ConflictException) as exc_info:
+                await register(
+                    test_db_session, mock_redis, user_data, "127.0.0.1", "TestAgent/1.0"
+                )
 
-        assert "Email already exists" in str(exc_info.value)
+            assert "Email already exists" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_register_disabled(self, test_db_session: AsyncSession):
+        """Test registration when registration is disabled"""
+        mock_redis = AsyncMock()
+        user_data = UserRegister(
+            first_name="John",
+            last_name="Doe",
+            email="john.doe@example.com",
+            phone="+1234567890",
+            password="TestPassword123!",
+        )
+
+        with patch.object(settings, "REGISTRATION_ENABLE", False):
+            with pytest.raises(RegistrationDisabledException) as exc_info:
+                await register(
+                    test_db_session, mock_redis, user_data, "127.0.0.1", "TestAgent/1.0"
+                )
+
+            assert "Registration is disabled" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_login_success(self, test_db_session: AsyncSession, test_user: Users):
@@ -696,9 +719,9 @@ class TestAuthService:
             password="TestPassword123!",
         )
 
-        with patch.object(settings, "EMAIL_VERIFICATION_ENABLE", True), patch.object(
-            settings, "SMTP_ENABLE", True
-        ):
+        with patch.object(settings, "REGISTRATION_ENABLE", True), patch.object(
+            settings, "EMAIL_VERIFICATION_ENABLE", True
+        ), patch.object(settings, "SMTP_ENABLE", True):
             with pytest.raises(EmailVerificationRequiredException):
                 await register(
                     test_db_session,
@@ -727,9 +750,9 @@ class TestAuthService:
             password="TestPassword123!",
         )
 
-        with patch.object(settings, "EMAIL_VERIFICATION_ENABLE", True), patch.object(
-            settings, "SMTP_ENABLE", True
-        ):
+        with patch.object(settings, "REGISTRATION_ENABLE", True), patch.object(
+            settings, "EMAIL_VERIFICATION_ENABLE", True
+        ), patch.object(settings, "SMTP_ENABLE", True):
             with pytest.raises(EmailVerificationRequiredException):
                 await register(
                     test_db_session,

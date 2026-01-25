@@ -13,6 +13,8 @@ export const ENV = {
     API_PORT: import.meta.env.VITE_API_PORT || 5000,
     // SMTP settings
     SMTP_ENABLE: import.meta.env.VITE_SMTP_ENABLE === 'true' || false,
+    // Registration settings
+    REGISTRATION_ENABLE: import.meta.env.VITE_REGISTRATION_ENABLE === 'true' || false,
 };
 
 export default ENV;

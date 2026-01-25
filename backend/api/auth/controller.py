@@ -45,6 +45,7 @@ from utils.custom_exception import (
     NotFoundException,
     ValidationException,
     EmailVerificationRequiredException,
+    RegistrationDisabledException,
 )
 
 logger = logging.getLogger(__name__)
@@ -58,7 +59,8 @@ router = APIRouter(tags=["Auth"])
     responses=parse_responses({
         200: ("User registered successfully", UserLoginResponse),
         202: ("Email verification required", None),
-        409: ("Email already exists", None)
+        409: ("Email already exists", None),
+        503: ("Registration is disabled", None)
     }, common_responses)
 )
 async def register_api(
@@ -107,6 +109,8 @@ async def register_api(
         raise HTTPException(status_code=202, detail=resp.dict(exclude_none=True))
     except ConflictException:
         raise HTTPException(status_code=409, detail="Email already exists")
+    except RegistrationDisabledException:
+        raise HTTPException(status_code=503, detail="Registration is disabled")
     except Exception:
         raise HTTPException(status_code=500)
 

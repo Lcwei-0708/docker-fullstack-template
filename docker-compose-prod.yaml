@@ -69,6 +69,8 @@ services:
       - VITE_API_PORT=${API_PORT}
       # SMTP settings
       - VITE_SMTP_ENABLE=${SMTP_ENABLE}
+      # Registration settings
+      - VITE_REGISTRATION_ENABLE=${REGISTRATION_ENABLE}
     command: ["sh", "./init-prod.sh"]
     depends_on:
       backend:
@@ -123,6 +125,8 @@ services:
       - SMTP_ENCRYPTION=${SMTP_ENCRYPTION}
       # Email verification settings
       - EMAIL_VERIFICATION_ENABLE=${EMAIL_VERIFICATION_ENABLE}
+      # Registration settings
+      - REGISTRATION_ENABLE=${REGISTRATION_ENABLE}
     command: ["sh", "./init-prod.sh"]
     depends_on:
       mariadb:
