@@ -237,7 +237,10 @@ class TestAuthService:
         )
 
         assert result is True
-        mock_redis.delete.assert_called_once_with(f"session:{test_user_session.id}")
+        mock_redis.delete.assert_called_once_with(
+            f"session:{test_user_session.id}",
+            f"csrf:{test_user_session.id}",
+        )
 
     @pytest.mark.asyncio
     async def test_logout_all_devices_success(

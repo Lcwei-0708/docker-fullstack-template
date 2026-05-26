@@ -50,6 +50,7 @@ class Settings(BaseSettings):
 
     # Session settings
     SESSION_EXPIRE_MINUTES: int = 10080  # 7 days
+    CSRF_TOKEN_EXPIRE_MINUTES: int = 30
     
     # Cookie settings
     COOKIE_SECURE: bool = SSL_ENABLE

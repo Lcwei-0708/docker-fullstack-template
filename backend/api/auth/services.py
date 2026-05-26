@@ -1,5 +1,6 @@
 import ast
 import redis
+from jose import jwt, JWTError
 from typing import Optional
 from sqlalchemy import select, update, or_
 from urllib.parse import quote
@@ -28,6 +29,7 @@ from .schema import (
 from core.security import (
     verify_password, 
     create_access_token,
+    create_csrf_token,
     hash_password,
     extend_session_ttl,
     clear_user_all_sessions,
@@ -116,7 +118,8 @@ async def register(
     return {
         "user": user,
         "session_id": session_result["session_id"],
-        "access_token": session_result["access_token"]
+        "access_token": session_result["access_token"],
+        "csrf_token": session_result["csrf_token"],
     }
 
 async def login(
@@ -261,7 +264,8 @@ async def login(
     return {
         "user": user,
         "session_id": session_result["session_id"],
-        "access_token": session_result["access_token"]
+        "access_token": session_result["access_token"],
+        "csrf_token": session_result["csrf_token"],
     }
 
 async def logout(
@@ -273,7 +277,7 @@ async def logout(
     """User logout"""
     try:
         redis_key = f"session:{session_id}"
-        await redis_client.delete(redis_key)
+        await redis_client.delete(redis_key, f"csrf:{session_id}")
         
         result = await db.execute(
             select(UserSessions).where(
@@ -300,6 +304,57 @@ async def logout_all_devices(
         return await clear_user_all_sessions(db, redis_client, user_id)
     except Exception:
         raise ServerException("Failed to logout all devices")
+
+async def get_or_create_csrf_token(
+    redis_client: redis.Redis,
+    session_id: str,
+) -> str:
+    """Return existing CSRF token or create a new one (does not extend TTL)."""
+    session_raw = await redis_client.get(f"session:{session_id}")
+    if not session_raw:
+        raise AuthenticationException("Invalid or expired session")
+
+    existing = await redis_client.get(_csrf_redis_key(session_id))
+    if existing:
+        return existing.decode() if isinstance(existing, bytes) else existing
+
+    return await _create_csrf_token_for_session(redis_client, session_id)
+
+
+async def verify_csrf_token(
+    redis_client: redis.Redis,
+    csrf_token: Optional[str],
+) -> str:
+    """Validate CSRF token and return session_id."""
+    if not csrf_token:
+        raise AuthenticationException("Invalid or expired CSRF token")
+
+    try:
+        payload = jwt.decode(
+            csrf_token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+        )
+    except JWTError:
+        raise AuthenticationException("Invalid or expired CSRF token")
+
+    if payload.get("token_type") != "csrf":
+        raise AuthenticationException("Invalid or expired CSRF token")
+
+    session_id = payload.get("sid")
+    if not session_id:
+        raise AuthenticationException("Invalid or expired CSRF token")
+
+    stored = await redis_client.get(_csrf_redis_key(session_id))
+    if not stored:
+        raise AuthenticationException("Invalid or expired CSRF token")
+
+    stored_token = stored.decode() if isinstance(stored, bytes) else stored
+    if stored_token != csrf_token:
+        raise AuthenticationException("Invalid or expired CSRF token")
+
+    return session_id
+
 
 async def token(
     db: AsyncSession,
@@ -391,7 +446,8 @@ async def reset_password(
         return {
             "user": user,
             "session_id": session_result["session_id"],
-            "access_token": session_result["access_token"]
+            "access_token": session_result["access_token"],
+            "csrf_token": session_result["csrf_token"],
         }
         
     except (AuthenticationException, NotFoundException):
@@ -615,10 +671,13 @@ async def _create_user_session(
             settings.SESSION_EXPIRE_MINUTES * 60,
             str(session_data)
         )
+
+        csrf_token = await _create_csrf_token_for_session(redis_client, session_id)
         
         return {
             "session_id": session_id,
-            "access_token": access_token
+            "access_token": access_token,
+            "csrf_token": csrf_token,
         }
     except Exception as e:
         raise ServerException(f"Failed to create user session: {str(e)}")
@@ -762,7 +821,8 @@ async def verify_email(
         return {
             "user": user,
             "session_id": session_result["session_id"],
-            "access_token": session_result["access_token"]
+            "access_token": session_result["access_token"],
+            "csrf_token": session_result["csrf_token"],
         }
         
     except (AuthenticationException, NotFoundException, ConflictException):
@@ -861,6 +921,20 @@ async def resend_verification_email(
         raise
     except Exception as e:
         raise ServerException(f"Failed to send verification email: {str(e)}")
+
+
+def _csrf_redis_key(session_id: str) -> str:
+    return f"csrf:{session_id}"
+
+
+async def _create_csrf_token_for_session(
+    redis_client: redis.Redis,
+    session_id: str,
+) -> str:
+    csrf_token = await create_csrf_token(session_id)
+    ttl = settings.CSRF_TOKEN_EXPIRE_MINUTES * 60
+    await redis_client.setex(_csrf_redis_key(session_id), ttl, csrf_token)
+    return csrf_token
 
 async def _send_registration_verification_email(
     db: AsyncSession,
