@@ -6,7 +6,7 @@ from models.role_mapper import RoleMapper
 from models.login_logs import LoginLogs
 from models.user_sessions import UserSessions
 from models.password_reset_tokens import PasswordResetTokens
-from typing import Optional, List
+from typing import Optional, List, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, delete, case
 from core.security import hash_password, clear_user_all_sessions
@@ -119,15 +119,10 @@ async def get_all_users(
                 total_pages=0
             )
         
+        user_roles = await _get_user_roles_map(db, [user.id for user in users])
+
         user_responses = []
         for user in users:
-            role_query = select(Roles.name).join(
-                RoleMapper, Roles.id == RoleMapper.role_id
-            ).where(RoleMapper.user_id == user.id).limit(1)
-            
-            role_result = await db.execute(role_query)
-            user_role = role_result.scalar()
-            
             user_response = UserResponse(
                 id=user.id,
                 email=user.email,
@@ -136,7 +131,7 @@ async def get_all_users(
                 phone=user.phone,
                 status=user.status,
                 created_at=user.created_at,
-                role=user_role
+                role=user_roles.get(user.id)
             )
             user_responses.append(user_response)
         
@@ -364,6 +359,25 @@ async def reset_user_password(
         raise
     except Exception as e:
         raise ServerException(f"Failed to reset password: {str(e)}")
+
+async def _get_user_roles_map(
+    db: AsyncSession, user_ids: List[str]
+) -> Dict[str, Optional[str]]:
+    """Batch-load one role name per user (matches limit(1) per-user query)."""
+    if not user_ids:
+        return {}
+
+    roles_query = (
+        select(RoleMapper.user_id, Roles.name)
+        .join(Roles, Roles.id == RoleMapper.role_id)
+        .where(RoleMapper.user_id.in_(user_ids))
+    )
+    role_result = await db.execute(roles_query)
+    user_roles: Dict[str, Optional[str]] = {}
+    for user_id, role_name in role_result.all():
+        if user_id not in user_roles:
+            user_roles[user_id] = role_name
+    return user_roles
 
 async def _assign_user_role(db: AsyncSession, user_id: str, role_name: str) -> None:
     """Assign a role to a user"""
