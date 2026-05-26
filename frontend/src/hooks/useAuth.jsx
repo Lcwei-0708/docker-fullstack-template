@@ -4,6 +4,31 @@ import authService from '@/services/auth.service';
 import accountService from '@/services/account.service';
 import rolesService from '@/services/roles.service';
 import { debugError } from '@/lib/utils';
+import { getCsrfTokenFromCookie } from '@/lib/cookies';
+import {
+  getApiErrorMessage,
+  isCsrfInvalidError,
+  isSessionInvalidError,
+} from '@/lib/authErrors';
+
+function parseAccessToken(result) {
+  if (!result) {
+    return null;
+  }
+  if (typeof result === 'string') {
+    return result;
+  }
+  if (result.access_token) {
+    return result.access_token;
+  }
+  if (result.data?.access_token) {
+    return result.data.access_token;
+  }
+  if (result.data && typeof result.data === 'string') {
+    return result.data;
+  }
+  return null;
+}
 
 export const useAuth = () => {
   const context = useAuthContext();
@@ -262,52 +287,81 @@ export const useAuth = () => {
     }
   }, [clearAuth]);
 
-  // Get authentication token from server
-  const getToken = useCallback(async (isInit = false, skipProfile = false) => {
+  // Get authentication token from server (with CSRF validation and retry)
+  const getToken = useCallback(async (isInit = false, _skipProfile = false) => {
+    const applyAccessToken = (accessToken) => {
+      if (state.user) {
+        loginSuccess(state.user, accessToken);
+      } else {
+        setToken(accessToken);
+      }
+    };
+
+    const attemptRefresh = async (csrfToken) => {
+      const result = await authService.getToken({
+        showErrorToast: false,
+        csrfToken: csrfToken ?? getCsrfTokenFromCookie() ?? '',
+      });
+      const accessToken = parseAccessToken(result);
+      if (!accessToken) {
+        throw new Error('Unable to get token');
+      }
+      applyAccessToken(accessToken);
+      return { success: true, token: accessToken };
+    };
+
+    const invalidateSession = async () => {
+      await logout(true);
+    };
+
     try {
       setLoading(true);
-      
-      const result = await authService.getToken({ showErrorToast: false });
-      
-      let access_token;
-      if (typeof result === 'string') {
-        access_token = result;
-      } else if (result?.data) {
-        access_token = result.data.access_token || result.data;
-      } else if (result?.access_token) {
-        access_token = result.access_token;
-      }
-      
-      if (access_token) {
-        // Preserve user if exists, otherwise just set token
-        if (state.user) {
-          loginSuccess(state.user, access_token);
-        } else {
-          setToken(access_token);
-        }
+
+      try {
+        const success = await attemptRefresh();
         setLoading(false);
-        return { success: true, token: access_token };
+        return success;
+      } catch (error) {
+        if (isCsrfInvalidError(error)) {
+          try {
+            const csrfResult = await authService.getCsrfToken({ showErrorToast: false });
+            const newCsrf = csrfResult?.csrf_token ?? getCsrfTokenFromCookie();
+            if (!newCsrf) {
+              throw error;
+            }
+            const success = await attemptRefresh(newCsrf);
+            setLoading(false);
+            return success;
+          } catch (retryError) {
+            if (isCsrfInvalidError(retryError) || isSessionInvalidError(retryError)) {
+              await invalidateSession();
+              setLoading(false);
+              return { success: false, error: getApiErrorMessage(retryError) };
+            }
+            throw retryError;
+          }
+        }
+
+        if (isSessionInvalidError(error)) {
+          await invalidateSession();
+          setLoading(false);
+          return { success: false, error: getApiErrorMessage(error) };
+        }
+
+        setLoading(false);
+        if (!isInit && !state.token) {
+          clearAuth();
+        }
+        return { success: false, error: getApiErrorMessage(error) };
       }
-      
-      setLoading(false);
-      
-      // Only clear auth if not initializing and no token exists
-      if (!isInit && !state.token) {
-        clearAuth();
-      }
-      
-      return { success: false, error: 'Unable to get token' };
     } catch (error) {
       setLoading(false);
-      
-      // Only clear auth if not initializing and no token exists
       if (!isInit && !state.token) {
         clearAuth();
       }
-      
-      return { success: false, error: error.message };
+      return { success: false, error: getApiErrorMessage(error) };
     }
-  }, [setLoading, setToken, clearAuth, state.token, state.user, loginSuccess]);
+  }, [setLoading, setToken, clearAuth, state.token, state.user, loginSuccess, logout]);
 
   // Reset password and auto-login user
   const resetPassword = useCallback(async (newPassword, resetToken) => {
@@ -468,40 +522,14 @@ export const useAuth = () => {
 
     const init = async () => {
       try {
-        setLoading(true);
-        
-        let result;
-        try {
-          result = await authService.getToken();
-        } catch (tokenError) {
-          result = null;
-        }
-        
-        let access_token;
-        if (result) {
-          if (typeof result === 'string') {
-            access_token = result;
-          } else if (result?.data) {
-            access_token = result.data.access_token || result.data;
-          } else if (result?.access_token) {
-            access_token = result.access_token;
-          }
-        }
-        
-        if (access_token) {
-          setToken(access_token);
-        }
-        
-        setLoading(false);
-      } catch (error) {
-        setLoading(false);
+        await getToken(true);
       } finally {
         isInitializingRef.current = false;
       }
     };
 
     init();
-  }, [setLoading, setToken]);
+  }, [getToken]);
 
   // Auto-load profile and permissions when authenticated
   useEffect(() => {

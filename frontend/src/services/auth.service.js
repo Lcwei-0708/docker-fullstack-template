@@ -1,5 +1,6 @@
 import apiService from './api.service';
 import i18n from '@/i18n';
+import { getCsrfTokenFromCookie } from '@/lib/cookies';
 
 const BASE_AUTH = '/auth';
 
@@ -46,19 +47,37 @@ export const authService = {
       ...config,
     }),
 
-  // Get token
-  getToken: (config = {}) => 
-    apiService.post(`${BASE_AUTH}/token`, {}, { 
+  // Get CSRF token (session cookie required)
+  getCsrfToken: (config = {}) =>
+    apiService.post(`${BASE_AUTH}/csrf-token`, {}, {
+      noToken: true,
+      retryOn401: false,
+      showErrorToast: false,
+      showSuccessToast: false,
+      ...config,
+    }),
+
+  // Get token (requires session_id cookie and X-CSRF-Token header)
+  getToken: (config = {}) => {
+    const { csrfToken, ...restConfig } = config;
+    const headers = {
+      ...(restConfig.headers || {}),
+      'X-CSRF-Token': csrfToken ?? getCsrfTokenFromCookie() ?? '',
+    };
+
+    return apiService.post(`${BASE_AUTH}/token`, {}, {
       noToken: true,
       retryOn401: false,
       showErrorToast: false,
       showSuccessToast: false,
       messageMap: {
         401: i18n.t('pages.auth.login.messages.invalidCredentials', 'Invalid email or password'),
-        ...config.messageMap,
+        ...restConfig.messageMap,
       },
-      ...config 
-    }),
+      headers,
+      ...restConfig,
+    });
+  },
 
   // Reset password
   resetPassword: (newPassword, resetToken, config = {}) => 
