@@ -52,6 +52,7 @@ class TestAuthController:
                 )(),
                 "session_id": "test-session-id",
                 "access_token": "test-access-token",
+                "csrf_token": "test-csrf-token",
             }
 
             response = await client.post("/api/auth/register", json=register_data)
@@ -61,6 +62,7 @@ class TestAuthController:
             assert data["code"] == 200
             assert data["message"] == "User registered successfully"
             assert "session_id" in response.cookies
+            assert "csrf_token" in response.cookies
 
     @pytest.mark.asyncio
     async def test_register_email_already_exists(self, client: AsyncClient):
@@ -165,6 +167,7 @@ class TestAuthController:
                 )(),
                 "session_id": "test-session-id",
                 "access_token": "test-access-token",
+                "csrf_token": "test-csrf-token",
             }
 
             response = await client.post("/api/auth/login", json=login_data)
@@ -174,6 +177,7 @@ class TestAuthController:
             assert data["code"] == 200
             assert data["message"] == "User logged in successfully"
             assert "session_id" in response.cookies
+            assert "csrf_token" in response.cookies
 
     @pytest.mark.asyncio
     async def test_login_invalid_credentials(self, client: AsyncClient):
@@ -290,11 +294,16 @@ class TestAuthController:
     @pytest.mark.asyncio
     async def test_token_refresh_success(self, client: AsyncClient):
         """Test successful token refresh"""
-        with patch("api.auth.controller.token") as mock_token:
+        with patch("api.auth.controller.verify_csrf_token") as mock_verify_csrf, patch(
+            "api.auth.controller.token"
+        ) as mock_token:
+            mock_verify_csrf.return_value = "test-session-id"
             mock_token.return_value = "new-access-token"
 
             response = await client.post(
-                "/api/auth/token", cookies={"session_id": "test-session-id"}
+                "/api/auth/token",
+                cookies={"session_id": "test-session-id"},
+                headers={"X-CSRF-Token": "test-csrf-token"},
             )
 
             assert response.status_code == 200
@@ -304,40 +313,70 @@ class TestAuthController:
             assert data["data"]["access_token"] == "new-access-token"
 
     @pytest.mark.asyncio
-    async def test_token_refresh_no_session(self, client: AsyncClient):
-        """Test token refresh without session cookie"""
-        response = await client.post("/api/auth/token")
+    async def test_token_refresh_no_csrf_header(self, client: AsyncClient):
+        """Test token refresh without CSRF header"""
+        response = await client.post(
+            "/api/auth/token",
+            cookies={"session_id": "test-session-id"},
+        )
 
         assert response.status_code == 401
         data = response.json()
         assert data["code"] == 401
-        assert data["message"] == "Invalid or expired session"
+        assert data["message"] == "Invalid or expired CSRF token"
+
+    @pytest.mark.asyncio
+    async def test_token_refresh_invalid_csrf(self, client: AsyncClient):
+        """Test token refresh with invalid CSRF token"""
+        with patch("api.auth.controller.verify_csrf_token") as mock_verify_csrf:
+            mock_verify_csrf.side_effect = AuthenticationException(
+                "Invalid or expired CSRF token"
+            )
+
+            response = await client.post(
+                "/api/auth/token",
+                cookies={"session_id": "test-session-id"},
+                headers={"X-CSRF-Token": "invalid-csrf-token"},
+            )
+
+            assert response.status_code == 401
+            data = response.json()
+            assert data["code"] == 401
+            assert data["message"] == "Invalid or expired CSRF token"
 
     @pytest.mark.asyncio
     async def test_token_refresh_invalid_session(self, client: AsyncClient):
         """Test token refresh with invalid session"""
-        with patch("api.auth.controller.token") as mock_token:
-            mock_token.side_effect = AuthenticationException(
-                "Invalid or expired session"
-            )
+        with patch("api.auth.controller.verify_csrf_token") as mock_verify_csrf, patch(
+            "api.auth.controller.token"
+        ) as mock_token:
+            mock_verify_csrf.return_value = "other-session-id"
 
             response = await client.post(
-                "/api/auth/token", cookies={"session_id": "invalid-session-id"}
+                "/api/auth/token",
+                cookies={"session_id": "invalid-session-id"},
+                headers={"X-CSRF-Token": "test-csrf-token"},
             )
 
             assert response.status_code == 401
             data = response.json()
             assert data["code"] == 401
             assert data["message"] == "Invalid or expired session"
+            mock_token.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_token_refresh_user_not_found(self, client: AsyncClient):
         """Test token refresh with user not found"""
-        with patch("api.auth.controller.token") as mock_token:
+        with patch("api.auth.controller.verify_csrf_token") as mock_verify_csrf, patch(
+            "api.auth.controller.token"
+        ) as mock_token:
+            mock_verify_csrf.return_value = "test-session-id"
             mock_token.side_effect = NotFoundException("User not found")
 
             response = await client.post(
-                "/api/auth/token", cookies={"session_id": "test-session-id"}
+                "/api/auth/token",
+                cookies={"session_id": "test-session-id"},
+                headers={"X-CSRF-Token": "test-csrf-token"},
             )
 
             assert response.status_code == 401
@@ -348,14 +387,47 @@ class TestAuthController:
     @pytest.mark.asyncio
     async def test_token_refresh_server_error(self, client: AsyncClient):
         """Test token refresh with server error"""
-        with patch("api.auth.controller.token") as mock_token:
+        with patch("api.auth.controller.verify_csrf_token") as mock_verify_csrf, patch(
+            "api.auth.controller.token"
+        ) as mock_token:
+            mock_verify_csrf.return_value = "test-session-id"
             mock_token.side_effect = Exception("Database error")
 
             response = await client.post(
-                "/api/auth/token", cookies={"session_id": "test-session-id"}
+                "/api/auth/token",
+                cookies={"session_id": "test-session-id"},
+                headers={"X-CSRF-Token": "test-csrf-token"},
             )
 
             assert response.status_code == 500
+
+    @pytest.mark.asyncio
+    async def test_csrf_token_success(self, client: AsyncClient):
+        """Test successful CSRF token retrieval"""
+        with patch("api.auth.controller.get_or_create_csrf_token") as mock_get_csrf:
+            mock_get_csrf.return_value = "test-csrf-token"
+
+            response = await client.post(
+                "/api/auth/csrf-token",
+                cookies={"session_id": "test-session-id"},
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["code"] == 200
+            assert data["message"] == "CSRF token retrieved successfully"
+            assert data["data"]["csrf_token"] == "test-csrf-token"
+            assert "csrf_token" in response.cookies
+
+    @pytest.mark.asyncio
+    async def test_csrf_token_no_session(self, client: AsyncClient):
+        """Test CSRF token retrieval without session cookie"""
+        response = await client.post("/api/auth/csrf-token")
+
+        assert response.status_code == 401
+        data = response.json()
+        assert data["code"] == 401
+        assert data["message"] == "Invalid or expired session"
 
     @pytest.mark.asyncio
     async def test_login_password_reset_required(self, client: AsyncClient):
@@ -426,6 +498,7 @@ class TestAuthController:
                 )(),
                 "session_id": "test-session-id",
                 "access_token": "test-access-token",
+                "csrf_token": "test-csrf-token",
             }
 
             app.dependency_overrides[verify_password_reset_token] = (
@@ -670,6 +743,7 @@ class TestAuthController:
                 )(),
                 "session_id": "test-session-id",
                 "access_token": "test-access-token",
+                "csrf_token": "test-csrf-token",
             }
 
             app.dependency_overrides[verify_password_reset_token] = (
@@ -684,6 +758,7 @@ class TestAuthController:
                 )
                 assert response.status_code == 200
                 assert "session_id" in response.cookies
+                assert "csrf_token" in response.cookies
             finally:
                 app.dependency_overrides.pop(verify_password_reset_token, None)
 
@@ -816,6 +891,7 @@ class TestAuthController:
                 )(),
                 "session_id": "test-session-id",
                 "access_token": "test-access-token",
+                "csrf_token": "test-csrf-token",
             }
             app.dependency_overrides[verify_email_verification_token] = (
                 mock_verify_email_token
@@ -831,6 +907,7 @@ class TestAuthController:
                 assert data["code"] == 200
                 assert data["message"] == "Email verified successfully"
                 assert "session_id" in response.cookies
+                assert "csrf_token" in response.cookies
             finally:
                 app.dependency_overrides.pop(verify_email_verification_token, None)
 

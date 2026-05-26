@@ -55,6 +55,24 @@ async def create_password_reset_token(user_id: str, email: str) -> str:
     except Exception as e:
         raise ServerException(f"Failed to create password reset token: {str(e)}")
 
+async def create_csrf_token(session_id: str) -> str:
+    """Create CSRF token bound to a session"""
+    try:
+        now = datetime.now().astimezone()
+        expire = now + timedelta(minutes=settings.CSRF_TOKEN_EXPIRE_MINUTES)
+
+        payload = {
+            "sid": session_id,
+            "token_type": "csrf",
+            "iat": now,
+            "exp": expire,
+        }
+
+        return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+    except Exception as e:
+        raise ServerException(f"Failed to create CSRF token: {str(e)}")
+
 async def create_email_verification_token(user_id: str, email: str, token_type: str) -> str:
     """Create email verification token"""
     try:
@@ -275,7 +293,10 @@ async def clear_user_all_sessions(db: AsyncSession, redis_client: redis.Redis, u
         session_ids = result.scalars().all()
         
         if session_ids:
-            redis_keys = [f"session:{sid}" for sid in session_ids]
+            redis_keys = []
+            for sid in session_ids:
+                redis_keys.append(f"session:{sid}")
+                redis_keys.append(f"csrf:{sid}")
             await redis_client.delete(*redis_keys)
         
         return True

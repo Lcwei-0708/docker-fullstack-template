@@ -5,12 +5,14 @@ from pydantic import BaseModel, EmailStr, Field
 
 class LoginResult(TypedDict):
     user: "UserResponse"
-    session_id: str = Field(..., description="Session ID")
+    session_id: str = Field(..., description="Session ID")  
     access_token: str = Field(..., description="JWT access token")
+    csrf_token: str = Field(..., description="CSRF token")
 
 class SessionResult(TypedDict):
     session_id: str = Field(..., description="Session ID")
     access_token: str = Field(..., description="JWT access token")
+    csrf_token: str = Field(..., description="CSRF token")
 
 class UserRegister(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=50, description="First name")
@@ -38,6 +40,10 @@ class UserLoginResponse(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str = Field(..., description="JWT access token")
     expires_at: datetime = Field(..., description="Token expiration time")
+
+class CsrfTokenResponse(BaseModel):
+    csrf_token: str = Field(..., description="CSRF token")
+    expires_at: datetime = Field(..., description="CSRF token expiration time")
 
 class ActionRequiredResponse(BaseModel):
     action_type: str = Field(..., description="Action type for frontend routing: 'password_reset' or 'email_verification'")
