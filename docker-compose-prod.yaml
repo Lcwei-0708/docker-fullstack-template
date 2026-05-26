@@ -181,7 +181,7 @@ services:
     restart: always
 
   redis:
-    image: redis:8.4.0
+    image: redis:8.6.3
     environment:
       - TZ=${TIMEZONE}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
