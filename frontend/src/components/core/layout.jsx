@@ -1,3 +1,4 @@
+import { motion } from 'motion/react';
 import { Dock } from '@/components/core/dock';
 import { cn, debugError } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
