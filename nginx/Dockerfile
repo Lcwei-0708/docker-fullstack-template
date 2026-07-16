@@ -1,4 +1,4 @@
-FROM nginx:1.31.0
+FROM nginx:1.31.3
 
 # Install required tools: logrotate for log management, cron for scheduling, curl for downloading gomplate, gomplate for template processing, apache2-utils for htpasswd
 RUN apt-get update && apt-get install -y logrotate cron curl procps apache2-utils \

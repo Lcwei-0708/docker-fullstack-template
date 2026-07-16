@@ -1,7 +1,6 @@
 import pytest
 import asyncio
 import pytest_asyncio
-import fastapi_limiter
 from uuid_utils import uuid7
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, patch
@@ -25,21 +24,6 @@ from models.role_mapper import RoleMapper
 
 mock_redis = AsyncMock()
 mock_redis.evalsha.return_value = 1000  # Indicates 1000ms remaining
-
-
-async def fake_http_callback(request, response, pexpire):
-    return
-
-
-async def fake_identifier(request):
-    return "test"
-
-
-fastapi_limiter.FastAPILimiter.redis = mock_redis
-fastapi_limiter.FastAPILimiter.prefix = "fastapi-limiter"
-fastapi_limiter.FastAPILimiter.lua_sha = "dummy_sha"
-fastapi_limiter.FastAPILimiter.identifier = fake_identifier
-fastapi_limiter.FastAPILimiter.http_callback = fake_http_callback
 
 
 @pytest_asyncio.fixture(scope="function")
