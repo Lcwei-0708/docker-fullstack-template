@@ -250,7 +250,7 @@ class TestChangePassword:
         password_data = PasswordChange(
             current_password="TestPassword123!",
             new_password="NewPassword123!",
-            logout_all_devices=False,
+            logout_other_devices=False,
         )
 
         mock_redis = AsyncMock()
@@ -268,14 +268,14 @@ class TestChangePassword:
         assert test_user.password_reset_required is False
 
     @pytest.mark.asyncio
-    async def test_change_password_with_logout_all_devices(
+    async def test_change_password_with_logout_other_devices(
         self, test_db_session: AsyncSession, test_user: Users
     ):
-        """Test password change with logout all devices enabled"""
+        """Test password change with logout other devices enabled"""
         password_data = PasswordChange(
             current_password="TestPassword123!",
             new_password="NewPassword123!",
-            logout_all_devices=True,
+            logout_other_devices=True,
         )
 
         mock_redis = AsyncMock()
@@ -284,12 +284,19 @@ class TestChangePassword:
             "api.account.services.clear_user_all_sessions", new_callable=AsyncMock
         ) as mock_clear_sessions:
             success = await change_password(
-                test_db_session, test_user.id, password_data, mock_redis
+                test_db_session,
+                test_user.id,
+                password_data,
+                mock_redis,
+                current_session_id="current-session-id",
             )
 
             assert success is True
             mock_clear_sessions.assert_called_once_with(
-                test_db_session, mock_redis, test_user.id
+                test_db_session,
+                mock_redis,
+                test_user.id,
+                exclude_session_id="current-session-id",
             )
 
     @pytest.mark.asyncio
@@ -300,7 +307,7 @@ class TestChangePassword:
         password_data = PasswordChange(
             current_password="WrongPassword123!",
             new_password="NewPassword123!",
-            logout_all_devices=False,
+            logout_other_devices=False,
         )
 
         mock_redis = AsyncMock()
@@ -318,7 +325,7 @@ class TestChangePassword:
         password_data = PasswordChange(
             current_password="TestPassword123!",
             new_password="NewPassword123!",
-            logout_all_devices=False,
+            logout_other_devices=False,
         )
 
         mock_redis = AsyncMock()
@@ -338,7 +345,7 @@ class TestChangePassword:
         password_data = PasswordChange(
             current_password="TestPassword123!",
             new_password="NewPassword123!",
-            logout_all_devices=False,
+            logout_other_devices=False,
         )
 
         mock_redis = AsyncMock()
@@ -360,7 +367,7 @@ class TestChangePassword:
         password_data = PasswordChange(
             current_password="WrongPassword123!",
             new_password="NewPassword123!",
-            logout_all_devices=False,
+            logout_other_devices=False,
         )
 
         mock_redis = AsyncMock()
@@ -395,7 +402,7 @@ class TestServiceIntegration:
         password_data = PasswordChange(
             current_password="TestPassword123!",
             new_password="NewPassword123!",
-            logout_all_devices=False,
+            logout_other_devices=False,
         )
 
         mock_redis = AsyncMock()
@@ -482,7 +489,7 @@ class TestServiceErrorHandling:
         password_data = PasswordChange(
             current_password="TestPassword123!",
             new_password="NewPassword123!",
-            logout_all_devices=True,  # This should be ignored if redis_client is None
+            logout_other_devices=True,  # This should be ignored if redis_client is None
         )
 
         success = await change_password(
@@ -519,7 +526,7 @@ class TestServiceErrorHandling:
             password_data = PasswordChange(
                 current_password="TestPassword123!",
                 new_password="NewPassword123!",
-                logout_all_devices=False,
+                logout_other_devices=False,
             )
             mock_redis = AsyncMock()
             success = await change_password(

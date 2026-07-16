@@ -109,7 +109,13 @@ async def update_user_profile(
     await db.refresh(user)
     return user, email_change_requested
 
-async def change_password(db: AsyncSession, user_id: str, password_change: PasswordChange, redis_client=None) -> bool:
+async def change_password(
+    db: AsyncSession,
+    user_id: str,
+    password_change: PasswordChange,
+    redis_client=None,
+    current_session_id: Optional[str] = None,
+) -> bool:
     """Change user password"""
     try:
         user = await get_user_by_id(db, user_id)
@@ -122,8 +128,13 @@ async def change_password(db: AsyncSession, user_id: str, password_change: Passw
         user.hash_password = await hash_password(password_change.new_password)
         user.password_reset_required = False
         
-        if password_change.logout_all_devices and redis_client:
-            await clear_user_all_sessions(db, redis_client, user_id)
+        if password_change.logout_other_devices and redis_client:
+            await clear_user_all_sessions(
+                db,
+                redis_client,
+                user_id,
+                exclude_session_id=current_session_id,
+            )
         
         await db.commit()
         

@@ -314,7 +314,7 @@ class TestChangePasswordAPI:
         password_data = {
             "current_password": "AccountTestPassword123!",
             "new_password": "NewPassword123!",
-            "logout_all_devices": False,
+            "logout_other_devices": False,
         }
 
         response = await client.put(
@@ -335,7 +335,7 @@ class TestChangePasswordAPI:
         password_data = {
             "current_password": "AccountTestPassword123!",
             "new_password": "NewPassword123!",
-            "logout_all_devices": False,
+            "logout_other_devices": False,
         }
 
         with patch("api.account.controller.change_password", return_value=True):
@@ -358,7 +358,7 @@ class TestChangePasswordAPI:
         password_data = {
             "current_password": "WrongPassword123!",
             "new_password": "NewPassword123!",
-            "logout_all_devices": False,
+            "logout_other_devices": False,
         }
 
         response = await client.put(
@@ -378,7 +378,7 @@ class TestChangePasswordAPI:
         password_data = {
             "current_password": "TestPassword123!",
             "new_password": "NewPassword123!",
-            "logout_all_devices": False,
+            "logout_other_devices": False,
         }
 
         response = await client.put("/api/account/password", json=password_data)
@@ -392,7 +392,7 @@ class TestChangePasswordAPI:
         password_data = {
             "current_password": "AccountTestPassword123!",
             "new_password": "123",  # Too weak
-            "logout_all_devices": False,
+            "logout_other_devices": False,
         }
 
         response = await client.put(
@@ -426,7 +426,7 @@ class TestChangePasswordAPI:
         password_data = {
             "current_password": "AccountTestPassword123!",
             "new_password": "AccountTestPassword123!",  # Same as current
-            "logout_all_devices": False,
+            "logout_other_devices": False,
         }
 
         response = await client.put(
@@ -438,14 +438,14 @@ class TestChangePasswordAPI:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_change_password_with_logout_all_devices(
+    async def test_change_password_with_logout_other_devices(
         self, client: AsyncClient, account_test_user: Users, account_auth_headers: dict
     ):
-        """Test password change with logout all devices option"""
+        """Test password change with logout other devices option"""
         password_data = {
             "current_password": "AccountTestPassword123!",
             "new_password": "NewPassword123!",
-            "logout_all_devices": True,
+            "logout_other_devices": True,
         }
 
         response = await client.put(
@@ -472,7 +472,7 @@ class TestChangePasswordAPI:
             password_data = {
                 "current_password": "AccountTestPassword123!",
                 "new_password": "NewPassword123!",
-                "logout_all_devices": False,
+                "logout_other_devices": False,
             }
 
             response = await client.put(
@@ -501,7 +501,7 @@ class TestChangePasswordAPI:
             password_data = {
                 "current_password": "WrongPassword123!",
                 "new_password": "NewPassword123!",
-                "logout_all_devices": False,
+                "logout_other_devices": False,
             }
 
             response = await client.put(
@@ -552,7 +552,7 @@ class TestControllerIntegration:
         password_data = {
             "current_password": "AccountTestPassword123!",
             "new_password": "NewPassword123!",
-            "logout_all_devices": False,
+            "logout_other_devices": False,
         }
         response = await client.put(
             "/api/account/password",
@@ -598,7 +598,7 @@ class TestControllerIntegration:
         wrong_password_data = {
             "current_password": "WrongPassword123!",
             "new_password": "NewPassword123!",
-            "logout_all_devices": False,
+            "logout_other_devices": False,
         }
         response = await client.put(
             "/api/account/password",
@@ -611,7 +611,7 @@ class TestControllerIntegration:
         correct_password_data = {
             "current_password": "AccountTestPassword123!",
             "new_password": "NewPassword123!",
-            "logout_all_devices": False,
+            "logout_other_devices": False,
         }
         response = await client.put(
             "/api/account/password",

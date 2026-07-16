@@ -124,7 +124,14 @@ async def change_user_password_api(
     """
     try:
         user_id = token.get("sub")
-        success = await change_password(db, user_id, password_change, redis_client)
+        current_session_id = token.get("sid")
+        success = await change_password(
+            db,
+            user_id,
+            password_change,
+            redis_client,
+            current_session_id=current_session_id,
+        )
         
         if success:
             return APIResponse(code=200, message="Password changed successfully")

@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, patch
 from httpx import AsyncClient
 from api.auth.schema import (
-    PasswordResetRequiredResponse,
+    ActionRequiredResponse,
 )
 from utils.custom_exception import (
     ConflictException,
@@ -435,8 +435,10 @@ class TestAuthController:
         login_data = {"email": "reset@example.com", "password": "TestPassword123!"}
 
         with patch("api.auth.controller.login") as mock_login:
-            details = PasswordResetRequiredResponse(
-                reset_token="test-reset-token", expires_at="2024-01-01T00:00:00Z"
+            details = ActionRequiredResponse(
+                action_type="password_reset",
+                token="test-reset-token",
+                expires_at="2024-01-01T00:00:00Z",
             )
             mock_exception = PasswordResetRequiredException("Password reset required")
             mock_exception.details = details
@@ -447,8 +449,8 @@ class TestAuthController:
             data = response.json()
             assert data["code"] == 202
             assert data["message"] == "Password reset required"
-            assert "reset_token" in data["data"]
-            assert data["data"]["reset_token"] == "test-reset-token"
+            assert data["data"]["action_type"] == "password_reset"
+            assert data["data"]["token"] == "test-reset-token"
 
     @pytest.mark.asyncio
     async def test_login_email_verification_required(self, client: AsyncClient):

@@ -460,6 +460,13 @@
               "required": "Please confirm your new password",
               "notMatch": "Passwords do not match"
             }
+          },
+          "confirmNewPassword": {
+            "label": "Confirm New Password",
+            "validation": {
+              "required": "Please enter your new password again",
+              "notMatch": "The new passwords do not match"
+            }
           }
         },
         "actions": {

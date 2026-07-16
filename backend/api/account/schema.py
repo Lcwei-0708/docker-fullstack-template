@@ -1,7 +1,7 @@
 from typing import Optional
 from datetime import datetime
 from core.config import settings
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 class UserProfile(BaseModel):
     id: str = Field(..., description="User ID")
@@ -21,4 +21,12 @@ class UserUpdate(BaseModel):
 class PasswordChange(BaseModel):
     current_password: str = Field(..., min_length=settings.PASSWORD_MIN_LENGTH, max_length=50, description="Current password")
     new_password: str = Field(..., min_length=settings.PASSWORD_MIN_LENGTH, max_length=50, description="New password")
-    logout_all_devices: bool = Field(True, description="Logout all devices")
+    logout_other_devices: bool = Field(True, description="Logout other devices")
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_legacy_logout_field(cls, data):
+        if isinstance(data, dict) and "logout_other_devices" not in data and "logout_all_devices" in data:
+            data = data.copy()
+            data["logout_other_devices"] = data.pop("logout_all_devices")
+        return data

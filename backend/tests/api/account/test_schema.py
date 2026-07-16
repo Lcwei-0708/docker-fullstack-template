@@ -181,24 +181,24 @@ class TestPasswordChange:
         valid_data = {
             "current_password": "CurrentPass123!",
             "new_password": "NewPass123!",
-            "logout_all_devices": True,
+            "logout_other_devices": True,
         }
 
         password_change = PasswordChange(**valid_data)
 
         assert password_change.current_password == "CurrentPass123!"
         assert password_change.new_password == "NewPass123!"
-        assert password_change.logout_all_devices is True
+        assert password_change.logout_other_devices is True
 
-    def test_password_change_default_logout_all_devices(self):
-        """Test PasswordChange default value for logout_all_devices"""
+    def test_password_change_default_logout_other_devices(self):
+        """Test PasswordChange default value for logout_other_devices"""
         data = {"current_password": "CurrentPass123!", "new_password": "NewPass123!"}
 
         password_change = PasswordChange(**data)
 
         assert password_change.current_password == "CurrentPass123!"
         assert password_change.new_password == "NewPass123!"
-        assert password_change.logout_all_devices is True  # Default value
+        assert password_change.logout_other_devices is True  # Default value
 
     def test_password_change_missing_required_fields(self):
         """Test PasswordChange validation with missing required fields"""
@@ -238,23 +238,32 @@ class TestPasswordChange:
         errors = exc_info.value.errors()
         assert any("max_length" in str(error) for error in errors)
 
-    def test_password_change_boolean_logout_all_devices(self):
-        """Test PasswordChange logout_all_devices field accepts boolean values"""
+    def test_password_change_boolean_logout_other_devices(self):
+        """Test PasswordChange logout_other_devices field accepts boolean values"""
         # Test with True
         password_change_true = PasswordChange(
             current_password="CurrentPass123!",
             new_password="NewPass123!",
-            logout_all_devices=True,
+            logout_other_devices=True,
         )
-        assert password_change_true.logout_all_devices is True
+        assert password_change_true.logout_other_devices is True
 
         # Test with False
         password_change_false = PasswordChange(
             current_password="CurrentPass123!",
             new_password="NewPass123!",
-            logout_all_devices=False,
+            logout_other_devices=False,
         )
-        assert password_change_false.logout_all_devices is False
+        assert password_change_false.logout_other_devices is False
+
+    def test_password_change_supports_legacy_logout_all_devices_field(self):
+        """Test PasswordChange supports legacy logout_all_devices payloads"""
+        password_change = PasswordChange(
+            current_password="CurrentPass123!",
+            new_password="NewPass123!",
+            logout_all_devices=True,
+        )
+        assert password_change.logout_other_devices is True
 
 
 class TestSchemaIntegration:
@@ -296,7 +305,7 @@ class TestSchemaIntegration:
 
         assert password_change_fields["current_password"].description is not None
         assert password_change_fields["new_password"].description is not None
-        assert password_change_fields["logout_all_devices"].description is not None
+        assert password_change_fields["logout_other_devices"].description is not None
 
     def test_schema_validation_error_details(self):
         """Test that validation errors provide detailed information"""

@@ -127,7 +127,7 @@ export const useAuth = () => {
       if (result?._statusCode === 202) {
         const actionData = result;
         const actionType = actionData?.action_type;
-        const resetToken = actionData?.token;
+        const resetToken = actionData?.token || actionData?.reset_token;
         
         setLoading(false);
         
@@ -190,7 +190,7 @@ export const useAuth = () => {
         // For 202 status, data is in error.response.data.data
         const actionData = error.response?.data?.data || error.response?.data;
         const actionType = actionData?.action_type;
-        const resetToken = actionData?.token;
+        const resetToken = actionData?.token || actionData?.reset_token;
         
         setLoading(false);
         
@@ -395,7 +395,6 @@ export const useAuth = () => {
         permissionsLoadRef.current = false;
         
         // Allow permissions to load and actively load them
-        isResettingPasswordRef.current = false;
         await loadPermissions();
         
         setLoading(false);
