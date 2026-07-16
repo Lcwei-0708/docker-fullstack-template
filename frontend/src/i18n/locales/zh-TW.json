@@ -339,6 +339,7 @@
         }
       },
       "verifyEmail": {
+        "title": "驗證電子信箱",
         "messages": {
           "noToken": "未提供驗證令牌",
           "success": "電子信箱驗證成功",
@@ -346,7 +347,12 @@
           "invalidToken": "驗證連結已失效或無效，請重新申請。",
           "verificationFailed": "電子信箱驗證失敗",
           "userNotFound": "使用者不存在",
-          "emailExists": "此電子信箱已被使用"
+          "emailExists": "此電子信箱已被使用",
+          "emailSent": "已寄送驗證郵件",
+          "cooldown": "請稍候再申請驗證郵件",
+          "accountDisabled": "帳號已停用",
+          "emailNotRegistered": "此信箱尚未被使用者註冊",
+          "smtpDisabled": "未啟用寄信服務"
         },
         "actions": {
           "backToHome": "回到首頁",

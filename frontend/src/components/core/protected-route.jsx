@@ -9,7 +9,7 @@ import { debugError } from '@/lib/utils';
  * ProtectedRoute - Protects routes by checking authentication and permissions
  */
 export const ProtectedRoute = ({ children, requireAuth = true, permissions = null }) => {
-  const { isAuthenticated, isLoading, isLoadingPermissions, checkPermissions, logout, isResettingPasswordRef } = useAuth();
+  const { isAuthenticated, isLoading, isLoadingPermissions, checkPermissions, logout, isResettingPasswordRef, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isInitialLoadRef = useRef(true);
@@ -83,11 +83,20 @@ export const ProtectedRoute = ({ children, requireAuth = true, permissions = nul
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
-  // Redirect authenticated users away from login/register pages (but not verify-email, reset-password, or forgot-password)
+  // Redirect authenticated users away from login/register pages
   const isAuthPage = location.pathname === "/auth/login" || location.pathname === "/auth/register";
-  if (!requireAuth && isAuthenticated && isAuthPage && !isAuthFlowPage) {
+  if (!requireAuth && isAuthenticated && isAuthPage) {
     const from = location.state?.from?.pathname;
     return <Navigate to={from || "/"} replace />;
+  }
+
+  // Redirect authenticated users away from pending verify-email page only (no ?token=).
+  // Keep profile email-change waiting room (pending_email). Token links keep verifying.
+  if (!requireAuth && isAuthenticated && isVerificationPage) {
+    const hasToken = Boolean(new URLSearchParams(location.search).get("token"));
+    if (!hasToken && !user?.pending_email) {
+      return <Navigate to="/" replace />;
+    }
   }
 
   // Show error page if user lacks required permissions
