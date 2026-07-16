@@ -60,51 +60,53 @@ function FilterFieldPopover({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-auto justify-start font-normal"
+          className="h-auto min-h-10 w-full max-w-full justify-start whitespace-normal py-2 font-normal"
         >
-          <CirclePlus className="size-4" />
-          {label}
-          {selectedValues.length > 0 && (
-            <>
-              <Separator orientation="vertical" className="mx-2 h-5" />
-              {selectedValues.length > 2 ? (
-                <Badge variant="outline" className="rounded-sm px-2 font-semibold bg-primary/15 text-primary border-primary/50">
-                  {selectedValues.length} {t("common.selected", "selected")}
-                </Badge>
-              ) : (
-                <div className="flex space-x-1">
-                  {selectedValues.map((value) => (
-                    <Badge
-                      key={value}
-                      variant="outline"
-                      className="rounded-xs px-2 py-0.5 font-semibold bg-primary/15 text-primary border-primary/50"
-                    >
-                      {getValueLabel(value)}
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          onRemoveValue(value);
-                        }}
-                        className="rounded-full hover:bg-primary/20 py-0.5 cursor-pointer inline-flex items-center justify-center"
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+            <CirclePlus className="size-4 shrink-0" />
+            <span className="shrink-0">{label}</span>
+            {selectedValues.length > 0 && (
+              <>
+                <Separator orientation="vertical" className="mx-0 hidden h-5 sm:block" />
+                {selectedValues.length > 2 ? (
+                  <Badge variant="outline" className="max-w-full rounded-sm border-primary/50 bg-primary/15 px-2 font-semibold text-primary">
+                    {selectedValues.length} {t("common.selected", "selected")}
+                  </Badge>
+                ) : (
+                  <div className="flex min-w-0 flex-1 flex-wrap gap-1">
+                    {selectedValues.map((value) => (
+                      <Badge
+                        key={value}
+                        variant="outline"
+                        className="max-w-full whitespace-normal break-words rounded-xs border-primary/50 bg-primary/15 px-2 py-0.5 font-semibold text-primary"
+                      >
+                        <span className="break-words">{getValueLabel(value)}</span>
+                        <span
+                          onClick={(e) => {
                             e.stopPropagation();
                             e.preventDefault();
                             onRemoveValue(value);
-                          }
-                        }}
-                      >
-                        <X className="size-4" />
-                      </span>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
+                          }}
+                          className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full py-0.5 hover:bg-primary/20"
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              onRemoveValue(value);
+                            }
+                          }}
+                        >
+                          <X className="size-4" />
+                        </span>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-48 p-0" align="start">
