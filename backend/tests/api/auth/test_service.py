@@ -218,8 +218,9 @@ class TestAuthService:
 
         assert "Password reset required" in str(exc_info.value)
         assert exc_info.value.details is not None
-        assert hasattr(exc_info.value.details, "reset_token")
-        assert hasattr(exc_info.value.details, "expires_at")
+        assert exc_info.value.details.action_type == "password_reset"
+        assert exc_info.value.details.token is not None
+        assert exc_info.value.details.expires_at is not None
 
     @pytest.mark.asyncio
     async def test_logout_success(

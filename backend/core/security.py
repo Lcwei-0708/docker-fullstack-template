@@ -271,10 +271,15 @@ async def extend_session_ttl(redis_client, session_id: str, session_data: Dict[s
         logger.error(f"Failed to extend session TTL: {e}")
 
 
-async def clear_user_all_sessions(db: AsyncSession, redis_client: redis.Redis, user_id: str) -> bool:
-    """Logout user from all devices by clearing all active sessions"""
+async def clear_user_all_sessions(
+    db: AsyncSession,
+    redis_client: redis.Redis,
+    user_id: str,
+    exclude_session_id: Optional[str] = None,
+) -> bool:
+    """Logout user from all devices, optionally keeping one active session."""
     try:
-        await db.execute(
+        update_query = (
             update(UserSessions)
             .where(
                 UserSessions.user_id == user_id,
@@ -282,14 +287,20 @@ async def clear_user_all_sessions(db: AsyncSession, redis_client: redis.Redis, u
             )
             .values(is_active=False)
         )
+        if exclude_session_id:
+            update_query = update_query.where(UserSessions.id != exclude_session_id)
+
+        await db.execute(update_query)
         await db.commit()
         
-        result = await db.execute(
-            select(UserSessions.id).where(
-                UserSessions.user_id == user_id,
-                UserSessions.is_active == False
-            )
+        sessions_query = select(UserSessions.id).where(
+            UserSessions.user_id == user_id,
+            UserSessions.is_active == False
         )
+        if exclude_session_id:
+            sessions_query = sessions_query.where(UserSessions.id != exclude_session_id)
+
+        result = await db.execute(sessions_query)
         session_ids = result.scalars().all()
         
         if session_ids:

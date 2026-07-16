@@ -24,7 +24,6 @@ from .schema import (
     SessionResult,
     TokenValidationResponse,
     ActionRequiredResponse,
-    PasswordResetRequiredResponse,
 )
 from core.security import (
     verify_password, 
@@ -190,8 +189,9 @@ async def login(
         
         raise PasswordResetRequiredException(
             message="Password reset required",
-            details=PasswordResetRequiredResponse(
-                reset_token=reset_token,
+            details=ActionRequiredResponse(
+                action_type="password_reset",
+                token=reset_token,
                 expires_at=reset_token_record.expires_at.isoformat() if reset_token_record.expires_at else None
             )
         )

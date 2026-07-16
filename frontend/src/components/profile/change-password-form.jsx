@@ -44,12 +44,19 @@ export function ChangePasswordForm({ onSuccess, onClose, onSubmittingChange }) {
         .string()
         .min(1, { message: t('pages.profile.security.fields.newPassword.validation.required') })
         .min(6, { message: t('pages.profile.security.fields.newPassword.validation.minLength') }),
+      confirm_new_password: z
+        .string()
+        .min(1, { message: t('pages.profile.security.fields.confirmNewPassword.validation.required') }),
+    }).refine((data) => data.new_password === data.confirm_new_password, {
+      message: t('pages.profile.security.fields.confirmNewPassword.validation.notMatch'),
+      path: ['confirm_new_password'],
     });
   }, [t]);
 
   const defaultValues = useMemo(() => ({
     current_password: '',
     new_password: '',
+    confirm_new_password: '',
   }), []);
 
   const checkPasswordStrength = useCallback((password) => {
@@ -95,14 +102,14 @@ export function ChangePasswordForm({ onSuccess, onClose, onSubmittingChange }) {
     defaultValues,
   });
 
-  const handleSubmit = useCallback(async (formValues) => {
+  const submitPasswordChange = useCallback(async (formValues) => {
     setIsSubmitting(true);
     
     try {
       const result = await changePassword({
         current_password: formValues.current_password,
         new_password: formValues.new_password,
-        logout_all_devices: true,
+        logout_other_devices: true,
       });
       
       if (result.success) {
@@ -146,11 +153,34 @@ export function ChangePasswordForm({ onSuccess, onClose, onSubmittingChange }) {
     }
   }, [changePassword, form, defaultValues, onSuccess, t]);
 
+  const handleSubmit = useCallback(async (formValues) => {
+    await submitPasswordChange(formValues);
+  }, [submitPasswordChange]);
+
+  const onSubmitHandler = useCallback((e) => {
+    e?.preventDefault?.();
+    if (isSubmitting || isLoading) {
+      return;
+    }
+    form.handleSubmit(handleSubmit)();
+  }, [form, handleSubmit, isSubmitting, isLoading]);
+
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Enter' && !isSubmitting && !isLoading) {
+      e.preventDefault();
+      onSubmitHandler(e);
+    }
+  }, [onSubmitHandler, isSubmitting, isLoading]);
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form
+        onSubmit={(e) => e.preventDefault()}
+        onKeyDown={handleKeyDown}
+        className="space-y-6"
+      >
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-4 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-4 items-start">
             <FormField
               control={form.control}
               name="current_password"
@@ -222,6 +252,41 @@ export function ChangePasswordForm({ onSuccess, onClose, onSubmittingChange }) {
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="confirm_new_password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel
+                    htmlFor="confirm-new-password-input"
+                    className={cn(
+                      'flex items-center gap-1',
+                      form.formState.errors.confirm_new_password && 'text-destructive'
+                    )}
+                  >
+                    {t('pages.profile.security.fields.confirmNewPassword.label')}
+                    <span className="text-destructive">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      id="confirm-new-password-input"
+                      type="password"
+                      autoComplete="new-password"
+                      showPasswordToggle={true}
+                      {...field}
+                      disabled={isSubmitting || isLoading}
+                      className={cn(
+                        form.formState.errors.confirm_new_password &&
+                          'ring-2 ring-destructive focus-visible:ring-destructive'
+                      )}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
           </div>
 
           <div className="space-y-1.5 md:space-y-2">
@@ -299,7 +364,8 @@ export function ChangePasswordForm({ onSuccess, onClose, onSubmittingChange }) {
             </Button>
           )}
           <Button
-            type="submit"
+            type="button"
+            onClick={onSubmitHandler}
             disabled={isSubmitting || isLoading}
             className="flex items-center gap-1.5 md:gap-2 text-sm"
           >

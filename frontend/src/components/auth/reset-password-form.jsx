@@ -50,6 +50,15 @@ export const ResetPasswordForm = ({ className, token, ...props }) => {
   const resetPassword = useMemo(() => authContext.resetPassword, [authContext.resetPassword])
   const validateResetToken = useMemo(() => authContext.validateResetToken, [authContext.validateResetToken])
   const clearError = useMemo(() => authContext.clearError, [authContext.clearError])
+  const isResettingPasswordRef = useMemo(() => authContext.isResettingPasswordRef, [authContext.isResettingPasswordRef])
+
+  useEffect(() => {
+    return () => {
+      if (isResettingPasswordRef) {
+        isResettingPasswordRef.current = false
+      }
+    }
+  }, [isResettingPasswordRef])
   
   const handleResetPassword = useCallback(async (newPassword, resetToken) => {
     clearError()
@@ -188,9 +197,7 @@ export const ResetPasswordForm = ({ className, token, ...props }) => {
       
       if (result.success) {
         formMethodsRef.current.reset(stableDefaultValues, { keepValues: false })
-        setTimeout(() => {
-          navigateRef.current('/', { replace: true })
-        }, 0)
+        navigateRef.current('/', { replace: true })
       } else {
         // Check if error is 401 (token expired/invalid)
         if (result.status === 401) {
