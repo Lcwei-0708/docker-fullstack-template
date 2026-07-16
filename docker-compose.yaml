@@ -142,7 +142,7 @@ services:
       retries: 5
 
   mariadb:
-    image: mariadb:11.3
+    image: mariadb:11.8.8
     environment:
       - TZ=${TIMEZONE:-UTC}
       - MYSQL_DATABASE=${DB_DATABASE:-app}
@@ -164,7 +164,7 @@ services:
       retries: 5
       
   phpmyadmin:
-    image: phpmyadmin/phpmyadmin:5.2.2
+    image: phpmyadmin/phpmyadmin:5.2.3
     environment:
       - TZ=${TIMEZONE:-UTC}
       - PMA_HOST=mariadb
@@ -180,7 +180,7 @@ services:
     restart: always
 
   redis:
-    image: redis:8.6.3
+    image: redis:8.6.4
     environment:
       - TZ=${TIMEZONE:-UTC}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-redis}
@@ -204,7 +204,7 @@ services:
       retries: 5
 
   redis-insight:
-    image: redis/redisinsight:2.70
+    image: redis/redisinsight:2.70.1
     environment:
       - TZ=${TIMEZONE:-UTC}
       - RI_REDIS_HOST=redis
@@ -228,7 +228,7 @@ services:
       retries: 5
 
   loki:
-    image: grafana/loki:3.5.3
+    image: grafana/loki:3.7.3
     environment:
       - TZ=${TIMEZONE:-UTC}
     volumes:
@@ -251,7 +251,7 @@ services:
           memory: 2G
 
   alloy:
-    image: grafana/alloy:v1.10.0
+    image: grafana/alloy:v1.17.1
     environment:
       - TZ=${TIMEZONE:-UTC}
     volumes:
@@ -267,7 +267,7 @@ services:
       - loki
 
   grafana:
-    image: grafana/grafana:12.2.0-16557133545
+    image: grafana/grafana:12.2.10
     environment:
       - TZ=${TIMEZONE:-UTC}
       - SSL_ENABLE=${SSL_ENABLE:-false}

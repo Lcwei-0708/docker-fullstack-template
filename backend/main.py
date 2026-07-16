@@ -2,9 +2,8 @@ from core.config import settings, setup_logging
 setup_logging("logging_config.yaml")
 from api import api_router
 from fastapi import FastAPI
-from core.redis import init_redis, get_redis
+from core.redis import init_redis
 from core.database import init_db
-from fastapi_limiter import FastAPILimiter
 from contextlib import asynccontextmanager
 from extensions import register_extensions
 from middleware import register_middlewares
@@ -17,7 +16,6 @@ async def lifespan(app: FastAPI):
     register_schedules()
     scheduler.start()
     await init_redis()
-    await FastAPILimiter.init(get_redis())
     yield
     scheduler.shutdown()
 

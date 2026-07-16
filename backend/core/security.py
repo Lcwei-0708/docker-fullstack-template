@@ -9,21 +9,23 @@ from core.dependencies import get_db
 from sqlalchemy import update, select
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
-from passlib.context import CryptContext
+import bcrypt
 from models.user_sessions import UserSessions
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.custom_exception import ServerException
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 logger = logging.getLogger(__name__)
 
 async def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 async def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(
+        plain_password.encode("utf-8"),
+        hashed_password.encode("utf-8"),
+    )
 
 async def create_access_token(data: Dict[str, Any]) -> str:
     to_encode = data.copy()

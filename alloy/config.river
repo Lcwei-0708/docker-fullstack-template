@@ -100,9 +100,6 @@ loki.write "default" {
 		tenant_id          = "default"
 		batch_size    	   = "102KiB"
 		batch_wait         = "3s"
-		queue_config {
-			capacity       = "100MiB"
-		}
 	}
 	external_labels = {}
 }
