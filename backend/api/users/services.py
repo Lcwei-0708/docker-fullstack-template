@@ -6,6 +6,7 @@ from models.role_mapper import RoleMapper
 from models.login_logs import LoginLogs
 from models.user_sessions import UserSessions
 from models.password_reset_tokens import PasswordResetTokens
+from models.email_verification_tokens import EmailVerificationTokens
 from typing import Optional, List, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, delete, case
@@ -446,6 +447,11 @@ async def _delete_user_related_records(db: AsyncSession, user_id: str) -> None:
         # Delete password reset tokens
         await db.execute(
             delete(PasswordResetTokens).where(PasswordResetTokens.user_id == user_id)
+        )
+
+        # Delete email verification tokens
+        await db.execute(
+            delete(EmailVerificationTokens).where(EmailVerificationTokens.user_id == user_id)
         )
         
     except Exception as e:

@@ -7,6 +7,8 @@ import { MailCheck, Home, Mail, LogIn } from 'lucide-react'
 import { authService } from '@/services/auth.service'
 import accountService from '@/services/account.service'
 import { useAuth as useAuthContext } from '@/contexts/authContext'
+import { useAuth } from '@/hooks/useAuth'
+import { getCsrfTokenFromCookie } from '@/lib/cookies'
 import { debugError } from '@/lib/utils'
 import { Spinner } from '@/components/ui/spinner'
 
@@ -38,6 +40,64 @@ export const VerifyEmailForm = ({ className, token }) => {
   const intervalRef = useRef(null)
   const verificationInitiatedRef = useRef(false)
   const lastVerifiedTokenRef = useRef(null)
+  const { isAuthenticated, isLoading: isAuthLoading, user } = useAuth()
+  const { loginSuccess, setToken } = authContextDirect
+
+  // Pending page only (no ?token=): if already logged in, go home.
+  // Skip when user is waiting to confirm a profile email change (pending_email).
+  useEffect(() => {
+    if (token) return
+    if (isAuthLoading || !isAuthenticated) return
+    if (user?.pending_email) return
+    navigate('/', { replace: true })
+  }, [token, isAuthLoading, isAuthenticated, user?.pending_email, navigate])
+
+  // Pending page: detect login completed in another tab (session cookie) via focus / polling
+  useEffect(() => {
+    if (token) return
+
+    let cancelled = false
+    const checkSession = async () => {
+      if (cancelled || isAuthenticated) return
+      try {
+        const result = await authService.getToken({
+          showErrorToast: false,
+          csrfToken: getCsrfTokenFromCookie() ?? '',
+        })
+        const accessToken =
+          typeof result === 'string'
+            ? result
+            : result?.access_token || result?.data?.access_token || null
+        if (!cancelled && accessToken) {
+          if (loginSuccess) {
+            loginSuccess(null, accessToken)
+          } else if (setToken) {
+            setToken(accessToken)
+          }
+          navigate('/', { replace: true })
+        }
+      } catch (error) {
+        // Still waiting for verification in another tab
+      }
+    }
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        checkSession()
+      }
+    }
+
+    window.addEventListener('focus', checkSession)
+    document.addEventListener('visibilitychange', onVisible)
+    const intervalId = setInterval(checkSession, 4000)
+
+    return () => {
+      cancelled = true
+      window.removeEventListener('focus', checkSession)
+      document.removeEventListener('visibilitychange', onVisible)
+      clearInterval(intervalId)
+    }
+  }, [token, isAuthenticated, loginSuccess, setToken, navigate])
 
   // Handle email verification when token is provided, or set pending state when only email is available
   useEffect(() => {
@@ -86,7 +146,9 @@ export const VerifyEmailForm = ({ className, token }) => {
               debugError('Failed to fetch user profile:', error)
             }
           }
-          setVerificationStatus('success')
+          setIsVerifying(false)
+          navigate('/', { replace: true })
+          return
         } else {
           setVerificationStatus('error')
           setErrorMessage(t('pages.auth.verifyEmail.messages.verificationFailed', { defaultValue: 'Email verification failed' }))
@@ -96,7 +158,23 @@ export const VerifyEmailForm = ({ className, token }) => {
       } catch (error) {
         debugError('Email verification error:', error)
         setVerificationStatus('error')
-        const errorMsg = error.response?.data?.message || error.message || t('pages.auth.verifyEmail.messages.verificationFailed', { defaultValue: 'Email verification failed' })
+        const status = error.response?.status
+        const errorMsg =
+          status === 401
+            ? t('pages.auth.verifyEmail.messages.invalidToken', {
+                defaultValue: 'The verification link has expired or is invalid. Please request a new one.',
+              })
+            : status === 404
+              ? t('pages.auth.verifyEmail.messages.userNotFound', {
+                  defaultValue: 'User not found',
+                })
+              : status === 409
+                ? t('pages.auth.verifyEmail.messages.emailExists', {
+                    defaultValue: 'Email already exists',
+                  })
+                : t('pages.auth.verifyEmail.messages.verificationFailed', {
+                    defaultValue: 'Email verification failed',
+                  })
         setErrorMessage(errorMsg)
         verificationInitiatedRef.current = false
         lastVerifiedTokenRef.current = null
@@ -107,7 +185,7 @@ export const VerifyEmailForm = ({ className, token }) => {
 
     verifyToken()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, t, location.state?.email])
+  }, [token, t, location.state?.email, navigate])
 
   // Fetch email verification cooldown status
   const fetchCooldownRef = useRef(null)

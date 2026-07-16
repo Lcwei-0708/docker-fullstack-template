@@ -340,6 +340,7 @@
         }
       },
       "verifyEmail": {
+        "title": "Verify Email",
         "messages": {
           "noToken": "No verification token provided",
           "success": "Email verified successfully",
@@ -347,7 +348,12 @@
           "invalidToken": "The verification link has expired or is invalid. Please request a new one.",
           "verificationFailed": "Email verification failed",
           "userNotFound": "User not found",
-          "emailExists": "Email already exists"
+          "emailExists": "Email already exists",
+          "emailSent": "Verification email sent",
+          "cooldown": "Please wait before requesting another verification email",
+          "accountDisabled": "Account is disabled",
+          "emailNotRegistered": "This email is not registered",
+          "smtpDisabled": "Email service is disabled"
         },
         "actions": {
           "backToHome": "Go to Home",

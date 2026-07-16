@@ -269,7 +269,8 @@ async def create_default_admin():
                     phone=settings.DEFAULT_ADMIN_PHONE,
                     hash_password=await hash_password(settings.DEFAULT_ADMIN_PASSWORD),
                     status=True,
-                    password_reset_required=False
+                    password_reset_required=False,
+                    email_verified=True,
                 )
                 
                 db.add(admin_user)

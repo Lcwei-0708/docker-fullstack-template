@@ -169,6 +169,16 @@ export const RegisterForm = ({ className, redirectTo = '/', ...props }) => {
         setTimeout(() => {
           navigateRef.current(redirectToRef.current, { replace: true })
         }, 0)
+      } else if (result.requiresEmailVerification) {
+        const emailToKeep = formValues.email
+        formMethodsRef.current.reset(stableDefaultValues, { keepValues: false })
+        setIsSubmitting(false)
+        requestAnimationFrame(() => {
+          navigateRef.current('/auth/verify-email', {
+            replace: true,
+            state: { email: emailToKeep },
+          })
+        })
       } else {
         setIsSubmitting(false)
       }

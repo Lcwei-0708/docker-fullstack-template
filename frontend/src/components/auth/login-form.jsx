@@ -344,6 +344,7 @@ export const LoginForm = ({ className, redirectTo = '/', ...props }) => {
                     to="/auth/forgot-password" 
                     className="text-sm leading-none text-primary hover:underline !bg-transparent vertical-align: bottom;"
                     state={location.state}
+                    tabIndex={-1}
                   >
                     {t('pages.auth.login.links.forgotPassword', { defaultValue: 'Forgot password?' })}
                   </Link>
