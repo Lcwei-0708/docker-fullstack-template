@@ -1,10 +1,8 @@
 import logging
-from fastapi_limiter.depends import RateLimiter
-from pyrate_limiter import Duration, Limiter, Rate
 from utils.response import parse_responses, APIResponse
 from .services import get_ip_debug_info, clear_blocked_ips
 from .schema import IPDebugResponse, ClearBlockedIPsResponse
-from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi import APIRouter, Request, HTTPException
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +17,6 @@ router = APIRouter(tags=["Debug"])
                 429: ("Too Many Requests", None),
                 500: ("Internal Server Error", None),
             }),
-            dependencies=[Depends(RateLimiter(limiter=Limiter(Rate(10, Duration.SECOND * 60))))]
 )
 async def test_ip_detection(request: Request):
     try:

@@ -22,7 +22,6 @@ dependencies = [
     "httpx==0.28.1",
     "apscheduler==3.11.3",
     "redis==8.0.1",
-    "fastapi-limiter==0.2.0",
 ]
 
 [dependency-groups]
