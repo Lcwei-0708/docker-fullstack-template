@@ -1,3 +1,41 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "FastAPI backend for docker-fullstack-template"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[all]==0.139.1",
+    "uvicorn==0.51.0",
+    "gunicorn==26.0.0",
+    "asgi-lifespan==2.1.0",
+    "sqlalchemy[asyncio]==2.0.51",
+    "alembic==1.18.5",
+    "uuid-utils==0.17.0",
+    "aiomysql==0.3.2",
+    "pymysql==1.2.0",
+    "python-dotenv==1.2.2",
+    "pydantic==2.13.4",
+    "pydantic-settings==2.14.2",
+    "python-jose==3.5.0",
+    "bcrypt==5.0.0",
+    "requests==2.34.2",
+    "httpx==0.28.1",
+    "apscheduler==3.11.3",
+    "redis==8.0.1",
+    "fastapi-limiter==0.2.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "coverage==7.15.2",
+    "pytest-cov==7.1.0",
+]
+
+[tool.uv]
+package = false
+
 [tool.pytest.ini_options]
 addopts = "-v --tb=short --disable-warnings"
 asyncio_mode = "auto"
@@ -15,6 +53,7 @@ omit = [
     "*/tests/*",
     "*/migrations/*",
     "*/venv/*",
+    "*/.venv/*",
     "*/__pycache__/*",
     "*/debug/*",
 ]
