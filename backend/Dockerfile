@@ -1,27 +1,24 @@
 # Use Python 3.14 as the base image
 FROM python:3.14
 
-# Set working directory
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 WORKDIR /app
 
-# Copy requirements.txt into the container
-COPY requirements.txt /app/
+# Keep the venv outside /app so docker-compose bind mounts do not hide it
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Upgrade pip
-RUN pip install --upgrade pip
-
-# Install project dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install dependencies first for better layer caching
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project
 
 # Copy project files into the container
 COPY . /app/
-
-# Expose port 5000
-EXPOSE 5000
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
 
 # Run the application
 CMD ["gunicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]

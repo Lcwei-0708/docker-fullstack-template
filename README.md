@@ -10,7 +10,7 @@ This project is a ready-to-use fullstack template that leverages Docker Compose 
 ## Features
 
 - ⚛️ **Frontend**: Built with React, offering a fast and modern user interface.
-- 🚀 **Backend**: Powered by FastAPI, providing a robust and flexible API layer.
+- 🚀 **Backend**: Powered by FastAPI, with dependency management via uv (`pyproject.toml` + `uv.lock`).
 - 🛢️ **Database**: Uses MariaDB for reliable and high-performance data storage.
 - 🗄️ **Database Management**: phpMyAdmin provides an intuitive web-based interface for managing MariaDB databases.
 - 🔀 **Reverse Proxy**: Nginx serves as a reverse proxy, efficiently routing traffic to the appropriate services.

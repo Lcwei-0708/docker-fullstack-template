@@ -12,6 +12,7 @@ This backend project is built with modern Python technologies to provide a robus
 - **Redis (Async)**: Used for rate limiting, integrated via `redis.asyncio`.
 - **Uvicorn**: Lightning-fast ASGI server for running FastAPI applications.
 - **Docker**: Containerization for development and deployment.
+- **uv**: Fast Python package and project manager (`pyproject.toml` + `uv.lock`).
 - **Asyncio**: Native Python async event loop for high concurrency and performance.
 - **Testing**: Pytest (asyncio, coverage); fully isolated environment with a dedicated test database.  
   _See [Test Docs](./tests/README.md) for details._
