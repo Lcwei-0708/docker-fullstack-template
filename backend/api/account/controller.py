@@ -4,7 +4,7 @@ from core.security import verify_token
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, HTTPException, Response
 from .schema import UserProfile, UserUpdate, PasswordChange
-from utils.response import APIResponse, parse_responses, common_responses
+from utils.response import APIResponse, parse_responses, common_responses, make_error_examples
 from .services import get_user_by_id, update_user_profile, change_password
 from utils.custom_exception import AuthenticationException, NotFoundException
 from extensions.smtp import get_mailer, SMTPMailer
@@ -110,7 +110,10 @@ async def update_user_profile_api(
     summary="Change current user password",
     responses=parse_responses({
         200: ("Password changed successfully", None),
-        401: ("Invalid or expired token / Current password is incorrect", None)
+        401: ("Unauthorized", None, make_error_examples(401, {
+            "invalidToken": "Invalid or expired token",
+            "incorrectPassword": "Current password is incorrect",
+        })),
     }, common_responses)
 )
 async def change_user_password_api(
