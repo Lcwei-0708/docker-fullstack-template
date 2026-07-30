@@ -8,7 +8,7 @@ from utils.get_real_ip import get_real_ip
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.security import verify_password_reset_token, verify_token, verify_email_verification_token
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, Query
-from utils.response import APIResponse, parse_responses, common_responses
+from utils.response import APIResponse, parse_responses, common_responses, make_error_examples
 from extensions.smtp import get_mailer, SMTPMailer
 from utils.custom_exception import SMTPNotConfiguredException
 from .schema import (
@@ -119,7 +119,7 @@ async def register_api(
     summary="Login account",
     responses=parse_responses({
         200: ("User logged in successfully", UserLoginResponse),
-        202: ("Password reset required / Email verification required", ActionRequiredResponse, action_required_response_examples),
+        202: ("Action required", ActionRequiredResponse, action_required_response_examples),
         401: ("Invalid email or password", None)
     }, common_responses)
 )
@@ -177,7 +177,10 @@ async def login_api(
     summary="Logout account",
     responses=parse_responses({
         200: ("User logged out successfully", None),
-        401: ("Invalid or expired session / Invalid or expired token", None)
+        401: ("Unauthorized", None, make_error_examples(401, {
+            "invalidSession": "Invalid or expired session",
+            "invalidToken": "Invalid or expired token",
+        })),
     }, common_responses)
 )
 async def logout_api(
@@ -224,7 +227,10 @@ async def logout_api(
     summary="Refresh token",
     responses=parse_responses({
         200: ("Token refreshed successfully", TokenResponse),
-        401: ("Invalid or expired session / Invalid or expired CSRF token", None)
+        401: ("Unauthorized", None, make_error_examples(401, {
+            "invalidSession": "Invalid or expired session",
+            "invalidCsrf": "Invalid or expired CSRF token",
+        })),
     }, common_responses)
 )
 async def token_api(

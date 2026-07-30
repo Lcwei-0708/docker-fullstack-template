@@ -14,20 +14,65 @@ class ValidationErrorData(RootModel[dict[str, str]]):
     """Model for validation error data structure"""
     pass
 
+def is_openapi_examples(example: dict) -> bool:
+    """
+    Detect OpenAPI Media Type ``examples`` (named map with dropdown in Swagger UI).
+
+    Expected shape:
+        {
+          "caseA": {"summary": "...", "value": {...}},
+          "caseB": {"value": {...}},
+        }
+    """
+    if not isinstance(example, dict) or not example:
+        return False
+    if "code" in example or "message" in example or "data" in example:
+        return False
+    return all(
+        isinstance(item, dict) and "value" in item
+        for item in example.values()
+    )
+
+
 def make_response_doc(description: str, model: Optional[Type] = None, example: Optional[dict] = None) -> dict:
-    """Create OpenAPI response documentation with model and example"""
+    """Create OpenAPI response documentation with model and example(s)"""
     doc = {"description": description}
     if model:
         doc["model"] = APIResponse[model]
     if example:
-        doc["content"] = {"application/json": {"example": example}}
+        media = (
+            {"examples": example}
+            if is_openapi_examples(example)
+            else {"example": example}
+        )
+        doc["content"] = {"application/json": media}
     return doc
+
+def make_error_examples(code: int, cases: dict[str, str]) -> dict:
+    """
+    Build OpenAPI named ``examples`` for simple error responses.
+
+    Example:
+        make_error_examples(401, {
+            "invalidSession": "Invalid or expired session",
+            "invalidCsrf": "Invalid or expired CSRF token",
+        })
+    """
+    return {
+        key: {
+            "summary": message,
+            "value": {"code": code, "message": message, "data": None},
+        }
+        for key, message in cases.items()
+    }
+
 
 def parse_responses(custom: dict, default: dict = None) -> dict:
     """
     Parse and merge responses. Supports:
     - 2-tuple: (description, model) - auto-generates example
-    - 3-tuple: (description, model, example) - uses provided example  
+    - 3-tuple: (description, model, example) - single example dict,
+      or OpenAPI named ``examples`` map (Swagger UI dropdown)
     - string: description only - creates simple error response
     """
     # Merge default responses first, then override with custom ones
@@ -55,11 +100,12 @@ def parse_responses(custom: dict, default: dict = None) -> dict:
                 result[code] = make_response_doc(desc, model, example)
             elif len(val) == 3:
                 desc, model, example = val
-                # Auto-fill missing code and message
-                if "code" not in example:
-                    example["code"] = code
-                if "message" not in example:
-                    example["message"] = desc
+                # Auto-fill only for a single response body example
+                if not is_openapi_examples(example):
+                    if "code" not in example:
+                        example["code"] = code
+                    if "message" not in example:
+                        example["message"] = desc
                 result[code] = make_response_doc(desc, model, example)
         elif isinstance(val, str):
             example = {"code": code, "message": val, "data": None}
