@@ -51,7 +51,12 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
                 "limit": (60, 60),
                 "status_codes": None,
                 "clear_on_success": False
-            }
+            },
+            "/api/debug/test-ip": {
+                "limit": (10, 60),
+                "status_codes": None,
+                "clear_on_success": False
+            },
         }
     
     def _get_rate_limit_config(self, path: str) -> dict:

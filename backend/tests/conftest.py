@@ -137,22 +137,6 @@ def mock_other_components():
         yield
 
 
-# Mock RateLimiter to always allow requests
-@pytest.fixture(autouse=True)
-def mock_rate_limiter():
-    """Mock RateLimiter to always allow requests"""
-
-    class MockRateLimiter:
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def __call__(self, *args, **kwargs):
-            return None
-
-    with patch("fastapi_limiter.depends.RateLimiter", MockRateLimiter):
-        yield
-
-
 @pytest_asyncio.fixture
 async def db_transaction(test_db_session):
     """
