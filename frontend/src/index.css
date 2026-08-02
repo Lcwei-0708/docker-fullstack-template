@@ -251,4 +251,21 @@
   .dark *::-webkit-scrollbar-thumb:hover {
     background-color: oklch(0.5 0 0 / 0.5);
   }
+
+
+  /* Autofill: paint matches --input; wrapper overflow clips corner bleed. */
+  input:-webkit-autofill {
+    -webkit-text-fill-color: var(--foreground) !important;
+    caret-color: var(--foreground);
+    background-color: transparent !important;
+    background-image: none !important;
+    -webkit-box-shadow: 0 0 0 1000px var(--input) inset !important;
+    box-shadow: 0 0 0 1000px var(--input) inset !important;
+    transition: background-color 99999s ease-out 0s;
+  }
+  
+  input:-webkit-autofill::selection {
+    background-color: var(--primary) !important;
+    -webkit-text-fill-color: var(--primary-foreground) !important;
+  }
 }
