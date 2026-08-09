@@ -103,7 +103,6 @@ function DataGridToolbar({
         {showSearch && (
           <div className="flex items-center gap-2 flex-1 min-w-[200px] max-w-xs">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
               <Input
                 id="data-grid-search"
                 name="data-grid-search"
@@ -111,13 +110,14 @@ function DataGridToolbar({
                 value={searchValue}
                 onChange={handleSearchChange}
                 onKeyDown={handleSearchKeyDown}
-                className="px-9 h-9"
+                startIcon={<Search />}
+                className={cn("h-9", searchValue && "pr-9")}
               />
               {searchValue && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                  className="absolute right-1 top-1/2 z-10 -translate-y-1/2 h-7 w-7"
                   onClick={handleSearchClear}
                   aria-label={t('common.actions.reset', 'Reset')}>
                   <X className="size-4" />

@@ -84,20 +84,20 @@ export function RolesList({
         <div className="space-y-4 flex-shrink-0 px-5 pt-5">
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
               <Input
                 id="role-list-panel-search"
                 name="role-list-panel-search"
                 placeholder={t("pages.rolesManagement.searchPlaceholder", "Search roles")}
                 value={searchKeyword}
                 onChange={(e) => onSearchChange?.(e.target.value)}
-                className={cn("w-full px-9 h-10 rounded-md", searchKeyword?.trim() && "pr-10")}
+                startIcon={<Search />}
+                className={cn("w-full h-10 rounded-md", searchKeyword?.trim() && "pr-10")}
               />
               {!!searchKeyword?.trim() && (
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7" 
+                  className="absolute right-2 top-1/2 z-10 -translate-y-1/2 h-7 w-7" 
                   aria-label={t("common.actions.clear", "Clear")}
                   onClick={() => onSearchChange?.("")}
                 >

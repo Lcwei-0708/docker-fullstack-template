@@ -367,7 +367,6 @@ export function UsersCardListToolbar({
     <>
       <div className="flex items-center gap-2 px-6">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
             id="users-card-list-toolbar-search"
             name="users-card-list-toolbar-search"
@@ -376,13 +375,14 @@ export function UsersCardListToolbar({
             value={localKeyword}
             onChange={(e) => setLocalKeyword(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="pl-9 pr-9 h-12"
+            startIcon={<Search />}
+            className={cn("h-12", localKeyword && "pr-9")}
           />
           {localKeyword && (
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+              className="absolute right-1 top-1/2 z-10 -translate-y-1/2 h-7 w-7"
               onClick={handleClear}
             >
               <X className="size-4" />
