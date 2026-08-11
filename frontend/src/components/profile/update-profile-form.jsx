@@ -92,16 +92,16 @@ export function UpdateProfileForm({
         phone: formValues.phone,
       }, {returnStatus: true});
 
-      if (result?.status === 'success') {
-        if (onSuccess) {
-          await onSuccess(result.data);
-        }
-      } else if (result?.requiresEmailVerification) {
+      if (result?.requiresEmailVerification) {
         if (onRequiresEmailVerification) {
           await onRequiresEmailVerification({
-            email: result.email || formValues.email,
+            email: result.email || result.data?.pending_email || formValues.email,
             profile: result.data,
           });
+        }
+      } else if (result?.status === 'success') {
+        if (onSuccess) {
+          await onSuccess(result.data);
         }
       }
     } catch (error) {
