@@ -11,6 +11,18 @@ from extensions.smtp import get_mailer, SMTPMailer
 
 router = APIRouter(tags=["Account"])
 
+def _to_user_profile(user) -> UserProfile:
+    return UserProfile(
+        id=user.id,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        email=user.email,
+        pending_email=user.pending_email,
+        phone=user.phone,
+        status=user.status,
+        created_at=user.created_at,
+    )
+
 @router.get(
     "/profile",
     response_model=APIResponse[UserProfile],
@@ -33,15 +45,7 @@ async def get_user_profile_api(
         if not user:
             raise NotFoundException("User not found")
         
-        user_data = UserProfile(
-            id=user.id,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            email=user.email,
-            phone=user.phone,
-            status=user.status,
-            created_at=user.created_at
-        )
+        user_data = _to_user_profile(user)
         
         return APIResponse(code=200, message="User profile retrieved successfully", data=user_data)
     except NotFoundException:
@@ -81,15 +85,7 @@ async def update_user_profile_api(
         
         user, email_change_requested = result
         
-        user_data = UserProfile(
-            id=user.id,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            email=user.email,
-            phone=user.phone,
-            status=user.status,
-            created_at=user.created_at
-        )
+        user_data = _to_user_profile(user)
 
         if email_change_requested:
             response.status_code = 202

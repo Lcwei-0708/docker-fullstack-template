@@ -121,6 +121,7 @@ class TestUpdateUserProfileAPI:
         assert data["data"]["first_name"] == "Updated"
         assert data["data"]["last_name"] == "Name"
         assert data["data"]["email"] == account_test_user.email
+        assert data["data"]["pending_email"] == "updated@example.com"
         assert data["data"]["phone"] == "+9876543210"
 
     @pytest.mark.asyncio

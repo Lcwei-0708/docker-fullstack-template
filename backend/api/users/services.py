@@ -9,7 +9,7 @@ from models.password_reset_tokens import PasswordResetTokens
 from models.email_verification_tokens import EmailVerificationTokens
 from typing import Optional, List, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_, delete, case
+from sqlalchemy import select, func, or_, delete, case, update
 from core.security import hash_password, clear_user_all_sessions
 from .schema import UserResponse, UserPagination, UserCreate, UserUpdate, UserDeleteBatchResponse, UserDeleteResult
 from utils.custom_exception import ServerException, ConflictException, NotFoundException
@@ -224,8 +224,24 @@ async def update_user(db: AsyncSession, user_id: str, user_data: UserUpdate) -> 
                 raise ConflictException("Email already exists")
         
         update_data = user_data.model_dump(exclude_unset=True, exclude={'role'})
+        email_changed = "email" in update_data and update_data["email"] != user.email
+
         for field, value in update_data.items():
             setattr(user, field, value)
+
+        # Admin-set email is treated as confirmed: drop pending change and unused tokens
+        if email_changed:
+            user.pending_email = None
+            user.email_verified = True
+            await db.execute(
+                update(EmailVerificationTokens)
+                .where(
+                    EmailVerificationTokens.user_id == user.id,
+                    EmailVerificationTokens.token_type == "email_change",
+                    EmailVerificationTokens.is_used == False
+                )
+                .values(is_used=True)
+            )
         
         await db.commit()
         await db.refresh(user)

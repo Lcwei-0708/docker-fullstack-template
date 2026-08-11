@@ -8,6 +8,7 @@ class UserProfile(BaseModel):
     first_name: str = Field(..., description="First name")
     last_name: str = Field(..., description="Last name")
     email: EmailStr = Field(..., description="User email address")
+    pending_email: Optional[EmailStr] = Field(None, description="Pending email awaiting verification")
     phone: str = Field(..., description="Phone number")
     status: bool = Field(..., description="User status")
     created_at: datetime = Field(..., description="User creation time")

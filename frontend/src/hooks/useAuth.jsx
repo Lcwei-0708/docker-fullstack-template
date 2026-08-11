@@ -459,17 +459,22 @@ export const useAuth = () => {
 
       if (responseData?._statusCode === 202) {
         const { _statusCode: _ignored, ...profileData } = responseData;
-        if (profileData) {
-          setUser(profileData);
+        const pendingEmail = profileData?.pending_email || userData?.email || null;
+        const nextProfile = {
+          ...profileData,
+          pending_email: pendingEmail,
+        };
+        if (nextProfile) {
+          setUser(nextProfile);
         }
         const baseResult = {
           success: false,
           requiresEmailVerification: true,
-          data: profileData,
-          email: userData?.email,
+          data: nextProfile,
+          email: pendingEmail,
         };
         return returnStatus
-          ? { ...result, ...baseResult, data: profileData }
+          ? { ...result, ...baseResult, status: 'accepted', data: nextProfile }
           : baseResult;
       }
 

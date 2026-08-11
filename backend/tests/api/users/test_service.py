@@ -434,6 +434,36 @@ class TestUpdateUser:
             assert result.email == "updated@example.com"
 
     @pytest.mark.asyncio
+    async def test_update_user_email_clears_pending_verification(self, test_db_session: AsyncSession):
+        """Admin email update should confirm the new address and clear pending verification"""
+        user = Users(
+            id="user1",
+            email="user@example.com",
+            pending_email="pending@example.com",
+            email_verified=True,
+            first_name="Original",
+            last_name="Name",
+            phone="+1234567890",
+            hash_password="hashed_password",
+            status=True,
+            created_at=datetime.now()
+        )
+        test_db_session.add(user)
+        await test_db_session.commit()
+
+        result = await update_user(
+            test_db_session,
+            "user1",
+            UserUpdate(email="admin-set@example.com"),
+        )
+
+        refreshed = await test_db_session.get(Users, "user1")
+        assert result.email == "admin-set@example.com"
+        assert refreshed.email == "admin-set@example.com"
+        assert refreshed.pending_email is None
+        assert refreshed.email_verified is True
+
+    @pytest.mark.asyncio
     async def test_update_user_not_found(self, test_db_session: AsyncSession):
         """Test user update with non-existent user"""
         update_data = UserUpdate(first_name="Updated")

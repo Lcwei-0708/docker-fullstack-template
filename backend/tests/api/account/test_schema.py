@@ -26,6 +26,7 @@ class TestUserProfile:
         assert profile.first_name == "John"
         assert profile.last_name == "Doe"
         assert profile.email == "john.doe@example.com"
+        assert profile.pending_email is None
         assert profile.phone == "+1234567890"
         assert profile.status is True
         assert isinstance(profile.created_at, datetime)
