@@ -5,7 +5,7 @@ from core.permissions import Permission
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.response import APIResponse, parse_responses, common_responses
 from fastapi import APIRouter, Depends, HTTPException, Request, Path, Response
-from utils.custom_exception import NotFoundException, ConflictException, ServerException
+from utils.custom_exception import NotFoundException, ConflictException, ServerException, AuthorizationException
 from .services import (
     get_all_roles, create_role, update_role, delete_role, 
     get_role_attribute_mapping, update_role_attribute_mapping,
@@ -65,6 +65,8 @@ async def create_role_api(
     try:
         role = await create_role(db, role_data)
         return APIResponse(code=200, message="Role created successfully", data=role)
+    except AuthorizationException as e:
+        raise HTTPException(status_code=403, detail=e.message)
     except ConflictException:
         raise HTTPException(status_code=409, detail="Role name already exists")
     except Exception:
@@ -95,6 +97,8 @@ async def update_role_api(
         return APIResponse(code=200, message="Role updated successfully", data=role)
     except NotFoundException:
         raise HTTPException(status_code=404, detail="Role not found")
+    except AuthorizationException as e:
+        raise HTTPException(status_code=403, detail=e.message)
     except ConflictException:
         raise HTTPException(status_code=409, detail="Role name already exists")
     except ServerException:
@@ -124,6 +128,8 @@ async def delete_role_api(
         return APIResponse(code=200, message="Role deleted successfully")
     except NotFoundException:
         raise HTTPException(status_code=404, detail="Role not found")
+    except AuthorizationException as e:
+        raise HTTPException(status_code=403, detail=e.message)
     except ConflictException:
         raise HTTPException(status_code=409, detail="Cannot delete role that is assigned to users")
     except Exception:
@@ -156,6 +162,8 @@ async def get_role_attribute_mapping_api(
         )
     except NotFoundException:
         raise HTTPException(status_code=404, detail="Role not found")
+    except AuthorizationException as e:
+        raise HTTPException(status_code=403, detail=e.message)
     except Exception:
         raise HTTPException(status_code=500)
 
@@ -216,6 +224,8 @@ async def update_role_attribute_mapping_api(
             )
     except NotFoundException:
         raise HTTPException(status_code=404, detail="Role not found")
+    except AuthorizationException as e:
+        raise HTTPException(status_code=403, detail=e.message)
     except Exception:
         raise HTTPException(status_code=500)
 
