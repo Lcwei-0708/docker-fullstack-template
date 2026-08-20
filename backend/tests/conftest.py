@@ -372,12 +372,12 @@ async def users_test_user(test_db_session: AsyncSession):
 
 @pytest_asyncio.fixture(scope="function")
 async def users_test_role(test_db_session: AsyncSession):
-    """Create admin role for users API tests"""
+    """Create a non-system admin role for users/roles API tests"""
     role_id = str(uuid7())
     role = Roles(
         id=role_id,
         name="admin",
-        description="Administrator role with full permissions"
+        description="Administrator role with management permissions"
     )
     test_db_session.add(role)
     await test_db_session.commit()
@@ -387,32 +387,29 @@ async def users_test_role(test_db_session: AsyncSession):
 
 @pytest_asyncio.fixture(scope="function")
 async def users_test_role_attributes(test_db_session: AsyncSession, users_test_role: Roles):
-    """Create role attributes and mappings for users management permissions"""
+    """Create role attributes and mappings for users/roles management permissions"""
     
-    view_users_attr = RoleAttributes(
-        id=str(uuid7()),
-        name="view-users"
-    )
-    manage_users_attr = RoleAttributes(
-        id=str(uuid7()),
-        name="manage-users"
-    )
+    attribute_names = [
+        "view-users",
+        "manage-users",
+        "view-roles",
+        "manage-roles",
+    ]
+    attributes = [
+        RoleAttributes(id=str(uuid7()), name=name)
+        for name in attribute_names
+    ]
     
-    test_db_session.add(view_users_attr)
-    test_db_session.add(manage_users_attr)
+    test_db_session.add_all(attributes)
     await test_db_session.commit()
     
     attribute_mappings = [
         RoleAttributesMapper(
             role_id=users_test_role.id,
-            attributes_id=view_users_attr.id,
-            value=True
-        ),
-        RoleAttributesMapper(
-            role_id=users_test_role.id,
-            attributes_id=manage_users_attr.id,
+            attributes_id=attr.id,
             value=True
         )
+        for attr in attributes
     ]
     
     for mapping in attribute_mappings:
