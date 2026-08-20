@@ -6,7 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.users import Users
 from models.roles import Roles
 from models.role_mapper import RoleMapper
-from utils.custom_exception import ConflictException, NotFoundException, ServerException
+from utils.custom_exception import (
+    ConflictException,
+    NotFoundException,
+    ServerException,
+    AuthorizationException,
+)
 from api.users.services import (
     get_all_users,
     create_user,
@@ -15,6 +20,7 @@ from api.users.services import (
     reset_user_password,
     _assign_user_role,
     _update_user_role,
+    _assert_can_manage_user_role,
     _delete_user_related_records,
 )
 from api.users.schema import (
@@ -339,16 +345,21 @@ class TestCreateUser:
             role="admin"
         )
 
-        with patch("api.users.services._assign_user_role") as mock_assign_role:
-            result = await create_user(test_db_session, user_data)
+        with patch("api.users.services._assert_can_manage_user_role") as mock_assert_role:
+            with patch("api.users.services._assign_user_role") as mock_assign_role:
+                result = await create_user(
+                    test_db_session, user_data, actor_user_id="actor1"
+                )
 
-            assert isinstance(result, UserResponse)
-            assert result.email == user_data.email
-            assert result.first_name == user_data.first_name
-            assert result.last_name == user_data.last_name
-            assert result.phone == user_data.phone
-            assert result.status == user_data.status
-            assert result.role == user_data.role
+                assert isinstance(result, UserResponse)
+                assert result.email == user_data.email
+                assert result.first_name == user_data.first_name
+                assert result.last_name == user_data.last_name
+                assert result.phone == user_data.phone
+                assert result.status == user_data.status
+                assert result.role == user_data.role
+                mock_assert_role.assert_awaited_once()
+                mock_assign_role.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_create_user_email_exists(self, test_db_session: AsyncSession):
@@ -377,7 +388,7 @@ class TestCreateUser:
         )
 
         with pytest.raises(ConflictException) as exc_info:
-            await create_user(test_db_session, user_data)
+            await create_user(test_db_session, user_data, actor_user_id="actor1")
         
         assert "Email already exists" in str(exc_info.value)
 
@@ -393,7 +404,7 @@ class TestCreateUser:
             status=True
         )
 
-        result = await create_user(test_db_session, user_data)
+        result = await create_user(test_db_session, user_data, actor_user_id="actor1")
 
         assert isinstance(result, UserResponse)
         assert result.role is None
@@ -426,12 +437,15 @@ class TestUpdateUser:
         )
 
         with patch("api.users.services._update_user_role") as mock_update_role:
-            result = await update_user(test_db_session, "user1", update_data)
+            result = await update_user(
+                test_db_session, "user1", update_data, actor_user_id="actor1"
+            )
 
             assert isinstance(result, UserResponse)
             assert result.first_name == "Updated"
             assert result.last_name == "Name"
             assert result.email == "updated@example.com"
+            mock_update_role.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_update_user_email_clears_pending_verification(self, test_db_session: AsyncSession):
@@ -455,6 +469,7 @@ class TestUpdateUser:
             test_db_session,
             "user1",
             UserUpdate(email="admin-set@example.com"),
+            actor_user_id="actor1",
         )
 
         refreshed = await test_db_session.get(Users, "user1")
@@ -469,7 +484,9 @@ class TestUpdateUser:
         update_data = UserUpdate(first_name="Updated")
 
         with pytest.raises(NotFoundException) as exc_info:
-            await update_user(test_db_session, "nonexistent", update_data)
+            await update_user(
+                test_db_session, "nonexistent", update_data, actor_user_id="actor1"
+            )
         
         assert "User not found" in str(exc_info.value)
 
@@ -504,7 +521,9 @@ class TestUpdateUser:
         update_data = UserUpdate(email="user2@example.com")
 
         with pytest.raises(ConflictException) as exc_info:
-            await update_user(test_db_session, "user1", update_data)
+            await update_user(
+                test_db_session, "user1", update_data, actor_user_id="actor1"
+            )
         
         assert "Email already exists" in str(exc_info.value)
 
@@ -769,6 +788,68 @@ class TestResetUserPassword:
                 await reset_user_password(
                     test_db_session, mock_redis, "user1", "NewPassword123!"
                 )
+
+
+class TestAssertCanManageUserRole:
+    """Test role assignment authorization helper"""
+
+    @pytest.mark.asyncio
+    async def test_super_admin_can_assign_any_role(self, test_db_session: AsyncSession):
+        with patch(
+            "api.users.services.check_user_has_super_role",
+            new_callable=AsyncMock,
+            return_value=True,
+        ):
+            await _assert_can_manage_user_role(test_db_session, "actor1", "admin")
+
+    @pytest.mark.asyncio
+    async def test_manage_roles_required_for_role_change(
+        self, test_db_session: AsyncSession
+    ):
+        with patch(
+            "api.users.services.check_user_has_super_role",
+            new_callable=AsyncMock,
+            return_value=False,
+        ), patch(
+            "api.users.services.get_user_attributes",
+            new_callable=AsyncMock,
+            return_value={"manage-users": True},
+        ):
+            with pytest.raises(AuthorizationException) as exc_info:
+                await _assert_can_manage_user_role(test_db_session, "actor1", "user")
+            assert "Permission denied to assign roles" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_non_super_cannot_assign_super_admin_role(
+        self, test_db_session: AsyncSession
+    ):
+        with patch(
+            "api.users.services.check_user_has_super_role",
+            new_callable=AsyncMock,
+            return_value=False,
+        ), patch(
+            "api.users.services.get_user_attributes",
+            new_callable=AsyncMock,
+            return_value={"manage-roles": True, "manage-users": True},
+        ):
+            with pytest.raises(AuthorizationException) as exc_info:
+                await _assert_can_manage_user_role(test_db_session, "actor1", "admin")
+            assert "Cannot assign super admin role" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_manage_roles_can_assign_non_super_role(
+        self, test_db_session: AsyncSession
+    ):
+        with patch(
+            "api.users.services.check_user_has_super_role",
+            new_callable=AsyncMock,
+            return_value=False,
+        ), patch(
+            "api.users.services.get_user_attributes",
+            new_callable=AsyncMock,
+            return_value={"manage-roles": True},
+        ):
+            await _assert_can_manage_user_role(test_db_session, "actor1", "user")
 
 
 class TestRoleManagement:

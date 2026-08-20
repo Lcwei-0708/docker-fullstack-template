@@ -14,7 +14,7 @@ from .schema import (
     UserDeleteBatchResponse, user_delete_success_response_example, user_delete_partial_response_example, 
     user_delete_failed_response_example
 )
-from utils.custom_exception import NotFoundException, ConflictException
+from utils.custom_exception import NotFoundException, ConflictException, AuthorizationException
 
 router = APIRouter(tags=["Users"])
 
@@ -72,8 +72,10 @@ async def create_user_api(
 ):
     """Create a new user account"""
     try:
-        user = await create_user(db, user_data)
+        user = await create_user(db, user_data, actor_user_id=token["sub"])
         return APIResponse(code=200, message="User created successfully", data=user)
+    except AuthorizationException as e:
+        raise HTTPException(status_code=403, detail=e.message)
     except Exception as e:
         if "Email already exists" in str(e):
             raise HTTPException(status_code=409, detail="Email already exists")
@@ -98,12 +100,14 @@ async def update_user_api(
 ):
     """Update user information"""
     try:
-        user = await update_user(db, user_id, user_data)
+        user = await update_user(db, user_id, user_data, actor_user_id=token["sub"])
         return APIResponse(code=200, message="User updated successfully", data=user)
     except NotFoundException:
         raise HTTPException(status_code=404, detail="User not found")
     except ConflictException:
         raise HTTPException(status_code=409, detail="Email already exists")
+    except AuthorizationException as e:
+        raise HTTPException(status_code=403, detail=e.message)
     except Exception:
         raise HTTPException(status_code=500)
 
