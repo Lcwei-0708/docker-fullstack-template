@@ -21,6 +21,7 @@ from api.users.services import (
     _assign_user_role,
     _update_user_role,
     _assert_can_manage_user_role,
+    _get_user_role_name,
     _delete_user_related_records,
 )
 from api.users.schema import (
@@ -575,6 +576,42 @@ class TestDeleteUsers:
             mock_delete_related.assert_called()
 
     @pytest.mark.asyncio
+    async def test_delete_users_rejects_super_admin(
+        self, test_db_session: AsyncSession
+    ):
+        """Test deleting a system super-admin user is rejected"""
+        user = Users(
+            id="super1",
+            email="super@example.com",
+            first_name="Super",
+            last_name="Admin",
+            phone="+1234567890",
+            hash_password="hashed_password",
+            status=True,
+            created_at=datetime.now(),
+        )
+        role = Roles(
+            id="role-super", name="super-admin", description="System super-admin"
+        )
+        mapping = RoleMapper(user_id="super1", role_id="role-super")
+        test_db_session.add(user)
+        test_db_session.add(role)
+        test_db_session.add(mapping)
+        await test_db_session.commit()
+
+        mock_redis = AsyncMock()
+        result = await delete_users(test_db_session, mock_redis, ["super1"])
+
+        assert result.total_users == 1
+        assert result.success_count == 0
+        assert result.failed_count == 1
+        assert result.results[0].status == "failed"
+        assert "Cannot delete a system super-admin user" in result.results[0].message
+
+        remaining = await test_db_session.get(Users, "super1")
+        assert remaining is not None
+
+    @pytest.mark.asyncio
     async def test_delete_users_partial_success(self, test_db_session: AsyncSession):
         """Test users deletion with partial success"""
         # Create one user
@@ -788,6 +825,39 @@ class TestResetUserPassword:
                 await reset_user_password(
                     test_db_session, mock_redis, "user1", "NewPassword123!"
                 )
+
+
+class TestGetUserRoleName:
+    """Test _get_user_role_name helper"""
+
+    @pytest.mark.asyncio
+    async def test_get_user_role_name_returns_role(
+        self, test_db_session: AsyncSession
+    ):
+        user = Users(
+            id="user1",
+            email="user1@example.com",
+            first_name="User",
+            last_name="One",
+            phone="+1234567890",
+            hash_password="hashed_password",
+            status=True,
+            created_at=datetime.now(),
+        )
+        role = Roles(id="role-1", name="user", description="User")
+        mapping = RoleMapper(user_id="user1", role_id="role-1")
+        test_db_session.add(user)
+        test_db_session.add(role)
+        test_db_session.add(mapping)
+        await test_db_session.commit()
+
+        assert await _get_user_role_name(test_db_session, "user1") == "user"
+
+    @pytest.mark.asyncio
+    async def test_get_user_role_name_returns_none_without_role(
+        self, test_db_session: AsyncSession
+    ):
+        assert await _get_user_role_name(test_db_session, "missing") is None
 
 
 class TestAssertCanManageUserRole:

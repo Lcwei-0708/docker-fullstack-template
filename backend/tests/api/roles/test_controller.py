@@ -9,7 +9,12 @@ from api.roles.schema import (
     AttributeMappingResult,
     PermissionCheckResponse,
 )
-from utils.custom_exception import ConflictException, NotFoundException, ServerException
+from utils.custom_exception import (
+    ConflictException,
+    NotFoundException,
+    ServerException,
+    AuthorizationException,
+)
 
 
 class TestGetRolesAPI:
@@ -119,6 +124,29 @@ class TestCreateRoleAPI:
             assert data["message"] == "Role name already exists"
 
     @pytest.mark.asyncio
+    async def test_create_role_forbidden_super_admin(
+        self, client: AsyncClient, users_auth_headers: dict
+    ):
+        """Test creating system super-admin role returns 403"""
+        role_data = {"name": "super-admin", "description": "blocked"}
+
+        with patch("api.roles.controller.create_role") as mock_create_role:
+            mock_create_role.side_effect = AuthorizationException(
+                "Cannot create the system super-admin role"
+            )
+
+            response = await client.post(
+                "/api/roles",
+                json=role_data,
+                headers={"Authorization": users_auth_headers["Authorization"]},
+            )
+
+            assert response.status_code == 403
+            data = response.json()
+            assert data["code"] == 403
+            assert data["message"] == "Cannot create the system super-admin role"
+
+    @pytest.mark.asyncio
     async def test_create_role_unauthorized(self, client: AsyncClient):
         """Test role creation without authentication"""
         role_data = {"name": "test-role"}
@@ -193,6 +221,30 @@ class TestUpdateRoleAPI:
             data = response.json()
             assert data["code"] == 404
             assert data["message"] == "Role not found"
+
+    @pytest.mark.asyncio
+    async def test_update_role_forbidden_super_admin(
+        self, client: AsyncClient, users_auth_headers: dict
+    ):
+        """Test updating system super-admin role returns 403"""
+        role_id = "role-super"
+        role_data = {"description": "blocked"}
+
+        with patch("api.roles.controller.update_role") as mock_update_role:
+            mock_update_role.side_effect = AuthorizationException(
+                "Cannot modify the system super-admin role"
+            )
+
+            response = await client.put(
+                f"/api/roles/{role_id}",
+                json=role_data,
+                headers={"Authorization": users_auth_headers["Authorization"]},
+            )
+
+            assert response.status_code == 403
+            data = response.json()
+            assert data["code"] == 403
+            assert data["message"] == "Cannot modify the system super-admin role"
 
     @pytest.mark.asyncio
     async def test_update_role_conflict(
@@ -286,6 +338,28 @@ class TestDeleteRoleAPI:
             data = response.json()
             assert data["code"] == 404
             assert data["message"] == "Role not found"
+
+    @pytest.mark.asyncio
+    async def test_delete_role_forbidden_super_admin(
+        self, client: AsyncClient, users_auth_headers: dict
+    ):
+        """Test deleting system super-admin role returns 403"""
+        role_id = "role-super"
+
+        with patch("api.roles.controller.delete_role") as mock_delete_role:
+            mock_delete_role.side_effect = AuthorizationException(
+                "Cannot modify the system super-admin role"
+            )
+
+            response = await client.delete(
+                f"/api/roles/{role_id}",
+                headers={"Authorization": users_auth_headers["Authorization"]},
+            )
+
+            assert response.status_code == 403
+            data = response.json()
+            assert data["code"] == 403
+            assert data["message"] == "Cannot modify the system super-admin role"
 
     @pytest.mark.asyncio
     async def test_delete_role_conflict(
@@ -401,6 +475,30 @@ class TestGetRoleAttributeMappingAPI:
             data = response.json()
             assert data["code"] == 404
             assert data["message"] == "Role not found"
+
+    @pytest.mark.asyncio
+    async def test_get_role_attribute_mapping_forbidden_super_admin(
+        self, client: AsyncClient, users_auth_headers: dict
+    ):
+        """Test reading attributes of system super-admin role returns 403"""
+        role_id = "role-super"
+
+        with patch(
+            "api.roles.controller.get_role_attribute_mapping"
+        ) as mock_get_mapping:
+            mock_get_mapping.side_effect = AuthorizationException(
+                "Cannot modify the system super-admin role"
+            )
+
+            response = await client.get(
+                f"/api/roles/{role_id}/attributes",
+                headers={"Authorization": users_auth_headers["Authorization"]},
+            )
+
+            assert response.status_code == 403
+            data = response.json()
+            assert data["code"] == 403
+            assert data["message"] == "Cannot modify the system super-admin role"
 
     @pytest.mark.asyncio
     async def test_get_role_attribute_mapping_unauthorized(self, client: AsyncClient):
@@ -584,6 +682,32 @@ class TestUpdateRoleAttributeMappingAPI:
             data = response.json()
             assert data["code"] == 404
             assert data["message"] == "Role not found"
+
+    @pytest.mark.asyncio
+    async def test_update_role_attribute_mapping_forbidden_super_admin(
+        self, client: AsyncClient, users_auth_headers: dict
+    ):
+        """Test updating attributes of system super-admin role returns 403"""
+        role_id = "role-super"
+        attributes_data = {"attributes": {"view-users": True}}
+
+        with patch(
+            "api.roles.controller.update_role_attribute_mapping"
+        ) as mock_update_mapping:
+            mock_update_mapping.side_effect = AuthorizationException(
+                "Cannot modify the system super-admin role"
+            )
+
+            response = await client.put(
+                f"/api/roles/{role_id}/attributes",
+                json=attributes_data,
+                headers={"Authorization": users_auth_headers["Authorization"]},
+            )
+
+            assert response.status_code == 403
+            data = response.json()
+            assert data["code"] == 403
+            assert data["message"] == "Cannot modify the system super-admin role"
 
     @pytest.mark.asyncio
     async def test_update_role_attribute_mapping_unauthorized(

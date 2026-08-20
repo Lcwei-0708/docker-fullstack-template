@@ -8,7 +8,12 @@ from models.role_attributes import RoleAttributes
 from models.role_attributes_mapper import RoleAttributesMapper
 from models.role_mapper import RoleMapper
 from models.users import Users
-from utils.custom_exception import ConflictException, NotFoundException, ServerException
+from utils.custom_exception import (
+    ConflictException,
+    NotFoundException,
+    ServerException,
+    AuthorizationException,
+)
 from api.roles.schema import RoleCreate, RoleUpdate
 from api.roles.services import (
     get_all_roles,
@@ -515,3 +520,116 @@ class TestCheckUserPermissions:
                 )
 
             assert "Failed to check user permissions" in str(exc_info.value)
+
+
+class TestSuperAdminRoleProtection:
+    """Test system super-admin role cannot be listed or mutated via roles API"""
+
+    @pytest.mark.asyncio
+    async def test_get_all_roles_excludes_super_admin(
+        self, test_db_session: AsyncSession
+    ):
+        super_role = Roles(
+            id="role-super", name="super-admin", description="System super-admin"
+        )
+        user_role = Roles(id="role-user", name="user", description="User role")
+        test_db_session.add(super_role)
+        test_db_session.add(user_role)
+        await test_db_session.commit()
+
+        result = await get_all_roles(test_db_session)
+
+        names = [role.name for role in result.roles]
+        assert names == ["user"]
+        assert "super-admin" not in names
+
+    @pytest.mark.asyncio
+    async def test_create_role_rejects_super_admin_name(
+        self, test_db_session: AsyncSession
+    ):
+        with pytest.raises(AuthorizationException) as exc_info:
+            await create_role(
+                test_db_session,
+                RoleCreate(name="super-admin", description="blocked"),
+            )
+        assert "Cannot create the system super-admin role" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_update_role_rejects_mutating_super_admin(
+        self, test_db_session: AsyncSession
+    ):
+        role = Roles(
+            id="role-super", name="super-admin", description="System super-admin"
+        )
+        test_db_session.add(role)
+        await test_db_session.commit()
+
+        with pytest.raises(AuthorizationException) as exc_info:
+            await update_role(
+                test_db_session,
+                "role-super",
+                RoleUpdate(description="should fail"),
+            )
+        assert "Cannot modify the system super-admin role" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_update_role_rejects_rename_to_super_admin(
+        self, test_db_session: AsyncSession
+    ):
+        role = Roles(id="role-1", name="manager", description="Manager")
+        test_db_session.add(role)
+        await test_db_session.commit()
+
+        with pytest.raises(AuthorizationException) as exc_info:
+            await update_role(
+                test_db_session,
+                "role-1",
+                RoleUpdate(name="super-admin"),
+            )
+        assert "Cannot rename a role to the system super-admin role" in str(
+            exc_info.value
+        )
+
+    @pytest.mark.asyncio
+    async def test_delete_role_rejects_super_admin(
+        self, test_db_session: AsyncSession
+    ):
+        role = Roles(
+            id="role-super", name="super-admin", description="System super-admin"
+        )
+        test_db_session.add(role)
+        await test_db_session.commit()
+
+        with pytest.raises(AuthorizationException) as exc_info:
+            await delete_role(test_db_session, "role-super")
+        assert "Cannot modify the system super-admin role" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_get_role_attributes_rejects_super_admin(
+        self, test_db_session: AsyncSession
+    ):
+        role = Roles(
+            id="role-super", name="super-admin", description="System super-admin"
+        )
+        test_db_session.add(role)
+        await test_db_session.commit()
+
+        with pytest.raises(AuthorizationException) as exc_info:
+            await get_role_attribute_mapping(test_db_session, "role-super")
+        assert "Cannot modify the system super-admin role" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_update_role_attributes_rejects_super_admin(
+        self, test_db_session: AsyncSession
+    ):
+        role = Roles(
+            id="role-super", name="super-admin", description="System super-admin"
+        )
+        test_db_session.add(role)
+        await test_db_session.commit()
+
+        with pytest.raises(AuthorizationException) as exc_info:
+            await update_role_attribute_mapping(
+                test_db_session, "role-super", {"view-users": True}
+            )
+        assert "Cannot modify the system super-admin role" in str(exc_info.value)
