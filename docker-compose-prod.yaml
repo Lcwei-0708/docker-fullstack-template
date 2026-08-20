@@ -92,6 +92,7 @@ services:
     environment:
       - TZ=${TIMEZONE}
       - DEBUG_MODE=false
+      - RATE_LIMIT_WHITELIST=${RATE_LIMIT_WHITELIST:-}
       - LOG_LEVEL=${LOG_LEVEL}
       - SSL_ENABLE=${SSL_ENABLE}
       - SECRET_KEY=${SECRET_KEY}

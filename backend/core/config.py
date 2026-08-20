@@ -62,6 +62,16 @@ class Settings(BaseSettings):
     RATE_LIMIT: int = 200
     RATE_LIMIT_WINDOW_SECONDS: int = 300  # 5 minutes
     BLOCK_TIME_SECONDS: int = 600  # 10 minutes
+    # Comma-separated IPs skipped by rate limiting (empty in production)
+    RATE_LIMIT_WHITELIST: str = "127.0.0.1"
+
+    @property
+    def rate_limit_whitelist_ips(self) -> set[str]:
+        return {
+            ip.strip()
+            for ip in self.RATE_LIMIT_WHITELIST.split(",")
+            if ip.strip()
+        }
 
     # Registration settings
     REGISTRATION_ENABLE: bool = True

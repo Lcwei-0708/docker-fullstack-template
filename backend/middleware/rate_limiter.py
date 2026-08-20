@@ -17,7 +17,7 @@ HEALTH_CHECK_PATHS = {"/", "/docs", "/redoc", "/openapi.json"}
 class RateLimiterMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
         super().__init__(app)
-        self.whitelist_ips = {"127.0.0.1"}
+        self.whitelist_ips = settings.rate_limit_whitelist_ips
         self.endpoint_rate_limits = {}
         self._configure_endpoint_limits()
 
