@@ -1,23 +1,9 @@
 <?php
-// Check if it's a local access
-$is_localhost = false;
+// Opt-in auto-login for local development only.
+// Never gate this on HTTP_Host — Host is client-controlled via the reverse proxy.
+$auto_login = filter_var(getenv('PMA_AUTO_LOGIN') ?: 'false', FILTER_VALIDATE_BOOLEAN);
 
-// Check IP address and Host
-if (isset($_SERVER['REMOTE_ADDR'])) {
-    $client_ip = $_SERVER['REMOTE_ADDR'];
-    $is_localhost = in_array($client_ip, ['127.0.0.1', '::1']);
-}
-
-// Check Host header
-if (isset($_SERVER['HTTP_HOST'])) {
-    $host = $_SERVER['HTTP_HOST'];
-    if (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false) {
-        $is_localhost = true;
-    }
-}
-
-// If it's local access, auto-login
-if ($is_localhost) {
+if ($auto_login) {
     $cfg['Servers'][$i]['auth_type'] = 'config';
     $cfg['Servers'][$i]['user'] = $_ENV['PMA_USER'];
     $cfg['Servers'][$i]['password'] = $_ENV['PMA_PASSWORD'];
@@ -28,7 +14,7 @@ if ($is_localhost) {
     $cfg['Servers'][$i]['connect_type'] = 'tcp';
     $cfg['Servers'][$i]['extension'] = 'mysqli';
 } else {
-    // External access requires manual authentication
+    // Cookie auth — requires manual login (default / production)
     $cfg['Servers'][$i]['auth_type'] = 'cookie';
     $cfg['Servers'][$i]['host'] = $_ENV['PMA_HOST'];
     $cfg['Servers'][$i]['port'] = '3306';

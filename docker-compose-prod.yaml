@@ -92,6 +92,7 @@ services:
     environment:
       - TZ=${TIMEZONE}
       - DEBUG_MODE=false
+      - RATE_LIMIT_WHITELIST=${RATE_LIMIT_WHITELIST:-}
       - LOG_LEVEL=${LOG_LEVEL}
       - SSL_ENABLE=${SSL_ENABLE}
       - SECRET_KEY=${SECRET_KEY}
@@ -171,6 +172,7 @@ services:
       - PMA_HOST=mariadb
       - PMA_USER=root
       - PMA_PASSWORD=${DB_ROOT_PASSWORD}
+      - PMA_AUTO_LOGIN=${PMA_AUTO_LOGIN:-false}
     volumes:
       - ./phpmyadmin/config.user.inc.php:/etc/phpmyadmin/config.user.inc.php
     depends_on:

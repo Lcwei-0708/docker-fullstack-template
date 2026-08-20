@@ -12,7 +12,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, delete, case, update
 from core.security import hash_password, clear_user_all_sessions
 from .schema import UserResponse, UserPagination, UserCreate, UserUpdate, UserDeleteBatchResponse, UserDeleteResult
-from utils.custom_exception import ServerException, ConflictException, NotFoundException
+from utils.custom_exception import (
+    ServerException,
+    ConflictException,
+    NotFoundException,
+    AuthorizationException,
+)
+from core.config import settings
+from core.permissions import Permission
+from core.rbac import check_user_has_super_role, get_user_attributes
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +157,11 @@ async def get_all_users(
     except Exception as e:
         raise ServerException(f"Failed to retrieve users: {str(e)}")
 
-async def create_user(db: AsyncSession, user_data: UserCreate) -> UserResponse:
+async def create_user(
+    db: AsyncSession,
+    user_data: UserCreate,
+    actor_user_id: str,
+) -> UserResponse:
     """Create a new user"""
     try:
         # Check if the email already exists
@@ -164,6 +176,9 @@ async def create_user(db: AsyncSession, user_data: UserCreate) -> UserResponse:
         existing_user = result.scalar_one_or_none()
         if existing_user:
             raise ConflictException("Email already exists")
+
+        if user_data.role:
+            await _assert_can_manage_user_role(db, actor_user_id, user_data.role)
         
         user = Users(
             first_name=user_data.first_name,
@@ -194,12 +209,17 @@ async def create_user(db: AsyncSession, user_data: UserCreate) -> UserResponse:
             role=user_role
         )
         
-    except ConflictException:
+    except (ConflictException, AuthorizationException):
         raise
     except Exception as e:
         raise ServerException(f"Failed to create user: {str(e)}")
 
-async def update_user(db: AsyncSession, user_id: str, user_data: UserUpdate) -> UserResponse:
+async def update_user(
+    db: AsyncSession,
+    user_id: str,
+    user_data: UserUpdate,
+    actor_user_id: str,
+) -> UserResponse:
     """Update user information"""
     try:
         result = await db.execute(
@@ -247,6 +267,7 @@ async def update_user(db: AsyncSession, user_id: str, user_data: UserUpdate) -> 
         await db.refresh(user)
         
         if 'role' in user_data.model_dump(exclude_unset=True):
+            await _assert_can_manage_user_role(db, actor_user_id, user_data.role)
             await _update_user_role(db, user_id, user_data.role)
         
         role_query = select(Roles.name).join(
@@ -267,7 +288,7 @@ async def update_user(db: AsyncSession, user_id: str, user_data: UserUpdate) -> 
             role=user_role
         )
         
-    except (ConflictException, NotFoundException):
+    except (ConflictException, NotFoundException, AuthorizationException):
         raise
     except Exception as e:
         raise ServerException(f"Failed to update user: {str(e)}")
@@ -395,6 +416,23 @@ async def _get_user_roles_map(
         if user_id not in user_roles:
             user_roles[user_id] = role_name
     return user_roles
+
+async def _assert_can_manage_user_role(
+    db: AsyncSession,
+    actor_user_id: str,
+    role_name: Optional[str],
+) -> None:
+    """Require manage-roles (or super-admin). Only super-admin may assign the super-admin role."""
+    if await check_user_has_super_role(actor_user_id, db):
+        return
+
+    attributes = await get_user_attributes(actor_user_id, db)
+    if not attributes.get(Permission.MANAGE_ROLES.value, False):
+        raise AuthorizationException("Permission denied to assign roles")
+
+    if role_name == settings.DEFAULT_SUPER_ADMIN_ROLE:
+        raise AuthorizationException("Cannot assign super admin role")
+
 
 async def _assign_user_role(db: AsyncSession, user_id: str, role_name: str) -> None:
     """Assign a role to a user"""
