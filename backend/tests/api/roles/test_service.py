@@ -449,7 +449,7 @@ class TestCheckUserPermissions:
         )
 
         # Create test role, attributes and mappings
-        # Use a different role name to avoid super admin check
+        # Use a different role name to avoid system super-admin protection
         role = Roles(id="role-1", name="test-role", description="Test role")
         attr1 = RoleAttributes(id="attr-1", name="view-users")
         attr2 = RoleAttributes(

@@ -91,7 +91,7 @@ services:
     environment:
       - TZ=${TIMEZONE:-UTC}
       - DEBUG_MODE=true
-      - RATE_LIMIT_WHITELIST=${RATE_LIMIT_WHITELIST:-127.0.0.1}
+      - RATE_LIMIT_WHITELIST=${RATE_LIMIT_WHITELIST:-}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - SSL_ENABLE=${SSL_ENABLE:-false}
       - SECRET_KEY=${SECRET_KEY:-change-me}
@@ -171,8 +171,7 @@ services:
       - PMA_HOST=mariadb
       - PMA_USER=root
       - PMA_PASSWORD=${DB_ROOT_PASSWORD:-root}
-      # Dev-only convenience; never enable on public networks
-      - PMA_AUTO_LOGIN=${PMA_AUTO_LOGIN:-true}
+      - PMA_AUTO_LOGIN=true
     volumes:
       - ./phpmyadmin/config.user.inc.php:/etc/phpmyadmin/config.user.inc.php
     depends_on:

@@ -13,6 +13,10 @@ from models.role_attributes_mapper import RoleAttributesMapper
 
 logger = logging.getLogger(__name__)
 
+def is_super_admin_role_name(role_name: str | None) -> bool:
+    """True when role_name is the ENV-configured system super-admin role."""
+    return bool(role_name) and role_name == settings.DEFAULT_SUPER_ADMIN_ROLE
+
 async def get_user_attributes(user_id: str, db: AsyncSession) -> Dict[str, bool]:
     """Get user attributes"""
     try:

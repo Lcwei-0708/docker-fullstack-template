@@ -794,13 +794,56 @@ class TestAssertCanManageUserRole:
     """Test role assignment authorization helper"""
 
     @pytest.mark.asyncio
-    async def test_super_admin_can_assign_any_role(self, test_db_session: AsyncSession):
+    async def test_nobody_can_assign_super_admin_role(self, test_db_session: AsyncSession):
         with patch(
             "api.users.services.check_user_has_super_role",
             new_callable=AsyncMock,
             return_value=True,
         ):
-            await _assert_can_manage_user_role(test_db_session, "actor1", "admin")
+            with pytest.raises(AuthorizationException) as exc_info:
+                await _assert_can_manage_user_role(
+                    test_db_session,
+                    "actor1",
+                    "super-admin",
+                )
+            assert "Cannot assign the system super-admin role" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_cannot_change_role_of_super_admin_user(
+        self, test_db_session: AsyncSession
+    ):
+        with patch(
+            "api.users.services._get_user_role_name",
+            new_callable=AsyncMock,
+            return_value="super-admin",
+        ):
+            with pytest.raises(AuthorizationException) as exc_info:
+                await _assert_can_manage_user_role(
+                    test_db_session,
+                    "actor1",
+                    "user",
+                    target_user_id="super-user",
+                )
+            assert "Cannot change the role of a system super-admin user" in str(
+                exc_info.value
+            )
+
+    @pytest.mark.asyncio
+    async def test_super_admin_can_assign_non_system_role(
+        self, test_db_session: AsyncSession
+    ):
+        with patch(
+            "api.users.services.check_user_has_super_role",
+            new_callable=AsyncMock,
+            return_value=True,
+        ), patch(
+            "api.users.services._get_user_role_name",
+            new_callable=AsyncMock,
+            return_value="user",
+        ):
+            await _assert_can_manage_user_role(
+                test_db_session, "actor1", "user", target_user_id="user1"
+            )
 
     @pytest.mark.asyncio
     async def test_manage_roles_required_for_role_change(
@@ -818,23 +861,6 @@ class TestAssertCanManageUserRole:
             with pytest.raises(AuthorizationException) as exc_info:
                 await _assert_can_manage_user_role(test_db_session, "actor1", "user")
             assert "Permission denied to assign roles" in str(exc_info.value)
-
-    @pytest.mark.asyncio
-    async def test_non_super_cannot_assign_super_admin_role(
-        self, test_db_session: AsyncSession
-    ):
-        with patch(
-            "api.users.services.check_user_has_super_role",
-            new_callable=AsyncMock,
-            return_value=False,
-        ), patch(
-            "api.users.services.get_user_attributes",
-            new_callable=AsyncMock,
-            return_value={"manage-roles": True, "manage-users": True},
-        ):
-            with pytest.raises(AuthorizationException) as exc_info:
-                await _assert_can_manage_user_role(test_db_session, "actor1", "admin")
-            assert "Cannot assign super admin role" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_manage_roles_can_assign_non_super_role(

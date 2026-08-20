@@ -18,9 +18,8 @@ from utils.custom_exception import (
     NotFoundException,
     AuthorizationException,
 )
-from core.config import settings
 from core.permissions import Permission
-from core.rbac import check_user_has_super_role, get_user_attributes
+from core.rbac import check_user_has_super_role, get_user_attributes, is_super_admin_role_name
 
 logger = logging.getLogger(__name__)
 
@@ -242,6 +241,15 @@ async def update_user(
             )
             if result.scalar_one_or_none():
                 raise ConflictException("Email already exists")
+
+        role_update_requested = "role" in user_data.model_dump(exclude_unset=True)
+        if role_update_requested:
+            await _assert_can_manage_user_role(
+                db,
+                actor_user_id,
+                user_data.role,
+                target_user_id=user_id,
+            )
         
         update_data = user_data.model_dump(exclude_unset=True, exclude={'role'})
         email_changed = "email" in update_data and update_data["email"] != user.email
@@ -266,8 +274,7 @@ async def update_user(
         await db.commit()
         await db.refresh(user)
         
-        if 'role' in user_data.model_dump(exclude_unset=True):
-            await _assert_can_manage_user_role(db, actor_user_id, user_data.role)
+        if role_update_requested:
             await _update_user_role(db, user_id, user_data.role)
         
         role_query = select(Roles.name).join(
@@ -323,6 +330,15 @@ async def delete_users(db: AsyncSession, redis_client: redis.Redis, user_ids: Li
                     continue
                 
                 if user_id in existing_ids:
+                    if await check_user_has_super_role(user_id, db):
+                        results.append(UserDeleteResult(
+                            user_id=user_id,
+                            status="failed",
+                            message="Cannot delete a system super-admin user"
+                        ))
+                        failed_count += 1
+                        continue
+
                     # Clear user sessions and tokens before deletion
                     await clear_user_all_sessions(db, redis_client, user_id)
                     
@@ -417,21 +433,41 @@ async def _get_user_roles_map(
             user_roles[user_id] = role_name
     return user_roles
 
+async def _get_user_role_name(db: AsyncSession, user_id: str) -> Optional[str]:
+    result = await db.execute(
+        select(Roles.name)
+        .join(RoleMapper, Roles.id == RoleMapper.role_id)
+        .where(RoleMapper.user_id == user_id)
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
 async def _assert_can_manage_user_role(
     db: AsyncSession,
     actor_user_id: str,
     role_name: Optional[str],
+    *,
+    target_user_id: Optional[str] = None,
 ) -> None:
-    """Require manage-roles (or super-admin). Only super-admin may assign the super-admin role."""
+    """
+    Require manage-roles (or super-admin) to change roles.
+    The system super-admin role cannot be assigned or removed via API.
+    """
+    if is_super_admin_role_name(role_name):
+        raise AuthorizationException("Cannot assign the system super-admin role")
+
+    if target_user_id:
+        current_role = await _get_user_role_name(db, target_user_id)
+        if is_super_admin_role_name(current_role):
+            raise AuthorizationException("Cannot change the role of a system super-admin user")
+
     if await check_user_has_super_role(actor_user_id, db):
         return
 
     attributes = await get_user_attributes(actor_user_id, db)
     if not attributes.get(Permission.MANAGE_ROLES.value, False):
         raise AuthorizationException("Permission denied to assign roles")
-
-    if role_name == settings.DEFAULT_SUPER_ADMIN_ROLE:
-        raise AuthorizationException("Cannot assign super admin role")
 
 
 async def _assign_user_role(db: AsyncSession, user_id: str, role_name: str) -> None:

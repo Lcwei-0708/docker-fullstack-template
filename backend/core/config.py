@@ -62,16 +62,14 @@ class Settings(BaseSettings):
     RATE_LIMIT: int = 200
     RATE_LIMIT_WINDOW_SECONDS: int = 300  # 5 minutes
     BLOCK_TIME_SECONDS: int = 600  # 10 minutes
-    # Comma-separated IPs skipped by rate limiting (empty in production)
-    RATE_LIMIT_WHITELIST: str = "127.0.0.1"
+    RATE_LIMIT_WHITELIST: str = ""
 
     @property
     def rate_limit_whitelist_ips(self) -> set[str]:
-        return {
-            ip.strip()
-            for ip in self.RATE_LIMIT_WHITELIST.split(",")
-            if ip.strip()
-        }
+        raw = (self.RATE_LIMIT_WHITELIST or "").strip()
+        if not raw:
+            return set()
+        return {ip.strip() for ip in raw.split(",") if ip.strip()}
 
     # Registration settings
     REGISTRATION_ENABLE: bool = True
@@ -92,7 +90,8 @@ class Settings(BaseSettings):
     DEFAULT_ADMIN_FIRST_NAME: str = "Admin"
     DEFAULT_ADMIN_LAST_NAME: str = "User"
     DEFAULT_ADMIN_PHONE: str = "0000000000"
-    DEFAULT_SUPER_ADMIN_ROLE: str = "admin"
+    # System role with full access bypass (not editable via roles UI/API)
+    DEFAULT_SUPER_ADMIN_ROLE: str = "super-admin"
 
 # Create a settings instance to be imported elsewhere
 settings = Settings()

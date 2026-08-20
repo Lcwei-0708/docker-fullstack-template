@@ -1,12 +1,18 @@
 from typing import Dict, List
 from models.roles import Roles
 from models.role_mapper import RoleMapper
-from core.rbac import check_user_has_super_role
+from core.config import settings
+from core.rbac import check_user_has_super_role, is_super_admin_role_name
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete, and_
 from models.role_attributes import RoleAttributes
 from models.role_attributes_mapper import RoleAttributesMapper
-from utils.custom_exception import ServerException, ConflictException, NotFoundException
+from utils.custom_exception import (
+    ServerException,
+    ConflictException,
+    NotFoundException,
+    AuthorizationException,
+)
 from .schema import (
     RoleResponse, RoleCreate, RoleUpdate, RolesListResponse,
     RoleAttributeMappingBatchResponse, AttributeMappingResult,
@@ -14,10 +20,19 @@ from .schema import (
     PermissionCheckResponse
 )
 
+def _ensure_role_is_mutable(role: Roles) -> None:
+    """Block mutations of the system super-admin role."""
+    if is_super_admin_role_name(role.name):
+        raise AuthorizationException("Cannot modify the system super-admin role")
+
 async def get_all_roles(db: AsyncSession) -> RolesListResponse:
-    """Get all roles"""
+    """Get assignable roles (excludes the system super-admin role)."""
     try:
-        roles_query = select(Roles).order_by(Roles.name.asc())
+        roles_query = (
+            select(Roles)
+            .where(Roles.name != settings.DEFAULT_SUPER_ADMIN_ROLE)
+            .order_by(Roles.name.asc())
+        )
         roles_result = await db.execute(roles_query)
         roles = roles_result.scalars().all()
         
@@ -38,6 +53,9 @@ async def get_all_roles(db: AsyncSession) -> RolesListResponse:
 async def create_role(db: AsyncSession, role_data: RoleCreate) -> RoleResponse:
     """Create a new role"""
     try:
+        if is_super_admin_role_name(role_data.name):
+            raise AuthorizationException("Cannot create the system super-admin role")
+
         existing_role = await db.execute(
             select(Roles).where(Roles.name == role_data.name)
         )
@@ -58,7 +76,7 @@ async def create_role(db: AsyncSession, role_data: RoleCreate) -> RoleResponse:
             description=role.description
         )
         
-    except ConflictException:
+    except (ConflictException, AuthorizationException):
         raise
     except Exception as e:
         raise ServerException(f"Failed to create role: {str(e)}")
@@ -72,6 +90,11 @@ async def update_role(db: AsyncSession, role_id: str, role_data: RoleUpdate) -> 
         role = role_result.scalar_one_or_none()
         if not role:
             raise NotFoundException("Role not found")
+
+        _ensure_role_is_mutable(role)
+
+        if role_data.name and is_super_admin_role_name(role_data.name):
+            raise AuthorizationException("Cannot rename a role to the system super-admin role")
         
         if role_data.name and role_data.name != role.name:
             existing_role = await db.execute(
@@ -93,7 +116,7 @@ async def update_role(db: AsyncSession, role_id: str, role_data: RoleUpdate) -> 
             description=role.description
         )
         
-    except (ConflictException, NotFoundException):
+    except (ConflictException, NotFoundException, AuthorizationException):
         raise
     except Exception as e:
         raise ServerException(f"Failed to update role: {str(e)}")
@@ -107,6 +130,8 @@ async def delete_role(db: AsyncSession, role_id: str) -> bool:
         role = role_result.scalar_one_or_none()
         if not role:
             raise NotFoundException("Role not found")
+
+        _ensure_role_is_mutable(role)
         
         user_count = await db.execute(
             select(func.count(RoleMapper.user_id)).where(RoleMapper.role_id == role_id)
@@ -125,7 +150,7 @@ async def delete_role(db: AsyncSession, role_id: str) -> bool:
         
         return True
         
-    except (ConflictException, NotFoundException):
+    except (ConflictException, NotFoundException, AuthorizationException):
         raise
     except Exception as e:
         raise ServerException(f"Failed to delete role: {str(e)}")
@@ -139,6 +164,8 @@ async def get_role_attribute_mapping(db: AsyncSession, role_id: str) -> RoleAttr
         role = role_result.scalar_one_or_none()
         if not role:
             raise NotFoundException("Role not found")
+
+        _ensure_role_is_mutable(role)
         
         # Use LEFT JOIN to get all attributes and their mappings
         query = select(
@@ -181,7 +208,7 @@ async def get_role_attribute_mapping(db: AsyncSession, role_id: str) -> RoleAttr
 
         return RoleAttributesGroupedResponse(groups=groups)
         
-    except NotFoundException:
+    except (NotFoundException, AuthorizationException):
         raise
     except Exception as e:
         raise ServerException(f"Failed to get role attributes: {str(e)}")
@@ -195,6 +222,8 @@ async def update_role_attribute_mapping(db: AsyncSession, role_id: str, attribut
         role = role_result.scalar_one_or_none()
         if not role:
             raise NotFoundException("Role not found")
+
+        _ensure_role_is_mutable(role)
         
         results = []
         success_count = 0
@@ -278,7 +307,7 @@ async def update_role_attribute_mapping(db: AsyncSession, role_id: str, attribut
             failed_count=failed_count
         )
         
-    except NotFoundException:
+    except (NotFoundException, AuthorizationException):
         raise
     except Exception as e:
         raise ServerException(f"Failed to update role attributes mapping: {str(e)}")

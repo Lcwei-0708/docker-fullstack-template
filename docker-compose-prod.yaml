@@ -172,7 +172,7 @@ services:
       - PMA_HOST=mariadb
       - PMA_USER=root
       - PMA_PASSWORD=${DB_ROOT_PASSWORD}
-      - PMA_AUTO_LOGIN=${PMA_AUTO_LOGIN:-false}
+      - PMA_AUTO_LOGIN=false
     volumes:
       - ./phpmyadmin/config.user.inc.php:/etc/phpmyadmin/config.user.inc.php
     depends_on:
