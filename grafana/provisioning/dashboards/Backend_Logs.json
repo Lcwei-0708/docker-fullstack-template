@@ -23,6 +23,189 @@
   "panels": [
     {
       "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 0.7
+              },
+              {
+                "color": "red",
+                "value": 0.9
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      "id": 27,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^CPU$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.10",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"docker_stats\",container_label_com_docker_compose_project=\"docker-fullstack-template\",container_label_com_docker_compose_service=\"backend\"}[5m]))",
+          "instant": false,
+          "legendFormat": "CPU",
+          "queryType": "timeSeriesQuery",
+          "range": true,
+          "refId": "CPU"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "vector(0)",
+          "instant": false,
+          "legendFormat": "_min",
+          "queryType": "timeSeriesQuery",
+          "range": true,
+          "refId": "MIN"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "vector(1)",
+          "instant": false,
+          "legendFormat": "_max",
+          "queryType": "timeSeriesQuery",
+          "range": true,
+          "refId": "MAX"
+        }
+      ],
+      "title": "CPU",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 4,
+        "y": 0
+      },
+      "id": 29,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.2.10",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(container_fs_reads_bytes_total{job=\"docker_stats\",container_label_com_docker_compose_project=\"docker-fullstack-template\",container_label_com_docker_compose_service=\"backend\"}[5m]))",
+          "instant": false,
+          "legendFormat": "Read",
+          "queryType": "timeSeriesQuery",
+          "range": true,
+          "refId": "R"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(container_fs_writes_bytes_total{job=\"docker_stats\",container_label_com_docker_compose_project=\"docker-fullstack-template\",container_label_com_docker_compose_service=\"backend\"}[5m]))",
+          "instant": false,
+          "legendFormat": "Write",
+          "queryType": "timeSeriesQuery",
+          "range": true,
+          "refId": "W"
+        }
+      ],
+      "title": "Disk",
+      "type": "stat"
+    },
+    {
+      "datasource": {
         "type": "loki",
         "uid": "c73ec8de-9edd-441b-b947-383087fcfc06"
       },
@@ -64,7 +247,7 @@
       "gridPos": {
         "h": 10,
         "w": 8,
-        "x": 0,
+        "x": 10,
         "y": 0
       },
       "id": 5,
@@ -190,9 +373,9 @@
         ]
       },
       "gridPos": {
-        "h": 10,
+        "h": 11,
         "w": 6,
-        "x": 8,
+        "x": 18,
         "y": 0
       },
       "id": 18,
@@ -287,107 +470,6 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 0.7
-              },
-              {
-                "color": "red",
-                "value": 0.9
-              }
-            ]
-          },
-          "unit": "percentunit"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 4,
-        "x": 14,
-        "y": 0
-      },
-      "id": 27,
-      "options": {
-        "colorMode": "none",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "/^CPU$/",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "value_and_name",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.2.10",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"docker_stats\",container_label_com_docker_compose_project=\"docker-fullstack-template\",container_label_com_docker_compose_service=\"backend\"}[5m]))",
-          "instant": false,
-          "legendFormat": "CPU",
-          "queryType": "timeSeriesQuery",
-          "range": true,
-          "refId": "CPU"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "vector(0)",
-          "instant": false,
-          "legendFormat": "_min",
-          "queryType": "timeSeriesQuery",
-          "range": true,
-          "refId": "MIN"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "vector(1)",
-          "instant": false,
-          "legendFormat": "_max",
-          "queryType": "timeSeriesQuery",
-          "range": true,
-          "refId": "MAX"
-        }
-      ],
-      "title": "",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
           "fieldMinMax": false,
           "mappings": [],
           "min": 0,
@@ -400,89 +482,7 @@
               }
             ]
           },
-          "unit": "Bps"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 18,
-        "y": 0
-      },
-      "id": 29,
-      "options": {
-        "colorMode": "none",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "value_and_name",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.2.10",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(container_fs_reads_bytes_total{job=\"docker_stats\",container_label_com_docker_compose_project=\"docker-fullstack-template\",container_label_com_docker_compose_service=\"backend\"}[5m]))",
-          "instant": false,
-          "legendFormat": "Read",
-          "queryType": "timeSeriesQuery",
-          "range": true,
-          "refId": "R"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(container_fs_writes_bytes_total{job=\"docker_stats\",container_label_com_docker_compose_project=\"docker-fullstack-template\",container_label_com_docker_compose_service=\"backend\"}[5m]))",
-          "instant": false,
-          "legendFormat": "Write",
-          "queryType": "timeSeriesQuery",
-          "range": true,
-          "refId": "W"
-        }
-      ],
-      "title": "Disk",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              }
-            ]
-          },
-          "unit": "bytes",
-          "fieldMinMax": false
+          "unit": "bytes"
         },
         "overrides": [
           {
@@ -490,23 +490,14 @@
               "id": "byRegexp",
               "options": "/^LIMIT$/"
             },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": true,
-                  "tooltip": true,
-                  "viz": true
-                }
-              }
-            ]
+            "properties": []
           }
         ]
       },
       "gridPos": {
         "h": 5,
         "w": 4,
-        "x": 14,
+        "x": 0,
         "y": 5
       },
       "id": 28,
@@ -524,7 +515,7 @@
           "values": false
         },
         "showPercentChange": false,
-        "textMode": "value_and_name",
+        "textMode": "value",
         "wideLayout": true
       },
       "pluginVersion": "12.2.10",
@@ -557,7 +548,6 @@
         }
       ],
       "title": "",
-      "type": "stat",
       "transformations": [
         {
           "id": "configFromData",
@@ -576,7 +566,8 @@
             ]
           }
         }
-      ]
+      ],
+      "type": "stat"
     },
     {
       "datasource": {
@@ -604,10 +595,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 5,
         "w": 6,
-        "x": 18,
-        "y": 6
+        "x": 4,
+        "y": 5
       },
       "id": 30,
       "options": {
@@ -921,7 +912,7 @@
         "h": 3,
         "w": 6,
         "x": 18,
-        "y": 12
+        "y": 11
       },
       "id": 10,
       "options": {
@@ -1007,7 +998,7 @@
         "h": 3,
         "w": 6,
         "x": 18,
-        "y": 15
+        "y": 14
       },
       "id": 19,
       "options": {
@@ -1066,54 +1057,6 @@
     },
     {
       "datasource": {
-        "type": "loki",
-        "uid": "c73ec8de-9edd-441b-b947-383087fcfc06"
-      },
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 18,
-        "x": 0,
-        "y": 18
-      },
-      "id": 1,
-      "interval": "30",
-      "maxPerRow": 12,
-      "options": {
-        "dedupStrategy": "none",
-        "enableInfiniteScrolling": false,
-        "enableLogDetails": true,
-        "prettifyLogMessage": false,
-        "showCommonLabels": false,
-        "showLabels": false,
-        "showTime": false,
-        "sortOrder": "Descending",
-        "wrapLogMessage": false
-      },
-      "pluginVersion": "12.2.10",
-      "targets": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "c73ec8de-9edd-441b-b947-383087fcfc06"
-          },
-          "direction": "backward",
-          "editorMode": "code",
-          "expr": "{job=\"backend_logs\"} != \"API RateLimit: method=\"\r\n  | level =~ \"${level:pipe:.*}\" \r\n  |= \"${message:pipe:.*}\"\r\n  | regexp `payload=<<(?P<payload>.*?)>>`\r\n  | regexp `data=<<(?P<data>.*?)>>`\r\n  | regexp `query=<<(?P<request_query>.*?)>>`\r\n  | regexp `path=(?P<path_from_line>[^ ]+)`\r\n  | regexp `\\[(?P<level>\\w+)\\] \\[(?P<logger_name>[^\\]]+)\\]`\r\n  | regexp `(?P<short>^.*?ipAddress=\\S+(?: status_code=\\S+)?|.*)`\r\n  | line_format `{{ regexReplaceAll \"\\\\s*traceID=\\\\w+\" (regexReplaceAll \"/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/roles/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/users/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" .short \"/users/{user_id}\") \"/roles/{role_id}\") \"/{id}\") \"\" }}`\r\n  | label_format path=`{{ regexReplaceAll \"/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/roles/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/users/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" .path_from_line \"/users/{user_id}\") \"/roles/{role_id}\") \"/{id}\" }}`\r\n  | label_format logger=`{{ if .logger_name }}{{ .logger_name }}{{ else }}{{ .logger }}{{ end }}`\r\n  | keep timestamp, level, logger, method, path, status_code, user_agent, ip_address, request_query, payload, data, traceID",
-          "legendFormat": "",
-          "maxLines": 10000,
-          "queryType": "range",
-          "refId": "Log Stream"
-        }
-      ],
-      "title": "Log List",
-      "type": "logs"
-    },
-    {
-      "datasource": {
         "type": "datasource",
         "uid": "-- Mixed --"
       },
@@ -1140,7 +1083,7 @@
         "h": 3,
         "w": 6,
         "x": 18,
-        "y": 18
+        "y": 17
       },
       "id": 20,
       "options": {
@@ -1200,6 +1143,54 @@
     },
     {
       "datasource": {
+        "type": "loki",
+        "uid": "c73ec8de-9edd-441b-b947-383087fcfc06"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 18,
+        "x": 0,
+        "y": 18
+      },
+      "id": 1,
+      "interval": "30",
+      "maxPerRow": 12,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "12.2.10",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "c73ec8de-9edd-441b-b947-383087fcfc06"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "{job=\"backend_logs\"} != \"API RateLimit: method=\"\r\n  | level =~ \"${level:pipe:.*}\" \r\n  |= \"${message:pipe:.*}\"\r\n  | regexp `payload=<<(?P<payload>.*?)>>`\r\n  | regexp `data=<<(?P<data>.*?)>>`\r\n  | regexp `query=<<(?P<request_query>.*?)>>`\r\n  | regexp `path=(?P<path_from_line>[^ ]+)`\r\n  | regexp `\\[(?P<level>\\w+)\\] \\[(?P<logger_name>[^\\]]+)\\]`\r\n  | regexp `(?P<short>^.*?ipAddress=\\S+(?: status_code=\\S+)?|.*)`\r\n  | line_format `{{ regexReplaceAll \"\\\\s*traceID=\\\\w+\" (regexReplaceAll \"/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/roles/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/users/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" .short \"/users/{user_id}\") \"/roles/{role_id}\") \"/{id}\") \"\" }}`\r\n  | label_format path=`{{ regexReplaceAll \"/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/roles/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/users/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" .path_from_line \"/users/{user_id}\") \"/roles/{role_id}\") \"/{id}\" }}`\r\n  | label_format logger=`{{ if .logger_name }}{{ .logger_name }}{{ else }}{{ .logger }}{{ end }}`\r\n  | keep timestamp, level, logger, method, path, status_code, user_agent, ip_address, request_query, payload, data, traceID",
+          "legendFormat": "",
+          "maxLines": 10000,
+          "queryType": "range",
+          "refId": "Log Stream"
+        }
+      ],
+      "title": "Log List",
+      "type": "logs"
+    },
+    {
+      "datasource": {
         "type": "datasource",
         "uid": "-- Mixed --"
       },
@@ -1226,7 +1217,7 @@
         "h": 3,
         "w": 6,
         "x": 18,
-        "y": 21
+        "y": 20
       },
       "id": 21,
       "options": {
@@ -1312,7 +1303,7 @@
         "h": 3,
         "w": 6,
         "x": 18,
-        "y": 24
+        "y": 23
       },
       "id": 22,
       "options": {
@@ -1457,5 +1448,5 @@
   "timezone": "browser",
   "title": "Backend Logs",
   "uid": "bejjsrxkiq5fke",
-  "version": 95
+  "version": 98
 }
