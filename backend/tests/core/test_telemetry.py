@@ -24,28 +24,36 @@ def _sdk_tracer_provider() -> TracerProvider | None:
     return None
 
 
+def _rebuild_app_middleware() -> None:
+    # Starlette builds this once on the first request. Later add_middleware calls
+    # are ignored until the cache is cleared (CI runs API tests before this file).
+    app.middleware_stack = None
+
+
 def _install_span_exporter() -> tuple[InMemorySpanExporter, bool]:
-    """Attach an in-memory exporter to the provider FastAPI is already using.
+    """Attach an in-memory exporter without replacing an already-live tracer.
 
     Replacing the global provider while the app is instrumented sends spans
     to the old tracer and leaves the test exporter empty.
     """
     exporter = InMemorySpanExporter()
     processor = SkipSpanProcessor(SimpleSpanProcessor(exporter))
+    already_instrumented = getattr(app, "_is_instrumented_by_opentelemetry", False)
     provider = _sdk_tracer_provider()
-    instrumented_here = False
-    if provider is None:
-        provider = TracerProvider()
-        trace._TRACER_PROVIDER = None
-        once = getattr(trace, "_TRACER_PROVIDER_SET_ONCE", None)
-        if once is not None:
-            once._done = False
-        trace.set_tracer_provider(provider)
+    if already_instrumented and provider is not None:
+        provider.add_span_processor(processor)
+        return exporter, False
+
+    provider = TracerProvider()
+    trace._TRACER_PROVIDER = None
+    once = getattr(trace, "_TRACER_PROVIDER_SET_ONCE", None)
+    if once is not None:
+        once._done = False
+    trace.set_tracer_provider(provider)
     provider.add_span_processor(processor)
-    if not getattr(app, "_is_instrumented_by_opentelemetry", False):
-        FastAPIInstrumentor.instrument_app(app, excluded_urls=EXCLUDED_URLS)
-        instrumented_here = True
-    return exporter, instrumented_here
+    FastAPIInstrumentor.instrument_app(app, excluded_urls=EXCLUDED_URLS)
+    _rebuild_app_middleware()
+    return exporter, True
 
 
 @pytest.mark.asyncio
@@ -102,6 +110,7 @@ async def test_skip_paths_are_not_traced_and_api_log_has_trace_id():
         api_logger.removeHandler(handler)
         if instrumented_here:
             FastAPIInstrumentor.uninstrument_app(app)
+            _rebuild_app_middleware()
 
 
 def test_otel_excluded_urls_match_full_request_url():
