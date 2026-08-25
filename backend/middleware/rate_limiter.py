@@ -6,13 +6,13 @@ from utils.response import APIResponse
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from core.config import SKIP_METHODS, SKIP_PATHS
 
 logger = logging.getLogger(__name__)
 
 RATE_LIMIT = settings.RATE_LIMIT
 RATE_LIMIT_WINDOW_SECONDS = settings.RATE_LIMIT_WINDOW_SECONDS
 BLOCK_TIME_SECONDS = settings.BLOCK_TIME_SECONDS
-HEALTH_CHECK_PATHS = {"/", "/docs", "/redoc", "/openapi.json"}
 
 class RateLimiterMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
@@ -79,7 +79,7 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         method = request.method
 
-        if path in HEALTH_CHECK_PATHS or method == "OPTIONS":
+        if path in SKIP_PATHS or method in SKIP_METHODS:
             return await call_next(request)
 
         try:
@@ -120,26 +120,35 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
                 try:
                     api_fail_key = f"fail:api:{ip}:{path}"
                     api_fails = await redis.incr(api_fail_key)
-                    logger.info(f"IP {ip} API {path} status {response.status_code}")
 
                     if api_fails == 1:
                         await redis.expire(api_fail_key, window_seconds)
 
                     if api_fails >= limit_count:
-                        logger.warning(f"IP {ip} is now blocked for API {path} for {BLOCK_TIME_SECONDS} seconds (count {api_fails}, limit: {limit_count})")
+                        logger.warning(
+                            f"API RateLimit blocked: method={method} path={path} "
+                            f"count={api_fails} limit={limit_count} "
+                            f"block_seconds={BLOCK_TIME_SECONDS} ipAddress={ip}"
+                        )
                         await redis.set(api_block_key, 1, ex=BLOCK_TIME_SECONDS)
                         await redis.delete(api_fail_key)
                         resp = APIResponse[None](code=429, message="Too many requests. Try again later.")
                         return JSONResponse(status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                                             content=resp.model_dump(exclude_none=True))
                 except Exception as e:
-                    logger.error(f"Rate limiter error for IP {ip} on API {path}: {e}")
+                    logger.error(
+                        f"Rate limiter error: method={method} path={path} "
+                        f"error={e} ipAddress={ip}"
+                    )
             elif clear_on_success and is_success:
                 try:
                     api_fail_key = f"fail:api:{ip}:{path}"
                     await redis.delete(api_fail_key)
                 except Exception as e:
-                    logger.error(f"Failed to clear count for IP {ip} on API {path}: {e}")
+                    logger.error(
+                        f"Failed to clear count: method={method} path={path} "
+                        f"error={e} ipAddress={ip}"
+                    )
 
             return response
 

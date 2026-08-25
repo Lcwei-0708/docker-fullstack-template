@@ -2,9 +2,33 @@ from dotenv import load_dotenv
 load_dotenv()  # Load .env
 
 import os
+import re
 import yaml
 import logging.config
 from pydantic_settings import BaseSettings
+
+# Docs / health probes — skip logging, rate limit, and tracing.
+# Not an env setting: these paths are part of the app, not deployment.
+SKIP_PATHS: frozenset[str] = frozenset(
+    {"/", "/docs", "/redoc", "/openapi.json", "/healthz"}
+)
+# CORS preflight — skip logging, rate limit, and tracing (URL exclude cannot filter method).
+SKIP_METHODS: frozenset[str] = frozenset({"OPTIONS"})
+
+
+def otel_excluded_urls(paths: frozenset[str] = SKIP_PATHS) -> str:
+    """Regexes matched with search() against the full URL (e.g. http://host:5000/healthz).
+
+    Anchored path-only patterns like ^/healthz$ never match, so Docker healthchecks
+    would still create server spans and show up in p95.
+    """
+    patterns: list[str] = []
+    for path in sorted(paths):
+        if path == "/":
+            patterns.append(r"https?://[^/?]+/?$")
+        else:
+            patterns.append(re.escape(path))
+    return ",".join(patterns)
 
 class Settings(BaseSettings):
     # Project settings
@@ -15,7 +39,13 @@ class Settings(BaseSettings):
     # Basic settings
     DEBUG_MODE: bool = True
     LOG_LEVEL: str = "INFO"
+    LOG_HTTP_BODY: bool = False
+    LOG_HTTP_BODY_MAX_BYTES: int = 8192
     SSL_ENABLE: bool = False
+
+    # OpenTelemetry settings
+    OTEL_ENABLE: bool = False
+    OTEL_EXPORTER_OTLP_ENDPOINT: str = "http://alloy:4318"
 
     # Database settings
     DATABASE_URL: str
