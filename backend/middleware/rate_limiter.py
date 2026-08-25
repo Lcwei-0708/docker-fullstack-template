@@ -82,12 +82,16 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
         if path in SKIP_PATHS or method in SKIP_METHODS:
             return await call_next(request)
 
+        response = None
         try:
             ip = get_real_ip(request)
-            if ip in self.whitelist_ips:
+            if self.whitelist_ips and ip in self.whitelist_ips:
                 return await call_next(request)
 
             redis = get_redis()
+            if redis is None:
+                return await call_next(request)
+
             # Get rate limit config
             rate_limit_config = self._get_rate_limit_config(path)
             
@@ -154,6 +158,8 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
 
         except Exception as e:
             logger.error(f"Unexpected error in rate limiter middleware for path {path}: {e}")
+            if response is not None:
+                return response
             return await call_next(request)
 
 def add_rate_limiter_middleware(app):

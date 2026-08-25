@@ -3,7 +3,6 @@ import time
 from utils import get_real_ip
 from fastapi import FastAPI, Request
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
 from core.config import SKIP_METHODS, SKIP_PATHS
 from core.config import settings
 from utils.log_sanitize import (
@@ -61,15 +60,12 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         duration_ms = (time.perf_counter() - started) * 1000
 
         response_extra = ""
-        rebuilt = None
         if settings.LOG_HTTP_BODY:
             content_type = response.headers.get("content-type", "")
             if should_omit_body(content_type):
                 response_extra = _append_field(response_extra, "data", "[omitted]")
             else:
-                body = b""
-                async for chunk in response.body_iterator:
-                    body += chunk
+                body = b"".join([chunk async for chunk in response.body_iterator])
                 response_extra = _append_field(
                     response_extra,
                     "data",
@@ -79,15 +75,12 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                         settings.LOG_HTTP_BODY_MAX_BYTES,
                     ),
                 )
-                headers = dict(response.headers)
-                headers.pop("content-length", None)
-                rebuilt = Response(
-                    content=body,
-                    status_code=response.status_code,
-                    headers=headers,
-                    media_type=response.media_type,
-                    background=response.background,
-                )
+                # Replay on the same response so multiple Set-Cookie headers stay intact.
+                # dict(response.headers) collapses them into one and drops csrf_token.
+                async def _replay(content: bytes = body):
+                    yield content
+
+                response.body_iterator = _replay()
 
         logger.info(
             f"API Response: method={method} path={path} ipAddress={client_ip} "
@@ -95,7 +88,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             f"user-agent=\"{user_agent}\"{response_extra}"
         )
 
-        return rebuilt if rebuilt is not None else response
+        return response
 
 
 def add_request_logging_middleware(app: FastAPI):

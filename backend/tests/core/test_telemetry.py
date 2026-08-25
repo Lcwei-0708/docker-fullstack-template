@@ -14,20 +14,43 @@ from core.telemetry import EXCLUDED_URLS, SkipSpanProcessor, TraceIdFormatter
 from main import app
 
 
-def _install_span_exporter() -> InMemorySpanExporter:
+def _sdk_tracer_provider() -> TracerProvider | None:
+    provider = getattr(trace, "_TRACER_PROVIDER", None)
+    if isinstance(provider, TracerProvider):
+        return provider
+    current = trace.get_tracer_provider()
+    if isinstance(current, TracerProvider):
+        return current
+    return None
+
+
+def _install_span_exporter() -> tuple[InMemorySpanExporter, bool]:
+    """Attach an in-memory exporter to the provider FastAPI is already using.
+
+    Replacing the global provider while the app is instrumented sends spans
+    to the old tracer and leaves the test exporter empty.
+    """
     exporter = InMemorySpanExporter()
-    provider = TracerProvider()
-    provider.add_span_processor(SkipSpanProcessor(SimpleSpanProcessor(exporter)))
-    trace._TRACER_PROVIDER = None
-    trace._TRACER_PROVIDER_SET_ONCE._done = False
-    trace.set_tracer_provider(provider)
-    return exporter
+    processor = SkipSpanProcessor(SimpleSpanProcessor(exporter))
+    provider = _sdk_tracer_provider()
+    instrumented_here = False
+    if provider is None:
+        provider = TracerProvider()
+        trace._TRACER_PROVIDER = None
+        once = getattr(trace, "_TRACER_PROVIDER_SET_ONCE", None)
+        if once is not None:
+            once._done = False
+        trace.set_tracer_provider(provider)
+    provider.add_span_processor(processor)
+    if not getattr(app, "_is_instrumented_by_opentelemetry", False):
+        FastAPIInstrumentor.instrument_app(app, excluded_urls=EXCLUDED_URLS)
+        instrumented_here = True
+    return exporter, instrumented_here
 
 
 @pytest.mark.asyncio
 async def test_skip_paths_are_not_traced_and_api_log_has_trace_id():
-    exporter = _install_span_exporter()
-    FastAPIInstrumentor.instrument_app(app, excluded_urls=EXCLUDED_URLS)
+    exporter, instrumented_here = _install_span_exporter()
 
     stream = io.StringIO()
     handler = logging.StreamHandler(stream)
@@ -77,7 +100,8 @@ async def test_skip_paths_are_not_traced_and_api_log_has_trace_id():
         ), names
     finally:
         api_logger.removeHandler(handler)
-        FastAPIInstrumentor.uninstrument_app(app)
+        if instrumented_here:
+            FastAPIInstrumentor.uninstrument_app(app)
 
 
 def test_otel_excluded_urls_match_full_request_url():
