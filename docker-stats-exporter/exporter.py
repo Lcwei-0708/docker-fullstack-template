@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""Prometheus exporter backed by the Docker Stats API (docker.sock only)."""
-
-from __future__ import annotations
-
 import http.client
 import json
 import socket

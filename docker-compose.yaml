@@ -331,12 +331,10 @@ services:
       - alloy-data:/data
       - ./backend/logs:/var/log/backend
       - ./nginx/logs:/var/log/nginx
-      - ./alloy/config.river:/etc/alloy/config.river
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /sys:/sys:ro
+      - ./alloy:/etc/alloy:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    command: ["run", "--storage.path=/data", "/etc/alloy/config.river"]
+    command: ["run", "--storage.path=/data", "/etc/alloy"]
     networks:
       - backend-network
     restart: always

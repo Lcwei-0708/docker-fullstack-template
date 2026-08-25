@@ -1,0 +1,8 @@
+prometheus.scrape "docker_stats" {
+	targets = [{
+		__address__ = "docker-stats-exporter:9100",
+		job         = "docker_stats",
+	}]
+	forward_to      = [prometheus.remote_write.prometheus.receiver]
+	scrape_interval = "15s"
+}

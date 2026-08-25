@@ -1,0 +1,9 @@
+prometheus.scrape "node" {
+	targets = [{
+		__address__ = "172.17.0.1:9100",
+		job         = "node",
+		instance    = "host",
+	}]
+	forward_to      = [prometheus.remote_write.prometheus.receiver]
+	scrape_interval = "15s"
+}
