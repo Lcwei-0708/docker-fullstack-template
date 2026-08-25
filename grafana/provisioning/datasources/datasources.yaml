@@ -1,4 +1,18 @@
 apiVersion: 1
+prune: true
+
+# Recreate on every start so grafana-data does not keep stale derivedFields.
+# Increase `version` when derivedFields change, or Grafana ignores the YAML.
+deleteDatasources:
+  - name: Loki
+    orgId: 1
+    uid: c73ec8de-9edd-441b-b947-383087fcfc06
+  - name: Tempo
+    orgId: 1
+    uid: tempo
+  - name: Prometheus
+    orgId: 1
+    uid: prometheus
 
 datasources:
   - name: Loki
@@ -6,12 +20,59 @@ datasources:
     access: proxy
     url: http://loki:3100
     uid: c73ec8de-9edd-441b-b947-383087fcfc06
+    isDefault: true
+    editable: false
+    version: 21
     jsonData:
       maxLines: 1000
       derivedFields:
-        - datasourceUid: c73ec8de-9edd-441b-b947-383087fcfc06
-          matcherRegex: "traceID=(\\w+)"
-          name: TraceID
+        # One field, one Tempo button. matcherType=label reads query labels,
+        # not the log line, so the link only shows in expanded details.
+        - name: traceID
+          matcherType: label
+          matcherRegex: "^traceID$"
+          datasourceUid: tempo
           url: "$${__value.raw}"
-    editable: true
-    version: 1 
+          urlDisplayLabel: Open Tempo Trace
+
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    uid: tempo
+    editable: false
+    version: 21
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: c73ec8de-9edd-441b-b947-383087fcfc06
+        spanStartTimeShift: "-1h"
+        spanEndTimeShift: "1h"
+        filterByTraceID: true
+        filterBySpanID: false
+        customQuery: true
+        query: '{job="backend_logs"} |= "$${__span.traceId}"'
+      lokiSearch:
+        datasourceUid: c73ec8de-9edd-441b-b947-383087fcfc06
+      nodeGraph:
+        enabled: true
+      search:
+        hide: false
+      traceQuery:
+        timeShiftEnabled: true
+        spanStartTimeShift: "-1h"
+        spanEndTimeShift: "1h"
+      streamingEnabled:
+        search: true
+        # Metrics streaming often sends an empty first frame, so panels flash "No data" on refresh.
+        metrics: false
+
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    uid: prometheus
+    editable: false
+    version: 21
+    jsonData:
+      timeInterval: 15s
+      httpMethod: POST

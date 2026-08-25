@@ -1,3 +1,8 @@
+import os
+
+os.environ.setdefault("OTEL_ENABLE", "false")
+os.environ.setdefault("LOG_HTTP_BODY", "false")
+
 import pytest
 import asyncio
 import pytest_asyncio
@@ -13,7 +18,9 @@ from core.database import Base, make_async_url
 from core.dependencies import get_db
 from core.redis import get_redis
 from core.security import create_access_token, hash_password
-from main import app
+
+with patch("core.config.setup_logging"):
+    from main import app
 from models.password_reset_tokens import PasswordResetTokens
 from models.user_sessions import UserSessions
 from models.users import Users

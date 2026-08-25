@@ -2,7 +2,8 @@ version: 1
 disable_existing_loggers: True
 formatters:
   default:
-    format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    (): core.telemetry.TraceIdFormatter
+    format: "%(asctime)s [%(levelname)s] [%(name)s] %(message)s traceID=%(otelTraceID)s"
 handlers:
   file:
     class: logging.handlers.TimedRotatingFileHandler

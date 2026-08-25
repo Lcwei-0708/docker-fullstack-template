@@ -11,7 +11,7 @@ loki.process "backend_logs" {
 	forward_to = [loki.write.default.receiver]
 
 	stage.regex {
-		expression = "^(?P<timestamp>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2},\\d{3}) \\[(?P<level>\\w+)\\] (?P<logger>[^:]+): (?P<message>.*)$"
+		expression = "^(?P<timestamp>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2},\\d{3}) \\[(?P<level>\\w+)\\] \\[(?P<logger>[^]]+)\\] (?P<message>.*)$"
 	}
 
 	stage.timestamp {
@@ -28,12 +28,10 @@ loki.process "backend_logs" {
 	}
 
 	stage.regex {
-		expression = "API Request: method=(?P<method>\\w+) path=(?P<path>[^ ]+) ipAddress=(?P<ip_address>[^ ]+) user-agent=\"(?P<user_agent>[^\"]*)\""
-		source = "message"
+		expression = "API (?P<api_action>Request): method=(?P<method>\\w+) path=(?P<path>[^ ]+) ipAddress=(?P<ip_address>[^ ]+) user-agent=\"(?P<user_agent>[^\"]*)\""
 	}
 	stage.labels {
 		values = {
-			event_type = "api_request",
 			method = "method",
 			path = "path",
 			ip_address = "ip_address",
@@ -41,12 +39,22 @@ loki.process "backend_logs" {
 	}
 
 	stage.regex {
-		expression = "API Response: method=(?P<method>\\w+) path=(?P<path>[^ ]+) ipAddress=(?P<ip_address>[^ ]+) user-agent=\"(?P<user_agent>[^\"]*)\" status_code=(?P<status_code>\\d+)"
-		source = "message"
+		expression = "API (?P<api_action>Response): method=(?P<method>\\w+) path=(?P<path>[^ ]+) ipAddress=(?P<ip_address>[^ ]+) status_code=(?P<status_code>\\d+)(?: duration=(?P<duration>\\S+))? user-agent=\"(?P<user_agent>[^\"]*)\""
 	}
 	stage.labels {
 		values = {
-			event_type = "api_response",
+			method = "method",
+			path = "path",
+			ip_address = "ip_address",
+			status_code = "status_code",
+		}
+	}
+
+	stage.regex {
+		expression = "API RateLimit blocked: method=(?P<method>\\w+) path=(?P<path>[^ ]+).* ipAddress=(?P<ip_address>[^ ]+)"
+	}
+	stage.labels {
+		values = {
 			method = "method",
 			path = "path",
 			ip_address = "ip_address",
@@ -56,13 +64,37 @@ loki.process "backend_logs" {
 
 	stage.regex {
 		expression = "\\[(?P<error_code>[A-Z_]+)\\] \\| (?P<error_message>.*)"
-		source = "message"
 	}
 	stage.labels {
 		values = {
-			event_type = "error",
 			error_code = "error_code",
 		}
+	}
+
+	stage.template {
+		source   = "event_type"
+		template = "{{ if eq (index .Values \"api_action\") \"Request\" }}api_request{{ else if eq (index .Values \"api_action\") \"Response\" }}api_response{{ else if index .Values \"error_code\" }}error{{ end }}"
+	}
+	stage.labels {
+		values = {
+			event_type = "event_type",
+		}
+	}
+
+	stage.regex {
+		expression = "traceID=(?P<traceID>\\w+)"
+	}
+
+	stage.regex {
+		expression = "query=<<(?P<request_query>.*?)>>"
+	}
+
+	stage.regex {
+		expression = "payload=<<(?P<payload>.*?)>>"
+	}
+
+	stage.regex {
+		expression = "data=<<(?P<data>.*?)>>"
 	}
 
 	stage.label_drop {
@@ -73,15 +105,19 @@ loki.process "backend_logs" {
 		values = {
 			level = "level",
 			logger = "logger",
-			message = "message",
 			timestamp = "timestamp",
 			method = "method",
 			path = "path",
 			ip_address = "ip_address",
 			user_agent = "user_agent",
 			status_code = "status_code",
+			duration = "duration",
 			error_code = "error_code",
 			error_message = "error_message",
+			traceID = "traceID",
+			request_query = "request_query",
+			payload = "payload",
+			data = "data",
 		}
 	}
 }
@@ -102,4 +138,52 @@ loki.write "default" {
 		batch_wait         = "3s"
 	}
 	external_labels = {}
+}
+
+otelcol.receiver.otlp "default" {
+	grpc {
+		endpoint = "0.0.0.0:4317"
+	}
+
+	http {
+		endpoint = "0.0.0.0:4318"
+	}
+
+	output {
+		traces = [otelcol.exporter.otlp.tempo.input]
+	}
+}
+
+otelcol.exporter.otlp "tempo" {
+	client {
+		endpoint = "tempo:4317"
+		tls {
+			insecure = true
+		}
+	}
+}
+
+prometheus.scrape "docker_stats" {
+	targets = [{
+		__address__ = "docker-stats-exporter:9100",
+		job         = "docker_stats",
+	}]
+	forward_to      = [prometheus.remote_write.prometheus.receiver]
+	scrape_interval = "15s"
+}
+
+prometheus.scrape "node" {
+	targets = [{
+		__address__ = "172.17.0.1:9100",
+		job         = "node",
+		instance    = "host",
+	}]
+	forward_to      = [prometheus.remote_write.prometheus.receiver]
+	scrape_interval = "15s"
+}
+
+prometheus.remote_write "prometheus" {
+	endpoint {
+		url = "http://prometheus:9090/api/v1/write"
+	}
 }

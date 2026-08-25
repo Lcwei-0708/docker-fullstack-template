@@ -11,8 +11,10 @@ class CORSMiddleware(BaseHTTPMiddleware):
         self.allowed_hosts = [
             f"{settings.HOSTNAME}:{settings.BACKEND_PORT}",
             f"localhost:{settings.BACKEND_PORT}",
+            f"127.0.0.1:{settings.BACKEND_PORT}",
             f"{settings.HOSTNAME}:{settings.FRONTEND_PORT}",
-            f"localhost:{settings.FRONTEND_PORT}"
+            f"localhost:{settings.FRONTEND_PORT}",
+            f"127.0.0.1:{settings.FRONTEND_PORT}",
         ]
 
         self.allowed_methods = "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD"
@@ -93,11 +95,40 @@ class CORSMiddleware(BaseHTTPMiddleware):
         allowed_headers = sorted(list(set(allowed_headers)))
         return ", ".join(allowed_headers)
     
-    def _should_allow_origin(self, origin: str, is_whitelisted: bool) -> bool:
+    def _request_hostname(self, request: Request) -> str | None:
+        """Hostname the browser actually called (nginx Host / X-Forwarded-Host)."""
+        raw = request.headers.get("x-forwarded-host") or request.headers.get("host")
+        if not raw:
+            return None
+        host = raw.split(",")[0].strip()
+        if host.startswith("[") and "]" in host:
+            return host[1 : host.index("]")].lower()
+        return host.split(":")[0].strip().lower() or None
+
+    def _is_same_host_origin(self, origin: str, request: Request) -> bool:
+        """Allow frontend/API split on the same host (LAN IP vs localhost in .env)."""
+        try:
+            origin_host = urlparse(origin).hostname
+        except Exception:
+            return False
+        request_host = self._request_hostname(request)
+        if not origin_host or not request_host:
+            return False
+        return origin_host.lower() == request_host
+
+    def _should_allow_origin(
+        self, origin: str, is_whitelisted: bool, request: Request
+    ) -> bool:
         """Check if origin should be allowed"""
         if is_whitelisted:
             return bool(origin)
-        return origin and self.is_allowed_origin(origin)
+        return bool(
+            origin
+            and (
+                self.is_allowed_origin(origin)
+                or self._is_same_host_origin(origin, request)
+            )
+        )
     
     def _set_cors_origin_headers(self, headers: dict, origin: str):
         """Set CORS origin and credentials headers"""
@@ -107,7 +138,7 @@ class CORSMiddleware(BaseHTTPMiddleware):
     
     def handle_preflight(self, request: Request, origin: str, is_whitelisted: bool) -> JSONResponse:
         """Handle OPTIONS preflight requests"""
-        if not self._should_allow_origin(origin, is_whitelisted):
+        if not self._should_allow_origin(origin, is_whitelisted, request):
             return JSONResponse(status_code=200, content={})
         
         allowed_headers_str = self.get_allowed_headers(request)
@@ -122,11 +153,13 @@ class CORSMiddleware(BaseHTTPMiddleware):
         self._set_cors_origin_headers(headers, origin)
         return JSONResponse(status_code=200, content={}, headers=headers)
     
-    def add_cors_headers(self, response, origin: str, is_whitelisted: bool):
+    def add_cors_headers(
+        self, response, origin: str, is_whitelisted: bool, request: Request
+    ):
         """Add CORS headers to response"""
         response.headers["Vary"] = "Origin"
         
-        if not self._should_allow_origin(origin, is_whitelisted):
+        if not self._should_allow_origin(origin, is_whitelisted, request):
             return
         
         self._set_cors_origin_headers(response.headers, origin)
@@ -143,7 +176,7 @@ class CORSMiddleware(BaseHTTPMiddleware):
             return self.handle_preflight(request, origin, is_whitelisted)
         
         response = await call_next(request)
-        self.add_cors_headers(response, origin, is_whitelisted)
+        self.add_cors_headers(response, origin, is_whitelisted, request)
         return response
 
 def add_cors_middleware(app: FastAPI):

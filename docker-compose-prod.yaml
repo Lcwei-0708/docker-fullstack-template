@@ -94,6 +94,8 @@ services:
       - DEBUG_MODE=false
       - RATE_LIMIT_WHITELIST=${RATE_LIMIT_WHITELIST:-}
       - LOG_LEVEL=${LOG_LEVEL}
+      - LOG_HTTP_BODY=${LOG_HTTP_BODY:-false}
+      - LOG_HTTP_BODY_MAX_BYTES=${LOG_HTTP_BODY_MAX_BYTES:-8192}
       - SSL_ENABLE=${SSL_ENABLE}
       - SECRET_KEY=${SECRET_KEY}
       - PROJECT_NAME=${PROJECT_NAME}
@@ -115,6 +117,9 @@ services:
       - DB_WRITE_TIMEOUT=${DB_WRITE_TIMEOUT}
       # Redis settings
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      # OpenTelemetry settings
+      - OTEL_ENABLE=true
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4318
       # SMTP settings
       - SMTP_ENABLE=${SMTP_ENABLE}
       - SMTP_HOST=${SMTP_HOST}
@@ -134,6 +139,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      alloy:
+        condition: service_started
     networks:
       - backend-network
     restart: always    
@@ -230,6 +237,19 @@ services:
       timeout: 5s
       retries: 5
 
+  tempo:
+    image: grafana/tempo:3.0.3
+    user: root
+    command: ["-config.file=/etc/tempo.yaml"]
+    environment:
+      - TZ=${TIMEZONE}
+    volumes:
+      - tempo-data:/var/tempo
+      - ./tempo/tempo.yaml:/etc/tempo.yaml:ro
+    networks:
+      - backend-network
+    restart: always
+
   loki:
     image: grafana/loki:3.7.3
     environment:
@@ -253,8 +273,59 @@ services:
         reservations:
           memory: 2G
 
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    user: root
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-remote-write-receiver
+      - --web.enable-lifecycle
+    environment:
+      - TZ=${TIMEZONE}
+    volumes:
+      - prometheus-data:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - backend-network
+    restart: always
+
+  docker-stats-exporter:
+    build:
+      context: ./docker-stats-exporter
+    user: root
+    environment:
+      - TZ=${TIMEZONE}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - backend-network
+    restart: always
+
+  # Linux VM / WSL host metrics (not a single container).
+  # Host network has no Compose DNS name; Alloy scrapes docker0 at 172.17.0.1:9100.
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    pid: host
+    network_mode: host
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/host/rootfs
+      - --no-collector.filesystem
+      - --web.listen-address=:9100
+    environment:
+      - TZ=${TIMEZONE}
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/rootfs:ro
+    restart: always
+
   alloy:
     image: grafana/alloy:v1.17.1
+    user: root
     environment:
       - TZ=${TIMEZONE}
     volumes:
@@ -262,12 +333,20 @@ services:
       - ./backend/logs:/var/log/backend
       - ./nginx/logs:/var/log/nginx
       - ./alloy/config.river:/etc/alloy/config.river
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/sys:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command: ["run", "--storage.path=/data", "/etc/alloy/config.river"]
     networks:
       - backend-network
     restart: always
     depends_on:
       - loki
+      - tempo
+      - prometheus
+      - docker-stats-exporter
+      - node-exporter
 
   grafana:
     image: grafana/grafana:12.2.10
@@ -292,6 +371,8 @@ services:
     user: root
     depends_on:
       - loki
+      - tempo
+      - prometheus
     networks:
       - backend-network
       - frontend-network
@@ -302,6 +383,8 @@ volumes:
   redis-data:
   redis-insight-data:
   alloy-data:
+  prometheus-data:
+  tempo-data:
   loki-data:
   loki-wal-data:
   loki-tsdb-data:
