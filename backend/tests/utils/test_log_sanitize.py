@@ -1,6 +1,8 @@
 import json
 
 from utils.log_sanitize import (
+    ELLIPSIS,
+    PREVIEW_CHARS,
     REDACTED,
     format_log_value,
     quote_log_field,
@@ -81,6 +83,11 @@ class TestLogSanitize:
         assert "a@b.c" in rendered
         assert "abc" not in rendered
         assert REDACTED in rendered
+        assert sanitize_query({}) == ""
+
+    def test_unrepairable_truncated_json_falls_back_to_text(self):
+        rendered = sanitize_body(b'{"a":', "application/json")
+        assert rendered.startswith("{")
 
     def test_quote_log_field_escapes_quotes(self):
         assert quote_log_field('{"a":"b"}') == '"{\\"a\\":\\"b\\"}"'
@@ -89,3 +96,25 @@ class TestLogSanitize:
         json_body = '{"code":200,"message":"Successfully retrieved"}'
         assert format_log_value(json_body) == f"<<{json_body}>>"
         assert format_log_value("[omitted]") == "<<[omitted]>>"
+
+    def test_empty_body(self):
+        assert sanitize_body(b"", "application/json") == ""
+
+    def test_truncated_json_string_with_escape(self):
+        raw = b'{"note":"foo\\\\bar'
+        rendered = sanitize_body(raw, "application/json")
+        assert "foo" in rendered
+
+    def test_json_scalar_is_stringified(self):
+        assert sanitize_body(b"true", "application/json") == "True"
+        assert sanitize_body(b'"hello"', "application/json") == "hello"
+
+    def test_long_json_uses_ellipsis_at_separator(self):
+        payload = {
+            "items": [{"id": index, "email": f"user{index}@example.com"} for index in range(400)]
+        }
+        raw = json.dumps(payload, separators=(",", ":")).encode()
+        rendered = sanitize_body(raw, "application/json", max_bytes=len(raw) + 1)
+        assert len(json.dumps(payload, separators=(",", ":"))) > PREVIEW_CHARS
+        assert rendered.endswith(ELLIPSIS)
+        assert rendered != ELLIPSIS

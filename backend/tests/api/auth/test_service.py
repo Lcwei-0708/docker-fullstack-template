@@ -7,7 +7,7 @@ from models.users import Users
 from models.user_sessions import UserSessions
 from models.password_reset_tokens import PasswordResetTokens
 from models.email_verification_tokens import EmailVerificationTokens
-from core.security import hash_password, create_access_token
+from core.security import hash_password, create_access_token, create_csrf_token
 from extensions.smtp import SMTPMailer
 from api.auth.services import (
     register,
@@ -27,6 +27,8 @@ from api.auth.services import (
     _create_user,
     _create_user_session,
     _update_session_expiry,
+    get_or_create_csrf_token,
+    verify_csrf_token,
 )
 from api.auth.schema import UserRegister, UserLogin
 from utils.custom_exception import (
@@ -869,6 +871,66 @@ class TestAuthService:
             await token(test_db_session, mock_redis, "session-id")
 
     @pytest.mark.asyncio
+    async def test_token_missing_user_id(self, test_db_session: AsyncSession):
+        mock_redis = AsyncMock()
+        mock_redis.get.return_value = str({"email": "a@b.c"})
+        with pytest.raises(AuthenticationException):
+            await token(test_db_session, mock_redis, "session-id")
+
+    @pytest.mark.asyncio
+    async def test_get_or_create_csrf_token_paths(self):
+        redis_client = AsyncMock()
+        redis_client.get.side_effect = [None]
+        with pytest.raises(AuthenticationException):
+            await get_or_create_csrf_token(redis_client, "sid-1")
+
+        redis_client.get.side_effect = ["session", "existing-csrf"]
+        assert await get_or_create_csrf_token(redis_client, "sid-1") == "existing-csrf"
+
+        redis_client.get.side_effect = ["session", b"bytes-csrf"]
+        assert await get_or_create_csrf_token(redis_client, "sid-1") == "bytes-csrf"
+
+        redis_client.get.side_effect = ["session", None]
+        redis_client.setex.return_value = True
+        created = await get_or_create_csrf_token(redis_client, "sid-1")
+        assert created
+        redis_client.setex.assert_awaited()
+
+    @pytest.mark.asyncio
+    async def test_verify_csrf_token_paths(self):
+        redis_client = AsyncMock()
+        with pytest.raises(AuthenticationException):
+            await verify_csrf_token(redis_client, None)
+        with pytest.raises(AuthenticationException):
+            await verify_csrf_token(redis_client, "not-a-jwt")
+
+        access = await create_access_token({"sub": "u1", "sid": "sid-1"})
+        with pytest.raises(AuthenticationException):
+            await verify_csrf_token(redis_client, access)
+
+        csrf = await create_csrf_token("sid-1")
+        redis_client.get.return_value = None
+        with pytest.raises(AuthenticationException):
+            await verify_csrf_token(redis_client, csrf)
+
+        redis_client.get.return_value = "other-token"
+        with pytest.raises(AuthenticationException):
+            await verify_csrf_token(redis_client, csrf)
+
+        redis_client.get.return_value = csrf
+        assert await verify_csrf_token(redis_client, csrf) == "sid-1"
+
+        redis_client.get.return_value = csrf.encode()
+        assert await verify_csrf_token(redis_client, csrf) == "sid-1"
+
+        with patch(
+            "api.auth.services.jwt.decode",
+            return_value={"token_type": "csrf"},
+        ):
+            with pytest.raises(AuthenticationException):
+                await verify_csrf_token(redis_client, csrf)
+
+    @pytest.mark.asyncio
     async def test_reset_password_server_exception(
         self, test_db_session: AsyncSession, test_user: Users
     ):
@@ -1331,3 +1393,62 @@ class TestAuthServiceInternals:
                     mock_redis,
                 )
         assert "Please wait" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_verify_email_email_change_success(self, test_db_session: AsyncSession):
+        mock_redis = AsyncMock()
+        mock_redis.setex.return_value = True
+        hashed_pwd = await hash_password("TestPassword123!")
+        user = Users(
+            id="email-change-ok",
+            email="old-ok@example.com",
+            pending_email="new-ok@example.com",
+            first_name="Email",
+            last_name="Change",
+            phone="+1234567890",
+            hash_password=hashed_pwd,
+            status=True,
+            password_reset_required=False,
+            email_verified=True,
+        )
+        test_db_session.add(user)
+        await test_db_session.commit()
+
+        token_record = EmailVerificationTokens(
+            user_id=user.id,
+            email="new-ok@example.com",
+            token="change-ok-token",
+            token_type="email_change",
+            expires_at=datetime.now().astimezone() + timedelta(minutes=30),
+        )
+        test_db_session.add(token_record)
+        await test_db_session.commit()
+
+        result = await verify_email(
+            test_db_session,
+            mock_redis,
+            {
+                "sub": user.id,
+                "email": "new-ok@example.com",
+                "verification_type": "email_change",
+                "token": "change-ok-token",
+            },
+            "127.0.0.1",
+            "TestAgent/1.0",
+        )
+        await test_db_session.refresh(user)
+        assert result["user"].email == "new-ok@example.com"
+        assert user.pending_email is None
+        assert user.email_verified is True
+
+    @pytest.mark.asyncio
+    async def test_send_registration_verification_email_smtp_disabled(
+        self, test_db_session: AsyncSession, test_user: Users
+    ):
+        mock_mailer = MagicMock(spec=SMTPMailer)
+        mock_mailer.enabled = False
+        with patch.object(settings, "SMTP_ENABLE", False):
+            await _send_registration_verification_email(
+                test_db_session, mock_mailer, test_user
+            )
+        mock_mailer.send_text.assert_not_called()

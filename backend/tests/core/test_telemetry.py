@@ -1,8 +1,10 @@
 import io
 import logging
 import re
+from unittest.mock import MagicMock, patch
 
 import pytest
+from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from opentelemetry import trace
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -10,7 +12,17 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
-from core.telemetry import EXCLUDED_URLS, SkipSpanProcessor, TraceIdFormatter
+from core.config import settings
+from core.telemetry import (
+    EXCLUDED_URLS,
+    SkipSpanProcessor,
+    TraceIdFormatter,
+    _build_resource,
+    _traces_endpoint,
+    setup_telemetry,
+    should_drop_span,
+    shutdown_telemetry,
+)
 from main import app
 
 
@@ -123,3 +135,108 @@ def test_otel_excluded_urls_match_full_request_url():
     assert regex.search("http://localhost:5000/openapi.json")
     assert not regex.search("http://localhost:5000/api/roles")
     assert not regex.search("http://localhost:5000/api/health")
+
+
+class _FakeSpan:
+    def __init__(self, name="", attributes=None):
+        self.name = name
+        self.attributes = attributes
+
+
+class TestShouldDropSpan:
+    def test_drops_options_by_attribute(self):
+        span = _FakeSpan(name="GET /api/x", attributes={"http.request.method": "OPTIONS"})
+        assert should_drop_span(span) is True
+
+    def test_drops_options_by_legacy_attribute(self):
+        span = _FakeSpan(name="POST /api/x", attributes={"http.method": "options"})
+        assert should_drop_span(span) is True
+
+    def test_drops_options_by_span_name(self):
+        span = _FakeSpan(name="OPTIONS /api/debug/test-ip", attributes={})
+        assert should_drop_span(span) is True
+
+    def test_keeps_get_span(self):
+        span = _FakeSpan(name="GET /api/debug/test-ip", attributes={"http.request.method": "GET"})
+        assert should_drop_span(span) is False
+
+
+class TestSkipSpanProcessor:
+    def test_forwards_non_options_and_lifecycle(self):
+        wrapped = MagicMock()
+        wrapped.force_flush.return_value = True
+        processor = SkipSpanProcessor(wrapped)
+        kept = _FakeSpan(name="GET /api/x", attributes={"http.request.method": "GET"})
+        dropped = _FakeSpan(name="OPTIONS /api/x", attributes={"http.request.method": "OPTIONS"})
+
+        processor.on_start(kept)
+        processor.on_end(kept)
+        processor.on_end(dropped)
+        processor.shutdown()
+        assert processor.force_flush() is True
+
+        wrapped.on_start.assert_called_once_with(kept, None)
+        wrapped.on_end.assert_called_once_with(kept)
+        wrapped.shutdown.assert_called_once()
+        wrapped.force_flush.assert_called_once()
+
+
+class TestTraceIdFormatter:
+    def test_defaults_missing_trace_id(self):
+        formatter = TraceIdFormatter("%(message)s %(otelTraceID)s")
+        record = logging.LogRecord("n", logging.INFO, __file__, 1, "hello", (), None)
+        assert formatter.format(record) == "hello 0"
+
+    def test_keeps_existing_trace_id(self):
+        formatter = TraceIdFormatter("%(message)s %(otelTraceID)s")
+        record = logging.LogRecord("n", logging.INFO, __file__, 1, "hello", (), None)
+        record.otelTraceID = "abc"
+        assert formatter.format(record) == "hello abc"
+
+
+class TestTracesEndpoint:
+    def test_appends_v1_traces(self):
+        assert _traces_endpoint("http://alloy:4318") == "http://alloy:4318/v1/traces"
+        assert _traces_endpoint("http://alloy:4318/") == "http://alloy:4318/v1/traces"
+
+    def test_keeps_existing_v1_traces_path(self):
+        assert _traces_endpoint("http://alloy:4318/v1/traces") == "http://alloy:4318/v1/traces"
+        assert _traces_endpoint("http://alloy:4318/v1/traces/") == "http://alloy:4318/v1/traces"
+
+
+class TestBuildResource:
+    def test_uses_project_settings(self):
+        resource = _build_resource()
+        attrs = dict(resource.attributes)
+        assert attrs["service.name"] == settings.PROJECT_NAME
+        assert attrs["service.version"] == settings.PROJECT_VERSION
+        expected_env = "development" if settings.DEBUG_MODE else "production"
+        assert attrs["deployment.environment"] == expected_env
+
+
+class TestSetupAndShutdownTelemetry:
+    def test_setup_returns_when_disabled(self):
+        test_app = FastAPI()
+        with patch("core.telemetry.settings.OTEL_ENABLE", False), patch(
+            "core.telemetry.LoggingInstrumentor"
+        ) as logging_instrumentor, patch(
+            "core.telemetry.FastAPIInstrumentor.instrument_app"
+        ) as instrument_app:
+            setup_telemetry(test_app)
+        logging_instrumentor.return_value.instrument.assert_called_once()
+        instrument_app.assert_not_called()
+
+    def test_shutdown_returns_when_disabled(self):
+        with patch("core.telemetry.settings.OTEL_ENABLE", False), patch(
+            "core.telemetry.trace.get_tracer_provider"
+        ) as get_provider:
+            shutdown_telemetry()
+        get_provider.assert_not_called()
+
+    def test_shutdown_calls_provider_shutdown(self):
+        provider = MagicMock()
+        with patch("core.telemetry.settings.OTEL_ENABLE", True), patch(
+            "core.telemetry.trace.get_tracer_provider", return_value=provider
+        ):
+            shutdown_telemetry()
+        provider.shutdown.assert_called_once()
