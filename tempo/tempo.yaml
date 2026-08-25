@@ -1,0 +1,45 @@
+stream_over_http_enabled: true
+
+server:
+  http_listen_port: 3200
+  log_level: info
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+
+query_frontend:
+  # Tempo 3 live-store is slightly behind ingest; skip only a few seconds so
+  # Grafana p95 is closer to Loki instead of hiding the last 30s.
+  query_end_cutoff: 5s
+  search:
+    # Recent traces come from live-store. 0s would skip it and wait for flushed blocks.
+    query_backend_after: 15m
+    max_result_limit: 1000
+  metrics:
+    max_duration: 24h
+    max_exemplars: 100
+    # Same split as search: last 15m from live-store, older from local blocks.
+    # Must be >= 2x storage.trace.blocklist_poll (default 5m).
+    query_backend_after: 15m
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+
+querier:
+  frontend_worker:
+    frontend_address: 127.0.0.1:9095
+
+usage_report:
+  reporting_enabled: false
