@@ -59,6 +59,7 @@ jobs:
         echo "HOSTNAME=localhost" >> $GITHUB_ENV
         echo "BACKEND_PORT=5000" >> $GITHUB_ENV
         echo "FRONTEND_PORT=3000" >> $GITHUB_ENV
+        echo "OTEL_ENABLE=false" >> $GITHUB_ENV
 
     - name: Install dependencies
       working-directory: ./backend
