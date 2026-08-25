@@ -54,7 +54,7 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-source = ["api", "utils", "extensions"]
+source = ["api", "core", "utils", "extensions"]
 omit = [
     "*/tests/*",
     "*/migrations/*",
