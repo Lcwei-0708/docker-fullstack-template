@@ -3,7 +3,6 @@ local.file_match "backend_logs" {
 		__address__ = "localhost",
 		__path__    = "/var/log/backend/*.log*",
 		job         = "backend_logs",
-		service     = "backend_logs",
 	}]
 }
 

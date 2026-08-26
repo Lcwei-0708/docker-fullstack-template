@@ -22,12 +22,11 @@ datasources:
     uid: c73ec8de-9edd-441b-b947-383087fcfc06
     isDefault: true
     editable: false
-    version: 21
+    version: 25
     jsonData:
       maxLines: 1000
+      # Required for the Trace section / Tempo link in log Details (Grafana logs panel).
       derivedFields:
-        # One field, one Tempo button. matcherType=label reads query labels,
-        # not the log line, so the link only shows in expanded details.
         - name: traceID
           matcherType: label
           matcherRegex: "^traceID$"
@@ -41,7 +40,7 @@ datasources:
     url: http://tempo:3200
     uid: tempo
     editable: false
-    version: 21
+    version: 25
     jsonData:
       tracesToLogsV2:
         datasourceUid: c73ec8de-9edd-441b-b947-383087fcfc06
@@ -62,8 +61,10 @@ datasources:
         spanStartTimeShift: "-1h"
         spanEndTimeShift: "1h"
       streamingEnabled:
-        search: true
-        # Metrics streaming often sends an empty first frame, so panels flash "No data" on refresh.
+        # Dashboard TraceQL table panels use gRPC streaming when true; on this stack
+        # streaming often yields empty frames while HTTP Search returns rows.
+        # Grafana 12.3+ backend Search() is enough for Explore and dashboards.
+        search: false
         metrics: false
 
   - name: Prometheus
@@ -72,7 +73,7 @@ datasources:
     url: http://prometheus:9090
     uid: prometheus
     editable: false
-    version: 21
+    version: 25
     jsonData:
       timeInterval: 15s
       httpMethod: POST
