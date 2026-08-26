@@ -55,7 +55,7 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 4,
+        "w": 3,
         "x": 0,
         "y": 0
       },
@@ -77,7 +77,7 @@
         "textMode": "value",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.10",
+      "pluginVersion": "12.3.11",
       "targets": [
         {
           "datasource": {
@@ -150,8 +150,8 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 6,
-        "x": 4,
+        "w": 5,
+        "x": 3,
         "y": 0
       },
       "id": 29,
@@ -172,7 +172,7 @@
         "textMode": "value_and_name",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.10",
+      "pluginVersion": "12.3.11",
       "targets": [
         {
           "datasource": {
@@ -246,8 +246,8 @@
       },
       "gridPos": {
         "h": 10,
-        "w": 8,
-        "x": 10,
+        "w": 10,
+        "x": 8,
         "y": 0
       },
       "id": 5,
@@ -280,7 +280,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.2.10",
+      "pluginVersion": "12.3.11",
       "targets": [
         {
           "datasource": {
@@ -289,7 +289,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "count by (path) (\n  sum by (path, traceID) (\n    count_over_time(\n      {job=\"backend_logs\"} |= \"API Request:\" |~ \"${message:regex:.*}\" | traceID != \"0\" | label_format path=`{{ regexReplaceAll \"/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/roles/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/users/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" .path \"/users/{user_id}\") \"/roles/{role_id}\") \"/{id}\" }}` | keep path, traceID [$__range]\n    )\n  )\n)",
+          "expr": "count by (path) (\n  sum by (path, traceID) (\n    count_over_time(\n      {job=\"backend_logs\"} |= \"API Request:\" | level =~ `${level:regex}` |~ \"${message:regex:.*}\" | traceID != \"0\" | label_format path=`{{ regexReplaceAll \"/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/roles/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/users/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" .path \"/users/{user_id}\") \"/roles/{role_id}\") \"/{id}\" }}` | keep path, traceID [$__range]\n    )\n  )\n)",
           "legendFormat": "{{path}}",
           "queryType": "instant",
           "refId": "API Calls"
@@ -408,7 +408,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.2.10",
+      "pluginVersion": "12.3.11",
       "targets": [
         {
           "datasource": {
@@ -417,7 +417,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "count by (ip_address) (\n  sum by (ip_address, traceID) (\n    count_over_time(\n      {job=\"backend_logs\"} |= \"API Request:\" |~ \"${message:regex:.*}\" | traceID != \"0\" | keep ip_address, traceID [$__range]\n    )\n  )\n)",
+          "expr": "count by (ip_address) (\n  sum by (ip_address, traceID) (\n    count_over_time(\n      {job=\"backend_logs\"} |= \"API Request:\" | level =~ `${level:regex}` |~ \"${message:regex:.*}\" | traceID != \"0\" | keep ip_address, traceID [$__range]\n    )\n  )\n)",
           "legendFormat": "{{ip_address}}",
           "queryType": "instant",
           "refId": "Client IPs"
@@ -496,7 +496,7 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 4,
+        "w": 3,
         "x": 0,
         "y": 5
       },
@@ -518,7 +518,7 @@
         "textMode": "value",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.10",
+      "pluginVersion": "12.3.11",
       "targets": [
         {
           "datasource": {
@@ -547,7 +547,7 @@
           "refId": "LIMIT"
         }
       ],
-      "title": "",
+      "title": "RAM",
       "transformations": [
         {
           "id": "configFromData",
@@ -596,8 +596,8 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 6,
-        "x": 4,
+        "w": 5,
+        "x": 3,
         "y": 5
       },
       "id": 30,
@@ -618,7 +618,7 @@
         "textMode": "value_and_name",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.10",
+      "pluginVersion": "12.3.11",
       "targets": [
         {
           "datasource": {
@@ -652,237 +652,53 @@
     },
     {
       "datasource": {
-        "type": "tempo",
-        "uid": "tempo"
+        "type": "loki",
+        "uid": "c73ec8de-9edd-441b-b947-383087fcfc06"
       },
-      "description": "Up to 1000 most recent server traces, sorted by duration. Columns: Timestamp, path, Trace ID, Duration (seconds). Click Trace ID to open Tempo.",
+      "description": "API logs. Detail fields come from Loki labels/structured metadata (no query-time Parsed fields). Line body still strips time/level and normalizes path IDs.",
       "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "filterable": true,
-            "footer": {
-              "reducers": []
-            },
-            "inspect": true,
-            "minWidth": 80
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "yellow",
-                "value": 0.2
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Duration"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "s"
-              },
-              {
-                "id": "decimals",
-                "value": 3
-              },
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "color-text"
-                }
-              },
-              {
-                "id": "custom.width",
-                "value": 380
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Timestamp"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "dateTimeAsLocal"
-              },
-              {
-                "id": "custom.width",
-                "value": 210
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "path"
-            },
-            "properties": [
-              {
-                "id": "custom.minWidth",
-                "value": 240
-              },
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "type": "auto",
-                  "wrapText": true
-                }
-              },
-              {
-                "id": "custom.width",
-                "value": 457
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Trace ID"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 300
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "duration_s"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "s"
-              },
-              {
-                "id": "decimals",
-                "value": 3
-              }
-            ]
-          }
-        ]
+        "defaults": {},
+        "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 16,
         "w": 18,
         "x": 0,
         "y": 10
       },
-      "id": 33,
+      "id": 1,
+      "interval": "30",
+      "maxPerRow": 12,
       "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "Duration"
-          }
-        ]
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showControls": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
       },
-      "pluginVersion": "12.2.10",
+      "pluginVersion": "12.3.11",
       "targets": [
         {
           "datasource": {
-            "type": "tempo",
-            "uid": "tempo"
+            "type": "loki",
+            "uid": "c73ec8de-9edd-441b-b947-383087fcfc06"
           },
-          "filters": [],
-          "limit": 1000,
-          "query": "{ kind = server && name !~ \"^OPTIONS \" }",
-          "queryType": "traceql",
-          "refId": "Traces",
-          "tableType": "traces"
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "{job=\"backend_logs\"} != \"API RateLimit: method=\"\r\n  | level =~ `${level:regex}` \r\n  |= \"${message:pipe:.*}\"\n \r\n  | regexp `(?P<short>^.*?ipAddress=\\S+(?: status_code=\\S+)?(?: duration=\\S+)?|.*)`\r\n  | line_format `{{ regexReplaceAll \"\\\\s*traceID=\\\\w+\" (regexReplaceAll \"^\\\\d{4}-\\\\d{2}-\\\\d{2} \\\\d{2}:\\\\d{2}:\\\\d{2},\\\\d{3}\\\\s*\" (regexReplaceAll \" \\\\[(DEBUG|INFO|WARNING|ERROR|CRITICAL)\\\\]\" (regexReplaceAll \"/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/roles/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/users/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" .short \"/users/{user_id}\") \"/roles/{role_id}\") \"/{id}\") \"\") \"\") \"\" }}`\r\n  | drop short",
+          "legendFormat": "",
+          "maxLines": 10000,
+          "queryType": "range",
+          "refId": "Log Stream"
         }
       ],
-      "title": "Slowest requests",
-      "transformations": [
-        {
-          "id": "calculateField",
-          "options": {
-            "alias": "duration_s",
-            "binary": {
-              "left": {
-                "matcher": {
-                  "id": "byName",
-                  "options": "Duration"
-                }
-              },
-              "operator": "/",
-              "right": {
-                "fixed": "1000"
-              }
-            },
-            "mode": "binary",
-            "replaceFields": false,
-            "timeSeries": false
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Duration": true,
-              "Service": true,
-              "nested": true,
-              "traceService": true
-            },
-            "includeByName": {
-              "Name": true,
-              "Start time": true,
-              "Trace ID": true,
-              "duration_s": true
-            },
-            "indexByName": {
-              "Name": 1,
-              "Start time": 0,
-              "Trace ID": 2,
-              "duration_s": 3
-            },
-            "orderByMode": "manual",
-            "renameByName": {
-              "Name": "path",
-              "Start time": "Timestamp",
-              "duration_s": "Duration"
-            }
-          }
-        }
-      ],
-      "type": "table"
+      "title": "Log List",
+      "type": "logs"
     },
     {
       "datasource": {
@@ -936,7 +752,7 @@
         "textMode": "value_and_name",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.10",
+      "pluginVersion": "12.3.11",
       "targets": [
         {
           "datasource": {
@@ -1022,7 +838,7 @@
         "textMode": "value_and_name",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.10",
+      "pluginVersion": "12.3.11",
       "targets": [
         {
           "datasource": {
@@ -1107,7 +923,7 @@
         "textMode": "value_and_name",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.10",
+      "pluginVersion": "12.3.11",
       "targets": [
         {
           "datasource": {
@@ -1140,54 +956,6 @@
         }
       ],
       "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "loki",
-        "uid": "c73ec8de-9edd-441b-b947-383087fcfc06"
-      },
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 18,
-        "x": 0,
-        "y": 18
-      },
-      "id": 1,
-      "interval": "30",
-      "maxPerRow": 12,
-      "options": {
-        "dedupStrategy": "none",
-        "enableInfiniteScrolling": false,
-        "enableLogDetails": true,
-        "prettifyLogMessage": false,
-        "showCommonLabels": false,
-        "showLabels": false,
-        "showTime": false,
-        "sortOrder": "Descending",
-        "wrapLogMessage": false
-      },
-      "pluginVersion": "12.2.10",
-      "targets": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "c73ec8de-9edd-441b-b947-383087fcfc06"
-          },
-          "direction": "backward",
-          "editorMode": "code",
-          "expr": "{job=\"backend_logs\"} != \"API RateLimit: method=\"\r\n  | level =~ \"${level:pipe:.*}\" \r\n  |= \"${message:pipe:.*}\"\r\n  | regexp `payload=<<(?P<payload>.*?)>>`\r\n  | regexp `data=<<(?P<data>.*?)>>`\r\n  | regexp `query=<<(?P<request_query>.*?)>>`\r\n  | regexp `path=(?P<path_from_line>[^ ]+)`\r\n  | regexp `\\[(?P<level>\\w+)\\] \\[(?P<logger_name>[^\\]]+)\\]`\r\n  | regexp `(?P<short>^.*?ipAddress=\\S+(?: status_code=\\S+)?|.*)`\r\n  | line_format `{{ regexReplaceAll \"\\\\s*traceID=\\\\w+\" (regexReplaceAll \"/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/roles/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/users/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" .short \"/users/{user_id}\") \"/roles/{role_id}\") \"/{id}\") \"\" }}`\r\n  | label_format path=`{{ regexReplaceAll \"/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/roles/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" (regexReplaceAll \"/users/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\" .path_from_line \"/users/{user_id}\") \"/roles/{role_id}\") \"/{id}\" }}`\r\n  | label_format logger=`{{ if .logger_name }}{{ .logger_name }}{{ else }}{{ .logger }}{{ end }}`\r\n  | keep timestamp, level, logger, method, path, status_code, user_agent, ip_address, request_query, payload, data, traceID",
-          "legendFormat": "",
-          "maxLines": 10000,
-          "queryType": "range",
-          "refId": "Log Stream"
-        }
-      ],
-      "title": "Log List",
-      "type": "logs"
     },
     {
       "datasource": {
@@ -1241,7 +1009,7 @@
         "textMode": "value_and_name",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.10",
+      "pluginVersion": "12.3.11",
       "targets": [
         {
           "datasource": {
@@ -1327,7 +1095,7 @@
         "textMode": "value_and_name",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.10",
+      "pluginVersion": "12.3.11",
       "targets": [
         {
           "datasource": {
@@ -1371,49 +1139,42 @@
       {
         "allValue": ".*",
         "current": {
-          "text": [
-            "INFO",
-            "WARNING",
-            "ERROR",
-            "DEBUG",
-            "CRITICAL"
-          ],
-          "value": [
-            "INFO",
-            "WARNING",
-            "ERROR",
-            "DEBUG",
-            "CRITICAL"
-          ]
+          "text": "All",
+          "value": "$__all"
         },
         "description": "",
-        "includeAll": false,
+        "includeAll": true,
         "label": "Level",
         "multi": true,
         "name": "level",
         "options": [
           {
             "selected": true,
+            "text": "All",
+            "value": "$__all"
+          },
+          {
+            "selected": false,
             "text": "INFO",
             "value": "INFO"
           },
           {
-            "selected": true,
+            "selected": false,
             "text": "WARNING",
             "value": "WARNING"
           },
           {
-            "selected": true,
+            "selected": false,
             "text": "ERROR",
             "value": "ERROR"
           },
           {
-            "selected": true,
+            "selected": false,
             "text": "DEBUG",
             "value": "DEBUG"
           },
           {
-            "selected": true,
+            "selected": false,
             "text": "CRITICAL",
             "value": "CRITICAL"
           }
@@ -1448,5 +1209,5 @@
   "timezone": "browser",
   "title": "Backend Logs",
   "uid": "bejjsrxkiq5fke",
-  "version": 98
+  "version": 118
 }
