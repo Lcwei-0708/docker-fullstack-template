@@ -284,14 +284,18 @@ class TestUpdateRole:
     @pytest.mark.asyncio
     async def test_update_role_database_error(self, test_db_session: AsyncSession):
         """Test update_role with database error"""
+        role = Roles(id="role-1", name="admin", description="Admin role")
+        test_db_session.add(role)
+        await test_db_session.commit()
+
+        actor = await _create_actor(test_db_session)
         role_data = RoleUpdate(name="updated_role")
 
         with patch.object(
             test_db_session, "execute", side_effect=Exception("Database error")
         ):
             with pytest.raises(ServerException) as exc_info:
-                actor = await _create_actor(test_db_session)
-            await update_role(test_db_session, "role-1", role_data, actor_user_id=actor)
+                await update_role(test_db_session, "role-1", role_data, actor_user_id=actor)
 
             assert "Failed to update role" in str(exc_info.value)
 
@@ -376,12 +380,17 @@ class TestDeleteRole:
     @pytest.mark.asyncio
     async def test_delete_role_database_error(self, test_db_session: AsyncSession):
         """Test delete_role with database error"""
+        role = Roles(id="role-1", name="admin", description="Admin role")
+        test_db_session.add(role)
+        await test_db_session.commit()
+
+        actor = await _create_actor(test_db_session)
+
         with patch.object(
             test_db_session, "execute", side_effect=Exception("Database error")
         ):
             with pytest.raises(ServerException) as exc_info:
-                actor = await _create_actor(test_db_session)
-            await delete_role(test_db_session, "role-1", actor_user_id=actor)
+                await delete_role(test_db_session, "role-1", actor_user_id=actor)
 
             assert "Failed to delete role" in str(exc_info.value)
 

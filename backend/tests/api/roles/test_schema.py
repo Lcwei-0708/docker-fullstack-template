@@ -83,14 +83,15 @@ class TestRolesListResponse:
         assert response.actor_role_id is None
 
     def test_roles_list_response_missing_roles_field(self):
-        """Test RolesListResponse with missing roles field"""
+        """Test RolesListResponse with missing required fields"""
         with pytest.raises(ValidationError) as exc_info:
             RolesListResponse()
 
         errors = exc_info.value.errors()
-        assert len(errors) == 1
-        assert errors[0]["type"] == "missing"
-        assert errors[0]["loc"] == ("roles",)
+        assert len(errors) == 2
+        locs = {error["loc"] for error in errors}
+        assert ("roles",) in locs
+        assert ("actor_level",) in locs
 
 
 class TestRoleCreate:
