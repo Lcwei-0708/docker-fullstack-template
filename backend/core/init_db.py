@@ -1,5 +1,5 @@
 import logging
-from sqlalchemy import select, text
+from sqlalchemy import delete, select, text
 from models.users import Users
 from models.roles import Roles
 from core.config import settings
@@ -121,11 +121,13 @@ async def create_default_roles():
             default_roles = [
                 {
                     "name": settings.DEFAULT_SUPER_ADMIN_ROLE,
-                    "description": "System super administrator (full access bypass)"
+                    "description": "System super administrator (full access bypass)",
+                    "level": settings.DEFAULT_SUPER_ADMIN_LEVEL,
                 },
                 {
                     "name": "user",
-                    "description": "Regular user role with basic permissions"
+                    "description": "Regular user role with basic permissions",
+                    "level": settings.DEFAULT_USER_ROLE_LEVEL,
                 }
             ]
             
@@ -140,7 +142,8 @@ async def create_default_roles():
                 
                 role = Roles(
                     name=role_config["name"],
-                    description=role_config["description"]
+                    description=role_config["description"],
+                    level=role_config["level"],
                 )
                 db.add(role)
                 created_count += 1
@@ -197,6 +200,12 @@ async def create_default_admin():
                     )
                     db.add(role_mapping)
                     logger.info(f"Assigned super admin role to existing user: {existing_user.email}")
+                await db.execute(
+                    delete(RoleMapper).where(
+                        RoleMapper.user_id == existing_user.id,
+                        RoleMapper.role_id != super_role.id,
+                    )
+                )
             else:
                 admin_user = Users(
                     first_name=settings.DEFAULT_ADMIN_FIRST_NAME,

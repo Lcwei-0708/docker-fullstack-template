@@ -200,17 +200,22 @@ class TestCreateDefaultAdmin:
             await create_default_roles()
 
         async with factory() as db:
-            db.add(
-                Users(
-                    id=str(uuid7()),
-                    email=settings.DEFAULT_ADMIN_EMAIL,
-                    first_name="Existing",
-                    last_name="Admin",
-                    phone="1111111111",
-                    hash_password="hashed",
-                    status=True,
-                )
+            user = Users(
+                id=str(uuid7()),
+                email=settings.DEFAULT_ADMIN_EMAIL,
+                first_name="Existing",
+                last_name="Admin",
+                phone="1111111111",
+                hash_password="hashed",
+                status=True,
             )
+            db.add(user)
+            await db.commit()
+
+            user_role = (
+                await db.execute(select(Roles).where(Roles.name == "user"))
+            ).scalar_one()
+            db.add(RoleMapper(user_id=user.id, role_id=user_role.id))
             await db.commit()
 
         with patch("core.init_db.AsyncSessionLocal", factory):
@@ -222,13 +227,19 @@ class TestCreateDefaultAdmin:
                     select(Users).where(Users.email == settings.DEFAULT_ADMIN_EMAIL)
                 )
             ).scalar_one()
-            mapping = (
+            super_role = (
+                await db.execute(
+                    select(Roles).where(Roles.name == settings.DEFAULT_SUPER_ADMIN_ROLE)
+                )
+            ).scalar_one()
+            mappings = (
                 await db.execute(
                     select(RoleMapper).where(RoleMapper.user_id == user.id)
                 )
-            ).scalar_one_or_none()
+            ).scalars().all()
         assert user.first_name == "Existing"
-        assert mapping is not None
+        assert len(mappings) == 1
+        assert mappings[0].role_id == super_role.id
 
     @pytest.mark.asyncio
     async def test_rolls_back_on_error(self, test_engine):
