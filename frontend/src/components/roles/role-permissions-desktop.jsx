@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Scroller } from "@/components/ui/scroller"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Shield, CheckCircle2, Circle, ChevronRight } from "lucide-react"
 
 const toCamelKey = (input) => {
@@ -214,10 +215,20 @@ export function RolePermissionsDesktop({
     <>
       <Card className="flex-1 flex flex-col py-0 gap-0">
         <CardHeader className="border-b px-5 !py-4 h-20 flex items-center justify-between gap-3">
-          <CardTitle className="text-base font-semibold leading-none tracking-tight">
-            {selectedRole
-              ? t("pages.rolesManagement.rolePermissionsFor", "Permissions for {{role}}", { role: roleTitle })
-              : t("pages.rolesManagement.selectRoleFromLeft", "Select a role from the left")}
+          <CardTitle className="text-base font-semibold leading-none tracking-tight flex items-center gap-2 min-w-0">
+            <span className="truncate">
+              {selectedRole
+                ? t("pages.rolesManagement.rolePermissionsFor", "Permissions for {{role}}", { role: roleTitle })
+                : t("pages.rolesManagement.selectRoleFromLeft", "Select a role from the left")}
+            </span>
+            {selectedRole?.level != null && (
+              <Badge
+                variant="outline"
+                className="shrink-0 rounded-sm px-2 py-0.5 text-xs font-semibold leading-5 border-primary/40 bg-primary/10 text-primary"
+              >
+                Lv.{selectedRole.level}
+              </Badge>
+            )}
           </CardTitle>
           {hasChanges && canManageRoles && (
             <div className="flex items-center gap-2">

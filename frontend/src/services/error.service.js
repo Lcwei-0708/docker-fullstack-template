@@ -81,8 +81,12 @@ export const handleApiError = (error, logoutFunction) => {
   
   const getCustomMessage = (defaultKey) => {
     const messageMap = error.config?.messageMap;
-    if (messageMap && messageMap[status]) {
-      return messageMap[status];
+    if (messageMap && messageMap[status] != null) {
+      const mapped = messageMap[status];
+      if (typeof mapped === 'function') {
+        return mapped(error);
+      }
+      return mapped;
     }
     
     const errorMessage = error.config?.errorMessage;

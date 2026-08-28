@@ -4,9 +4,29 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
+import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Edit, MoreVertical, Plus, Search, Shield, Trash2, X } from "lucide-react"
+import {
+  ArrowDown10,
+  ArrowDownAZ,
+  ArrowUp01,
+  ArrowUpAZ,
+  Check,
+  Edit,
+  MoreVertical,
+  Plus,
+  Search,
+  Shield,
+  Trash2,
+  X,
+} from "lucide-react"
 import { Scroller } from "@/components/ui/scroller"
 
 export function RolesList({ 
@@ -16,10 +36,15 @@ export function RolesList({
   loadingDelayMs = 0,
   searchKeyword = "",
   canManageRoles = false,
+  actorLevel = 0,
+  actorRoleId = null,
   isSubmitting = false,
+  sortBy = "level",
+  sortDir = "desc",
   className,
   onRoleSelect,
   onSearchChange,
+  onSortChange,
   onCreateClick,
   onEditClick,
   onDeleteClick,
@@ -28,6 +53,7 @@ export function RolesList({
   const scrollerRef = React.useRef(null);
   const [scrollbarWidth, setScrollbarWidth] = React.useState(0);
   const [delayedLoading, setDelayedLoading] = React.useState(false);
+  const [sortOpen, setSortOpen] = React.useState(false);
 
   const rawIsLoading = !!isLoading;
   const effectiveDelayMs = Number(loadingDelayMs ?? 0);
@@ -71,11 +97,116 @@ export function RolesList({
     return () => window.removeEventListener("resize", recomputeScrollbar);
   }, [recomputeScrollbar]);
 
+  const handleSortByChange = React.useCallback(
+    (nextSortBy) => {
+      if (!onSortChange) return;
+      onSortChange(nextSortBy, sortDir);
+    },
+    [onSortChange, sortDir]
+  );
+
+  const handleSortDirChange = React.useCallback(
+    (nextSortDir) => {
+      if (!onSortChange) return;
+      onSortChange(sortBy, nextSortDir);
+    },
+    [onSortChange, sortBy]
+  );
+
   const baseXPaddingPx = 20;
   const scrollerPaddingRightPx = Math.max(0, baseXPaddingPx - scrollbarWidth - 2);
   const canEditOrDelete = canManageRoles && !rawIsLoading && !isSubmitting;
 
   const showLoading = delayedLoading;
+  const SortIcon = React.useMemo(() => {
+    if (sortBy === "name") {
+      return sortDir === "asc" ? ArrowDownAZ : ArrowUpAZ;
+    }
+    // Level: low→high vs high→low use different arrow directions
+    return sortDir === "asc" ? ArrowUp01 : ArrowDown10;
+  }, [sortBy, sortDir]);
+
+  const sortTrigger = (
+    <Popover open={sortOpen} onOpenChange={setSortOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon"
+          className="h-10 w-10 shrink-0"
+          disabled={rawIsLoading || isSubmitting}
+          aria-label={t("common.actions.sort", "Sort")}
+        >
+          <SortIcon className="size-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-52 p-2" align="end">
+        <div className="space-y-2">
+          <div className="px-2 pt-1 text-xs font-semibold text-muted-foreground select-none">
+            {t("common.actions.sortBy", "Sort By")}
+          </div>
+          <div className="space-y-1">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => handleSortByChange("name")}
+              className={cn(
+                "w-full h-9 flex items-center justify-between px-2 text-sm rounded-xs font-normal",
+                sortBy === "name" && "bg-accent font-medium"
+              )}
+            >
+              <span>{t("pages.rolesManagement.sortByName", "By name")}</span>
+              {sortBy === "name" && <Check className="size-4" />}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => handleSortByChange("level")}
+              className={cn(
+                "w-full h-9 flex items-center justify-between px-2 text-sm rounded-xs font-normal",
+                sortBy === "level" && "bg-accent font-medium"
+              )}
+            >
+              <span>{t("pages.rolesManagement.sortByLevel", "By level")}</span>
+              {sortBy === "level" && <Check className="size-4" />}
+            </Button>
+          </div>
+
+          <Separator className="my-2" />
+
+          <div className="px-2 pt-1 text-xs font-semibold text-muted-foreground select-none">
+            {t("common.actions.sortOrder", "Sort Order")}
+          </div>
+          <div className="space-y-1">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => handleSortDirChange("asc")}
+              className={cn(
+                "w-full h-9 flex items-center justify-between px-2 text-sm rounded-xs font-normal",
+                sortDir === "asc" && "bg-accent font-medium"
+              )}
+            >
+              <span>{t("pages.rolesManagement.sortAsc", "Low to high")}</span>
+              {sortDir === "asc" && <Check className="size-4" />}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => handleSortDirChange("desc")}
+              className={cn(
+                "w-full h-9 flex items-center justify-between px-2 text-sm rounded-xs font-normal",
+                sortDir === "desc" && "bg-accent font-medium"
+              )}
+            >
+              <span>{t("pages.rolesManagement.sortDesc", "High to low")}</span>
+              {sortDir === "desc" && <Check className="size-4" />}
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 
   return (
     <Card className={cn("flex flex-col h-full min-h-0 py-0", className)}>
@@ -106,17 +237,20 @@ export function RolesList({
               )}
             </div>
           </div>
-          {canManageRoles && (
-            <Button 
-              type="button"
-              onClick={onCreateClick}
-              disabled={isSubmitting}
-              className="w-full bg-primary hover:bg-primary/90"
-            >
-              <Plus className="size-4" />
-              {t("common.actions.create", "Create role")}
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {canManageRoles ? (
+              <Button 
+                type="button"
+                onClick={onCreateClick}
+                disabled={isSubmitting}
+                className="flex-1 bg-primary hover:bg-primary/90"
+              >
+                <Plus className="size-4" />
+                {t("common.actions.create", "Create role")}
+              </Button>
+            ) : null}
+            {sortTrigger}
+          </div>
         </div>
 
         {/* Role List */}
@@ -162,11 +296,23 @@ export function RolesList({
                       )}
                     >
                       <div className={cn("pr-16", !canEditOrDelete && "pr-0")}>
-                        <div className="text-sm font-semibold">{role.name}</div>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="text-sm font-semibold truncate">{role.name}</div>
+                          {role.level != null && (
+                            <Badge
+                              variant="outline"
+                              className="shrink-0 rounded-sm px-1.5 py-0 text-[10px] font-semibold leading-4 border-primary/40 bg-primary/10 text-primary"
+                            >
+                              Lv.{role.level}
+                            </Badge>
+                          )}
+                        </div>
                         <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{role.description || "-"}</div>
                       </div>
 
-                      {canEditOrDelete && (
+                      {canEditOrDelete &&
+                        Number(role.level ?? 0) <= Number(actorLevel ?? 0) &&
+                        role.id !== actorRoleId && (
                         <div
                           className={cn(
                             "absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1",
