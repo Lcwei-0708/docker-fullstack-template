@@ -26,6 +26,36 @@ from api.roles.services import (
 )
 
 
+async def _create_actor(
+    db: AsyncSession,
+    *,
+    level: int = 100,
+    user_id: str = "actor-1",
+    role_name: str | None = None,
+) -> str:
+    """Seed an actor user with a role level for hierarchy checks."""
+    role = Roles(
+        id=f"actor-role-{user_id}",
+        name=role_name or f"actor-role-{user_id}",
+        description="Actor role",
+        level=level,
+    )
+    user = Users(
+        id=user_id,
+        email=f"{user_id}@example.com",
+        first_name="Actor",
+        last_name="User",
+        phone="0000000000",
+        hash_password="hashed",
+        status=True,
+    )
+    db.add_all([role, user])
+    await db.commit()
+    db.add(RoleMapper(user_id=user.id, role_id=role.id))
+    await db.commit()
+    return user_id
+
+
 class TestGetAllRoles:
     """Test get_all_roles service function"""
 
@@ -40,18 +70,24 @@ class TestGetAllRoles:
         test_db_session.add(role2)
         await test_db_session.commit()
 
-        result = await get_all_roles(test_db_session)
+        actor = await _create_actor(test_db_session, role_name="super-admin")
+        result = await get_all_roles(test_db_session, actor_user_id=actor)
 
         assert len(result.roles) == 2
         assert result.roles[0].name in ["admin", "user"]
         assert result.roles[1].name in ["admin", "user"]
+        assert result.actor_level == 100
+        assert result.actor_role_id == f"actor-role-{actor}"
 
     @pytest.mark.asyncio
     async def test_get_all_roles_empty(self, test_db_session: AsyncSession):
         """Test get_all_roles when no roles exist"""
-        result = await get_all_roles(test_db_session)
+        actor = await _create_actor(test_db_session, role_name="super-admin")
+        result = await get_all_roles(test_db_session, actor_user_id=actor)
 
         assert len(result.roles) == 0
+        assert result.actor_level == 100
+        assert result.actor_role_id == f"actor-role-{actor}"
 
     @pytest.mark.asyncio
     async def test_get_all_roles_database_error(self, test_db_session: AsyncSession):
@@ -60,7 +96,7 @@ class TestGetAllRoles:
             test_db_session, "execute", side_effect=Exception("Database error")
         ):
             with pytest.raises(ServerException) as exc_info:
-                await get_all_roles(test_db_session)
+                await get_all_roles(test_db_session, actor_user_id="actor-1")
 
             assert "Failed to retrieve roles" in str(exc_info.value)
 
@@ -72,21 +108,55 @@ class TestCreateRole:
     async def test_create_role_success(self, test_db_session: AsyncSession):
         """Test successful role creation"""
         role_data = RoleCreate(
-            name="manager", description="Manager role with special permissions"
+            name="manager", description="Manager role with special permissions",
+            level=10,
         )
 
-        result = await create_role(test_db_session, role_data)
+        actor = await _create_actor(test_db_session)
+
+        result = await create_role(test_db_session, role_data, actor_user_id=actor)
 
         assert result.name == "manager"
         assert result.description == "Manager role with special permissions"
+        assert result.level == 10
         assert result.id is not None
+
+    @pytest.mark.asyncio
+    async def test_create_role_rejects_level_too_high(
+        self, test_db_session: AsyncSession
+    ):
+        """Test role creation rejects level > actor level"""
+        actor = await _create_actor(test_db_session, level=20, user_id="actor-low")
+        role_data = RoleCreate(name="too-high", description="blocked", level=21)
+
+        with pytest.raises(AuthorizationException) as exc_info:
+            await create_role(test_db_session, role_data, actor_user_id=actor)
+
+        assert "higher than your own" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_create_role_allows_same_level(
+        self, test_db_session: AsyncSession
+    ):
+        """Test role creation allows level equal to actor level"""
+        actor = await _create_actor(test_db_session, level=20, user_id="actor-same")
+        role_data = RoleCreate(name="peer-role", description="same level", level=20)
+
+        result = await create_role(test_db_session, role_data, actor_user_id=actor)
+
+        assert result.name == "peer-role"
+        assert result.level == 20
 
     @pytest.mark.asyncio
     async def test_create_role_minimal_data(self, test_db_session: AsyncSession):
         """Test role creation with minimal data"""
-        role_data = RoleCreate(name="guest")
+        role_data = RoleCreate(name="guest",
+            level=10,
+        )
 
-        result = await create_role(test_db_session, role_data)
+        actor = await _create_actor(test_db_session)
+
+        result = await create_role(test_db_session, role_data, actor_user_id=actor)
 
         assert result.name == "guest"
         assert result.description is None
@@ -102,23 +172,29 @@ class TestCreateRole:
         test_db_session.add(existing_role)
         await test_db_session.commit()
 
-        role_data = RoleCreate(name="admin", description="New admin role")
+        role_data = RoleCreate(name="admin", description="New admin role",
+            level=10,
+        )
 
         with pytest.raises(ConflictException) as exc_info:
-            await create_role(test_db_session, role_data)
+            actor = await _create_actor(test_db_session)
+            await create_role(test_db_session, role_data, actor_user_id=actor)
 
         assert "Role name already exists" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_create_role_database_error(self, test_db_session: AsyncSession):
         """Test create_role with database error"""
-        role_data = RoleCreate(name="test-role")
+        role_data = RoleCreate(name="test-role",
+            level=10,
+        )
 
+        actor = await _create_actor(test_db_session)
         with patch.object(
-            test_db_session, "execute", side_effect=Exception("Database error")
+            test_db_session, "commit", side_effect=Exception("Database error")
         ):
             with pytest.raises(ServerException) as exc_info:
-                await create_role(test_db_session, role_data)
+                await create_role(test_db_session, role_data, actor_user_id=actor)
 
             assert "Failed to create role" in str(exc_info.value)
 
@@ -136,11 +212,28 @@ class TestUpdateRole:
 
         role_data = RoleUpdate(name="updated_admin", description="Updated admin role")
 
-        result = await update_role(test_db_session, "role-1", role_data)
+        actor = await _create_actor(test_db_session)
+        result = await update_role(test_db_session, "role-1", role_data, actor_user_id=actor)
 
         assert result.name == "updated_admin"
         assert result.description == "Updated admin role"
         assert result.id == "role-1"
+
+    @pytest.mark.asyncio
+    async def test_update_role_rejects_own_role(self, test_db_session: AsyncSession):
+        """Test update_role blocks modifying the actor's own role"""
+        actor = await _create_actor(test_db_session, user_id="actor-own-update", level=50)
+        role_data = RoleUpdate(description="self demotion attempt")
+
+        with pytest.raises(AuthorizationException) as exc_info:
+            await update_role(
+                test_db_session,
+                f"actor-role-{actor}",
+                role_data,
+                actor_user_id=actor,
+            )
+
+        assert "own role" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_update_role_partial_update(self, test_db_session: AsyncSession):
@@ -152,7 +245,8 @@ class TestUpdateRole:
 
         role_data = RoleUpdate(name="updated_admin")
 
-        result = await update_role(test_db_session, "role-1", role_data)
+        actor = await _create_actor(test_db_session)
+        result = await update_role(test_db_session, "role-1", role_data, actor_user_id=actor)
 
         assert result.name == "updated_admin"
         assert result.description == "Original admin role"  # Unchanged
@@ -164,7 +258,8 @@ class TestUpdateRole:
         role_data = RoleUpdate(name="updated_admin")
 
         with pytest.raises(NotFoundException) as exc_info:
-            await update_role(test_db_session, "non-existent-role", role_data)
+            actor = await _create_actor(test_db_session)
+            await update_role(test_db_session, "non-existent-role", role_data, actor_user_id=actor)
 
         assert "Role not found" in str(exc_info.value)
 
@@ -181,7 +276,8 @@ class TestUpdateRole:
         role_data = RoleUpdate(name="user")  # Try to change admin to user
 
         with pytest.raises(ConflictException) as exc_info:
-            await update_role(test_db_session, "role-1", role_data)
+            actor = await _create_actor(test_db_session)
+            await update_role(test_db_session, "role-1", role_data, actor_user_id=actor)
 
         assert "Role name already exists" in str(exc_info.value)
 
@@ -194,7 +290,8 @@ class TestUpdateRole:
             test_db_session, "execute", side_effect=Exception("Database error")
         ):
             with pytest.raises(ServerException) as exc_info:
-                await update_role(test_db_session, "role-1", role_data)
+                actor = await _create_actor(test_db_session)
+            await update_role(test_db_session, "role-1", role_data, actor_user_id=actor)
 
             assert "Failed to update role" in str(exc_info.value)
 
@@ -210,7 +307,8 @@ class TestDeleteRole:
         test_db_session.add(role)
         await test_db_session.commit()
 
-        result = await delete_role(test_db_session, "role-1")
+        actor = await _create_actor(test_db_session)
+        result = await delete_role(test_db_session, "role-1", actor_user_id=actor)
 
         assert result is True
 
@@ -221,10 +319,25 @@ class TestDeleteRole:
         assert deleted_role.scalar_one_or_none() is None
 
     @pytest.mark.asyncio
+    async def test_delete_role_rejects_own_role(self, test_db_session: AsyncSession):
+        """Test delete_role blocks deleting the actor's own role"""
+        actor = await _create_actor(test_db_session, user_id="actor-own-delete", level=50)
+
+        with pytest.raises(AuthorizationException) as exc_info:
+            await delete_role(
+                test_db_session,
+                f"actor-role-{actor}",
+                actor_user_id=actor,
+            )
+
+        assert "own role" in str(exc_info.value)
+
+    @pytest.mark.asyncio
     async def test_delete_role_not_found(self, test_db_session: AsyncSession):
         """Test delete_role with non-existent role"""
         with pytest.raises(NotFoundException) as exc_info:
-            await delete_role(test_db_session, "non-existent-role")
+            actor = await _create_actor(test_db_session)
+            await delete_role(test_db_session, "non-existent-role", actor_user_id=actor)
 
         assert "Role not found" in str(exc_info.value)
 
@@ -255,7 +368,8 @@ class TestDeleteRole:
         await test_db_session.commit()
 
         with pytest.raises(ConflictException) as exc_info:
-            await delete_role(test_db_session, "role-1")
+            actor = await _create_actor(test_db_session)
+            await delete_role(test_db_session, "role-1", actor_user_id=actor)
 
         assert "Cannot delete role that is assigned to users" in str(exc_info.value)
 
@@ -266,7 +380,8 @@ class TestDeleteRole:
             test_db_session, "execute", side_effect=Exception("Database error")
         ):
             with pytest.raises(ServerException) as exc_info:
-                await delete_role(test_db_session, "role-1")
+                actor = await _create_actor(test_db_session)
+            await delete_role(test_db_session, "role-1", actor_user_id=actor)
 
             assert "Failed to delete role" in str(exc_info.value)
 
@@ -366,13 +481,36 @@ class TestUpdateRoleAttributeMapping:
         attributes_data = {"view-users": True, "manage-roles": False}
 
         result = await update_role_attribute_mapping(
-            test_db_session, "role-1", attributes_data
+            test_db_session,
+            "role-1",
+            attributes_data,
+            actor_user_id=await _create_actor(test_db_session),
         )
 
         assert result.total_attributes == 2
         assert result.success_count == 2
         assert result.failed_count == 0
         assert len(result.results) == 2
+
+    @pytest.mark.asyncio
+    async def test_update_role_attribute_mapping_rejects_own_role(
+        self, test_db_session: AsyncSession
+    ):
+        """Test update_role_attribute_mapping blocks changing own role permissions"""
+        actor = await _create_actor(test_db_session, user_id="actor-own-attrs", level=50)
+        attr = RoleAttributes(id="attr-own", name="view-users")
+        test_db_session.add(attr)
+        await test_db_session.commit()
+
+        with pytest.raises(AuthorizationException) as exc_info:
+            await update_role_attribute_mapping(
+                test_db_session,
+                f"actor-role-{actor}",
+                {"view-users": False},
+                actor_user_id=actor,
+            )
+
+        assert "own role" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_update_role_attribute_mapping_partial_success(
@@ -393,7 +531,10 @@ class TestUpdateRoleAttributeMapping:
         }
 
         result = await update_role_attribute_mapping(
-            test_db_session, "role-1", attributes_data
+            test_db_session,
+            "role-1",
+            attributes_data,
+            actor_user_id=await _create_actor(test_db_session),
         )
 
         assert result.total_attributes == 2
@@ -410,8 +551,11 @@ class TestUpdateRoleAttributeMapping:
 
         with pytest.raises(NotFoundException) as exc_info:
             await update_role_attribute_mapping(
-                test_db_session, "non-existent-role", attributes_data
-            )
+            test_db_session,
+            "non-existent-role",
+            attributes_data,
+            actor_user_id=await _create_actor(test_db_session),
+        )
 
         assert "Role not found" in str(exc_info.value)
 
@@ -421,13 +565,17 @@ class TestUpdateRoleAttributeMapping:
     ):
         """Test update_role_attribute_mapping with database error"""
         attributes_data = {"view-users": True}
+        actor = await _create_actor(test_db_session)
 
         with patch.object(
             test_db_session, "execute", side_effect=Exception("Database error")
         ):
             with pytest.raises(ServerException) as exc_info:
                 await update_role_attribute_mapping(
-                    test_db_session, "role-1", attributes_data
+                    test_db_session,
+                    "role-1",
+                    attributes_data,
+                    actor_user_id=actor,
                 )
 
             assert "Failed to update role attributes mapping" in str(exc_info.value)
@@ -530,18 +678,30 @@ class TestSuperAdminRoleProtection:
         self, test_db_session: AsyncSession
     ):
         super_role = Roles(
-            id="role-super", name="super-admin", description="System super-admin"
+            id="role-super", name="super-admin", description="System super-admin", level=100
         )
-        user_role = Roles(id="role-user", name="user", description="User role")
-        test_db_session.add(super_role)
-        test_db_session.add(user_role)
+        user_role = Roles(id="role-user", name="user", description="User role", level=1)
+        actor_user = Users(
+            id="actor-super",
+            email="actor-super@example.com",
+            first_name="Actor",
+            last_name="Super",
+            phone="0000000000",
+            hash_password="hashed",
+            status=True,
+        )
+        test_db_session.add_all([super_role, user_role, actor_user])
+        await test_db_session.commit()
+        test_db_session.add(RoleMapper(user_id=actor_user.id, role_id=super_role.id))
         await test_db_session.commit()
 
-        result = await get_all_roles(test_db_session)
+        result = await get_all_roles(test_db_session, actor_user_id=actor_user.id)
 
         names = [role.name for role in result.roles]
         assert names == ["user"]
         assert "super-admin" not in names
+        assert result.actor_level == 100
+        assert result.actor_role_id == "role-super"
 
     @pytest.mark.asyncio
     async def test_create_role_rejects_super_admin_name(
@@ -550,7 +710,10 @@ class TestSuperAdminRoleProtection:
         with pytest.raises(AuthorizationException) as exc_info:
             await create_role(
                 test_db_session,
-                RoleCreate(name="super-admin", description="blocked"),
+                RoleCreate(name="super-admin", description="blocked",
+            level=10,
+        ),
+                actor_user_id=await _create_actor(test_db_session),
             )
         assert "Cannot create the system super-admin role" in str(exc_info.value)
 
@@ -569,6 +732,7 @@ class TestSuperAdminRoleProtection:
                 test_db_session,
                 "role-super",
                 RoleUpdate(description="should fail"),
+                actor_user_id=await _create_actor(test_db_session),
             )
         assert "Cannot modify the system super-admin role" in str(exc_info.value)
 
@@ -585,6 +749,7 @@ class TestSuperAdminRoleProtection:
                 test_db_session,
                 "role-1",
                 RoleUpdate(name="super-admin"),
+                actor_user_id=await _create_actor(test_db_session),
             )
         assert "Cannot rename a role to the system super-admin role" in str(
             exc_info.value
@@ -601,7 +766,8 @@ class TestSuperAdminRoleProtection:
         await test_db_session.commit()
 
         with pytest.raises(AuthorizationException) as exc_info:
-            await delete_role(test_db_session, "role-super")
+            actor = await _create_actor(test_db_session)
+            await delete_role(test_db_session, "role-super", actor_user_id=actor)
         assert "Cannot modify the system super-admin role" in str(exc_info.value)
 
     @pytest.mark.asyncio
@@ -630,6 +796,9 @@ class TestSuperAdminRoleProtection:
 
         with pytest.raises(AuthorizationException) as exc_info:
             await update_role_attribute_mapping(
-                test_db_session, "role-super", {"view-users": True}
-            )
+            test_db_session,
+            "role-super",
+            {"view-users": True},
+            actor_user_id=await _create_actor(test_db_session),
+        )
         assert "Cannot modify the system super-admin role" in str(exc_info.value)
