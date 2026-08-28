@@ -41,6 +41,8 @@ export function UserCard({
   onDelete,
   onResetPassword,
   canManageUsers = false,
+  canEdit = true,
+  canDelete = true,
   isSelectionMode = false,
   isSelected = false,
   onSelect,
@@ -180,7 +182,7 @@ export function UserCard({
             </div>
             
             {/* Right side: Action button or Selection check */}
-            {canManageUsers && (
+            {canManageUsers && (canEdit || canDelete || isSelectionMode) && (
               <div className="flex items-center shrink-0" onClick={(e) => e.stopPropagation()}>
                 {isSelectionMode ? (
                   <Button
@@ -326,46 +328,50 @@ export function UserCard({
           <div className="px-6 pb-10 pt-2">
             <div className="space-y-6">
               {/* General Actions Group */}
-              <div className="space-y-2">
-                <div className="overflow-hidden rounded-lg border divide-y divide-border">
-                  <Button
-                    variant="default"
-                    className="w-full justify-between gap-3 h-auto py-4 px-4 rounded-none bg-input text-card-foreground hover:bg-accent"
-                    onClick={() => handleActionClick('edit')}
-                  >
-                    <span className="flex-1 text-left">
-                      {t("common.actions.edit", "Edit")}
-                    </span>
-                    <Edit className="size-5 shrink-0" />
-                  </Button>
-                  <Button
-                    variant="default"
-                    className="w-full justify-between gap-3 h-auto py-4 px-4 rounded-none bg-input text-card-foreground hover:bg-accent"
-                    onClick={() => handleActionClick('resetPassword')}
-                  >
-                    <span className="flex-1 text-left">
-                      {t("common.actions.resetPassword", "Reset Password")}
-                    </span>
-                    <Key className="size-5 shrink-0" />
-                  </Button>
+              {canEdit && (
+                <div className="space-y-2">
+                  <div className="overflow-hidden rounded-lg border divide-y divide-border">
+                    <Button
+                      variant="default"
+                      className="w-full justify-between gap-3 h-auto py-4 px-4 rounded-none bg-input text-card-foreground hover:bg-accent"
+                      onClick={() => handleActionClick('edit')}
+                    >
+                      <span className="flex-1 text-left">
+                        {t("common.actions.edit", "Edit")}
+                      </span>
+                      <Edit className="size-5 shrink-0" />
+                    </Button>
+                    <Button
+                      variant="default"
+                      className="w-full justify-between gap-3 h-auto py-4 px-4 rounded-none bg-input text-card-foreground hover:bg-accent"
+                      onClick={() => handleActionClick('resetPassword')}
+                    >
+                      <span className="flex-1 text-left">
+                        {t("common.actions.resetPassword", "Reset Password")}
+                      </span>
+                      <Key className="size-5 shrink-0" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Dangerous Actions Group */}
-              <div className="space-y-2">
-                <div className="overflow-hidden rounded-lg border border-destructive/20">
-                  <Button
-                    variant="destructive"
-                    className="w-full justify-between gap-3 h-auto py-4 px-4 bg-destructive/15 text-destructive hover:bg-accent"
-                    onClick={() => handleActionClick('delete')}
-                  >
-                    <span className="flex-1 text-left">
-                      {t("common.actions.delete", "Delete")}
-                    </span>
-                    <Trash2 className="size-5 shrink-0" />
-                  </Button>
+              {canDelete && (
+                <div className="space-y-2">
+                  <div className="overflow-hidden rounded-lg border border-destructive/20">
+                    <Button
+                      variant="destructive"
+                      className="w-full justify-between gap-3 h-auto py-4 px-4 bg-destructive/15 text-destructive hover:bg-accent"
+                      onClick={() => handleActionClick('delete')}
+                    >
+                      <span className="flex-1 text-left">
+                        {t("common.actions.delete", "Delete")}
+                      </span>
+                      <Trash2 className="size-5 shrink-0" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </DrawerContent>

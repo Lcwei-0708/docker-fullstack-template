@@ -168,6 +168,7 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
   const [isResettingPassword, setIsResettingPassword] = React.useState(false);
 
   const [roles, setRoles] = React.useState([]);
+  const [actorLevel, setActorLevel] = React.useState(0);
   const rolesFetchingRef = React.useRef(false);
   const rolesFetchedRef = React.useRef(false);
 
@@ -185,11 +186,38 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
         ? response.data
         : (response.data.roles || []);
       setRoles(rolesList);
+      setActorLevel(Number(response.data?.actor_level ?? 0));
       rolesFetchedRef.current = true;
     }
     
     rolesFetchingRef.current = false;
   }, []);
+
+  const isCurrentUser = React.useCallback(
+    (user) =>
+      !!user &&
+      !!effectiveCurrentUserId &&
+      String(user.id).trim() === String(effectiveCurrentUserId).trim(),
+    [effectiveCurrentUserId]
+  );
+
+  const canEditUser = React.useCallback(
+    (user) => {
+      if (!canManageUsers || !user) return false;
+      if (isCurrentUser(user)) return true;
+      return Number(user.role_level ?? 0) <= Number(actorLevel ?? 0);
+    },
+    [canManageUsers, isCurrentUser, actorLevel]
+  );
+
+  const canDeleteUser = React.useCallback(
+    (user) => {
+      if (!canManageUsers || !user) return false;
+      if (isCurrentUser(user)) return false;
+      return Number(user.role_level ?? 0) <= Number(actorLevel ?? 0);
+    },
+    [canManageUsers, isCurrentUser, actorLevel]
+  );
 
   // Load roles on component mount
   React.useEffect(() => {
@@ -349,6 +377,9 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
 
     if (selectedUser) {
       delete userData.password;
+      if (selectedUser.role === "super-admin" || isCurrentUser(selectedUser)) {
+        delete userData.role;
+      }
     }
 
     const response = selectedUser
@@ -380,7 +411,7 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
     }
 
     setIsSubmitting(false);
-  }, [selectedUser, queryParams, fetchUsers]);
+  }, [selectedUser, queryParams, fetchUsers, isCurrentUser]);
 
   // Open create user dialog
   const handleAdd = React.useCallback(() => {
@@ -763,6 +794,8 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
                         onDelete={handleDelete}
                         onResetPassword={handleResetPassword}
                         canManageUsers={canManageUsers}
+                        canEdit={canEditUser(user)}
+                        canDelete={canDeleteUser(user)}
                         isSelectionMode={isSelectionMode}
                         isSelected={selectedUsers.has(user.id)}
                         onSelect={handleUserSelect}
@@ -820,6 +853,8 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
         onSubmit={handleFormSubmit}
         isSubmitting={isSubmitting}
         roles={roles}
+        isSelf={isCurrentUser(selectedUser)}
+        actorLevel={actorLevel}
       />
 
       {/* Delete Confirmation Dialog */}

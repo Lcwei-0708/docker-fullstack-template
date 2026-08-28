@@ -31,6 +31,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+const SUPER_ADMIN_ROLE = 'super-admin';
+
 // User form dialog component for creating and editing users
 export function UserFormDialog({
   open,
@@ -39,9 +41,19 @@ export function UserFormDialog({
   onSubmit,
   isSubmitting = false,
   roles = [],
+  isSelf = false,
+  actorLevel = null,
 }) {
   const { t } = useTranslation();
   const isEditMode = !!user;
+  const isSuperAdmin = isEditMode && user?.role === SUPER_ADMIN_ROLE;
+  const isRoleLocked = isSuperAdmin || isSelf;
+
+  const assignableRoles = React.useMemo(() => {
+    if (!Array.isArray(roles)) return [];
+    if (actorLevel == null) return roles;
+    return roles.filter((role) => Number(role?.level ?? 0) <= Number(actorLevel));
+  }, [roles, actorLevel]);
 
   // Build form validation schema
   const formSchema = React.useMemo(() => {
@@ -123,10 +135,15 @@ export function UserFormDialog({
 
   // Handle form submission
   const handleSubmit = React.useCallback((formValues) => {
-    if (onSubmit) {
-      onSubmit(formValues);
+    if (!onSubmit) return;
+
+    const payload = { ...formValues };
+    // Super-admin / self role cannot be changed via this form
+    if (isRoleLocked) {
+      delete payload.role;
     }
-  }, [onSubmit]);
+    onSubmit(payload);
+  }, [onSubmit, isRoleLocked]);
 
   // Handle form cancellation
   const handleCancel = React.useCallback(() => {
@@ -344,7 +361,7 @@ export function UserFormDialog({
                         name="role"
                         value={field.value ? field.value : '__none__'}
                         onValueChange={(value) => field.onChange(value === '__none__' ? null : value)}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isRoleLocked}
                       >
                         <SelectTrigger
                           id="role"
@@ -356,11 +373,26 @@ export function UserFormDialog({
                           <SelectValue placeholder={t('common.actions.select', 'Select...')} />
                         </SelectTrigger>
                         <SelectContent>
+                          {isSuperAdmin && (
+                            <SelectItem value={SUPER_ADMIN_ROLE}>
+                              {t('pages.usersManagement.fields.role.values.superAdmin', 'super admin')}
+                            </SelectItem>
+                          )}
+                          {isSelf &&
+                            !isSuperAdmin &&
+                            field.value &&
+                            !assignableRoles.some(
+                              (role) => (role.name || role) === field.value
+                            ) && (
+                              <SelectItem value={field.value}>
+                                {field.value}
+                              </SelectItem>
+                            )}
                           <SelectItem value="__none__">
                             {t('common.actions.none', 'None')}
                           </SelectItem>
-                          {roles.length > 0 ? (
-                            roles.map((role) => {
+                          {assignableRoles.length > 0 ? (
+                            assignableRoles.map((role) => {
                               const roleName = role.name || role;
                               const roleValue = role.name || role;
                               return (
@@ -370,9 +402,11 @@ export function UserFormDialog({
                               );
                             })
                           ) : (
-                            <SelectItem value="__loading__" disabled>
-                              {t('common.status.loading', 'Loading...')}
-                            </SelectItem>
+                            !isRoleLocked && (
+                              <SelectItem value="__loading__" disabled>
+                                {t('common.status.loading', 'Loading...')}
+                              </SelectItem>
+                            )
                           )}
                         </SelectContent>
                       </Select>
