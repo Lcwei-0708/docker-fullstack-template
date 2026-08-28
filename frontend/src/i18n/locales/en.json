@@ -507,7 +507,10 @@
           "label": "Phone"
         },
         "role": {
-          "label": "Role"
+          "label": "Role",
+          "values": {
+            "superAdmin": "super admin"
+          }
         },
         "status": {
           "label": "Status",
@@ -553,16 +556,20 @@
         },
         "createUser": {
           "success": "User created successfully",
-          "emailAlreadyExists": "Email already exists"
+          "emailAlreadyExists": "Email already exists",
+          "levelTooHigh": "Cannot assign a role with a higher level than your own"
         },
         "updateUser": {
           "success": "User updated successfully",
           "userNotFound": "User not found",
-          "emailAlreadyExists": "Email already exists"
+          "emailAlreadyExists": "Email already exists",
+          "cannotChangeOwnRole": "Cannot change your own role",
+          "levelTooHigh": "Cannot manage a user with a higher role level than your own"
         },
         "deleteUsers": {
           "success": "Users deleted successfully",
-          "userNotFound": "User not found"
+          "userNotFound": "User not found",
+          "levelTooHigh": "Cannot delete a user with a higher role level than your own"
         },
         "resetUserPassword": {
           "success": "User password reset successfully",
@@ -574,6 +581,10 @@
       "title": "Roles Management",
       "description": "Manage system roles and permissions",
       "searchPlaceholder": "Search roles",
+      "sortByName": "By name",
+      "sortByLevel": "By level",
+      "sortAsc": "Low to high",
+      "sortDesc": "High to low",
       "noRolesFound": "No matching roles",
       "noRoles": "No roles yet",
       "selectRole": "Select a role",
@@ -602,6 +613,15 @@
         "description": {
           "label": "Description",
           "placeholder": "Enter description"
+        },
+        "level": {
+          "label": "Level",
+          "placeholder": "Enter level",
+          "hint": "Higher number means higher privilege. Max allowed: {{max}}",
+          "validation": {
+            "min": "Level must be at least 1",
+            "max": "Level cannot exceed your own (max {{max}})"
+          }
         }
       },
       "groups": {
@@ -624,17 +644,22 @@
         },
         "createRole": {
           "success": "Role created successfully",
-          "roleNameAlreadyExists": "Role name already exists"
+          "roleNameAlreadyExists": "Role name already exists",
+          "levelTooHigh": "Cannot assign a role level higher than your own"
         },
         "updateRole": {
           "success": "Role updated successfully",
           "roleNotFound": "Role not found",
-          "roleNameAlreadyExists": "Role name already exists"
+          "roleNameAlreadyExists": "Role name already exists",
+          "levelTooHigh": "Cannot assign a role level higher than your own",
+          "cannotModifyOwnRole": "Cannot modify your own role"
         },
         "deleteRole": {
           "success": "Role deleted successfully",
           "roleNotFound": "Role not found",
-          "roleInUse": "Cannot delete role that is assigned to users"
+          "roleInUse": "Cannot delete role that is assigned to users",
+          "levelTooHigh": "Cannot manage a role with higher level than your own",
+          "cannotModifyOwnRole": "Cannot delete your own role"
         },
         "getRoleAttributes": {
           "success": "Role attributes retrieved successfully",
@@ -643,7 +668,9 @@
         "updateRoleAttributes": {
           "success": "Role attributes updated successfully",
           "roleAttributesFailed": "Role attributes failed to update",
-          "roleNotFound": "Role not found"
+          "roleNotFound": "Role not found",
+          "levelTooHigh": "Cannot manage a role with higher level than your own",
+          "cannotModifyOwnRole": "Cannot modify permissions on your own role"
         }
       }
     }
