@@ -28,9 +28,10 @@ class TestGetRolesAPI:
         with patch("api.roles.controller.get_all_roles") as mock_get_roles:
             mock_roles = RolesListResponse(
                 roles=[
-                    RoleResponse(id="role-1", name="admin", description="Admin role"),
-                    RoleResponse(id="role-2", name="user", description="User role"),
-                ]
+                    RoleResponse(id="role-1", name="admin", description="Admin role", level=50),
+                    RoleResponse(id="role-2", name="user", description="User role", level=1),
+                ],
+                actor_level=100,
             )
             mock_get_roles.return_value = mock_roles
 
@@ -80,6 +81,7 @@ class TestCreateRoleAPI:
         role_data = {
             "name": "manager",
             "description": "Manager role with special permissions",
+            "level": 10,
         }
 
         with patch("api.roles.controller.create_role") as mock_create_role:
@@ -87,6 +89,7 @@ class TestCreateRoleAPI:
                 id="role-123",
                 name="manager",
                 description="Manager role with special permissions",
+                level=10,
             )
             mock_create_role.return_value = mock_role
 
@@ -107,7 +110,7 @@ class TestCreateRoleAPI:
         self, client: AsyncClient, users_auth_headers: dict
     ):
         """Test role creation with name conflict"""
-        role_data = {"name": "admin", "description": "Admin role"}
+        role_data = {"name": "admin", "description": "Admin role", "level": 10}
 
         with patch("api.roles.controller.create_role") as mock_create_role:
             mock_create_role.side_effect = ConflictException("Role name already exists")
@@ -128,7 +131,7 @@ class TestCreateRoleAPI:
         self, client: AsyncClient, users_auth_headers: dict
     ):
         """Test creating system super-admin role returns 403"""
-        role_data = {"name": "super-admin", "description": "blocked"}
+        role_data = {"name": "super-admin", "description": "blocked", "level": 10}
 
         with patch("api.roles.controller.create_role") as mock_create_role:
             mock_create_role.side_effect = AuthorizationException(
@@ -149,7 +152,7 @@ class TestCreateRoleAPI:
     @pytest.mark.asyncio
     async def test_create_role_unauthorized(self, client: AsyncClient):
         """Test role creation without authentication"""
-        role_data = {"name": "test-role"}
+        role_data = {"name": "test-role", "level": 10}
         response = await client.post("/api/roles", json=role_data)
         assert response.status_code == 401
 
@@ -158,7 +161,7 @@ class TestCreateRoleAPI:
         self, client: AsyncClient, users_auth_headers: dict
     ):
         """Test role creation with server error"""
-        role_data = {"name": "test-role"}
+        role_data = {"name": "test-role", "level": 10}
 
         with patch(
             "api.roles.controller.create_role", side_effect=Exception("Database error")
@@ -180,11 +183,12 @@ class TestUpdateRoleAPI:
     ):
         """Test successful role update"""
         role_id = "role-123"
-        role_data = {"name": "updated_manager", "description": "Updated manager role"}
+        role_data = {"name": "updated_manager", "description": "Updated manager role", "level": 10}
 
         with patch("api.roles.controller.update_role") as mock_update_role:
             mock_role = RoleResponse(
-                id=role_id, name="updated_manager", description="Updated manager role"
+                id=role_id, name="updated_manager", description="Updated manager role",
+                level=10,
             )
             mock_update_role.return_value = mock_role
 
@@ -206,7 +210,7 @@ class TestUpdateRoleAPI:
     ):
         """Test role update with non-existent role"""
         role_id = "non-existent-role"
-        role_data = {"name": "updated_role"}
+        role_data = {"name": "updated_role", "level": 10}
 
         with patch("api.roles.controller.update_role") as mock_update_role:
             mock_update_role.side_effect = NotFoundException("Role not found")
@@ -252,7 +256,7 @@ class TestUpdateRoleAPI:
     ):
         """Test role update with name conflict"""
         role_id = "role-123"
-        role_data = {"name": "existing-role"}
+        role_data = {"name": "existing-role", "level": 10}
 
         with patch("api.roles.controller.update_role") as mock_update_role:
             mock_update_role.side_effect = ConflictException("Role name already exists")
@@ -272,7 +276,7 @@ class TestUpdateRoleAPI:
     async def test_update_role_unauthorized(self, client: AsyncClient):
         """Test role update without authentication"""
         role_id = "role-123"
-        role_data = {"name": "updated_role"}
+        role_data = {"name": "updated_role", "level": 10}
         response = await client.put(f"/api/roles/{role_id}", json=role_data)
         assert response.status_code == 401
 
@@ -282,7 +286,7 @@ class TestUpdateRoleAPI:
     ):
         """Test role update with server error"""
         role_id = "role-123"
-        role_data = {"name": "updated_role"}
+        role_data = {"name": "updated_role", "level": 10}
 
         with patch(
             "api.roles.controller.update_role",

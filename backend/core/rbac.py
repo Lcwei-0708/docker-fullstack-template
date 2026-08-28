@@ -1,7 +1,7 @@
 import logging
 from functools import wraps
 from typing import List, Dict
-from sqlalchemy import select
+from sqlalchemy import func, select
 from models.roles import Roles
 from core.config import settings
 from fastapi import HTTPException, status
@@ -16,6 +16,49 @@ logger = logging.getLogger(__name__)
 def is_super_admin_role_name(role_name: str | None) -> bool:
     """True when role_name is the ENV-configured system super-admin role."""
     return bool(role_name) and role_name == settings.DEFAULT_SUPER_ADMIN_ROLE
+
+async def get_user_role_level(user_id: str, db: AsyncSession) -> int:
+    """Return the user's highest role level, or 0 when the user has no role."""
+    try:
+        result = await db.execute(
+            select(func.max(Roles.level))
+            .join(RoleMapper, Roles.id == RoleMapper.role_id)
+            .where(RoleMapper.user_id == user_id)
+        )
+        level = result.scalar_one_or_none()
+        return int(level) if level is not None else 0
+    except Exception as e:
+        logger.error(f"Failed to get user role level: {e}")
+        return 0
+
+async def get_user_role_id(user_id: str, db: AsyncSession) -> str | None:
+    """Return the user's primary role id (highest level), or None when unassigned."""
+    try:
+        result = await db.execute(
+            select(Roles.id)
+            .join(RoleMapper, Roles.id == RoleMapper.role_id)
+            .where(RoleMapper.user_id == user_id)
+            .order_by(Roles.level.desc(), Roles.name.asc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+    except Exception as e:
+        logger.error(f"Failed to get user role id: {e}")
+        return None
+
+async def user_has_role(user_id: str, role_id: str, db: AsyncSession) -> bool:
+    """True when the user is currently assigned the given role."""
+    try:
+        result = await db.execute(
+            select(RoleMapper.role_id).where(
+                RoleMapper.user_id == user_id,
+                RoleMapper.role_id == role_id,
+            )
+        )
+        return result.scalar_one_or_none() is not None
+    except Exception as e:
+        logger.error(f"Failed to check user role assignment: {e}")
+        return False
 
 async def get_user_attributes(user_id: str, db: AsyncSession) -> Dict[str, bool]:
     """Get user attributes"""

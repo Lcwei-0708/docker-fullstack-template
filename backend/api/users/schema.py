@@ -13,6 +13,9 @@ class UserResponse(BaseModel):
     status: bool = Field(..., description="User status")
     created_at: datetime = Field(..., description="User creation time")
     role: Optional[str] = Field(None, description="User role")
+    role_level: Optional[int] = Field(
+        None, description="Privilege level of the user's primary role"
+    )
 
 class UserPagination(BaseModel):
     users: List[UserResponse] = Field(..., description="List of users")

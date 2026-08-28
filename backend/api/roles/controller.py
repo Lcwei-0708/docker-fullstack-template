@@ -39,7 +39,7 @@ async def get_roles(
 ):
     """Get all custom roles"""
     try:
-        roles = await get_all_roles(db)
+        roles = await get_all_roles(db, actor_user_id=token["sub"])
         return APIResponse(code=200, message="Successfully retrieved roles", data=roles)
     except Exception:
         raise HTTPException(status_code=500)
@@ -63,7 +63,7 @@ async def create_role_api(
 ):
     """Create a new role"""
     try:
-        role = await create_role(db, role_data)
+        role = await create_role(db, role_data, actor_user_id=token["sub"])
         return APIResponse(code=200, message="Role created successfully", data=role)
     except AuthorizationException as e:
         raise HTTPException(status_code=403, detail=e.message)
@@ -93,7 +93,7 @@ async def update_role_api(
 ):
     """Update role information"""
     try:
-        role = await update_role(db, role_id, role_data)
+        role = await update_role(db, role_id, role_data, actor_user_id=token["sub"])
         return APIResponse(code=200, message="Role updated successfully", data=role)
     except NotFoundException:
         raise HTTPException(status_code=404, detail="Role not found")
@@ -124,7 +124,7 @@ async def delete_role_api(
 ):
     """Delete a role"""
     try:
-        await delete_role(db, role_id)
+        await delete_role(db, role_id, actor_user_id=token["sub"])
         return APIResponse(code=200, message="Role deleted successfully")
     except NotFoundException:
         raise HTTPException(status_code=404, detail="Role not found")
@@ -188,7 +188,9 @@ async def update_role_attribute_mapping_api(
 ):
     """Update role attributes with batch processing results"""
     try:
-        batch_result = await update_role_attribute_mapping(db, role_id, attributes_data.attributes)
+        batch_result = await update_role_attribute_mapping(
+            db, role_id, attributes_data.attributes, actor_user_id=token["sub"]
+        )
         
         # Determine response code based on results
         if batch_result.failed_count == 0:

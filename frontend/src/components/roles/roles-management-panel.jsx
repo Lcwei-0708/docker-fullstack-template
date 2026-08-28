@@ -13,12 +13,16 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
   const isMobile = useIsMobile();
   const [roles, setRoles] = React.useState([]);
   const [filteredRoles, setFilteredRoles] = React.useState([]);
+  const [actorLevel, setActorLevel] = React.useState(0);
+  const [actorRoleId, setActorRoleId] = React.useState(null);
   const [selectedRole, setSelectedRole] = React.useState(null);
   const [attributes, setAttributes] = React.useState({});
   const [attributeGroups, setAttributeGroups] = React.useState([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isLoadingAttributes, setIsLoadingAttributes] = React.useState(false);
   const [searchKeyword, setSearchKeyword] = React.useState("");
+  const [sortBy, setSortBy] = React.useState("level");
+  const [sortDir, setSortDir] = React.useState("desc");
   const [hasChanges, setHasChanges] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isEditingRole, setIsEditingRole] = React.useState(false);
@@ -28,17 +32,33 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
   const [editedRoleData, setEditedRoleData] = React.useState({
     name: "",
     description: "",
+    level: 1,
   });
   const initialAttributesRef = React.useRef({});
   const hasFetchedRolesRef = React.useRef(false);
   const selectedRoleIdRef = React.useRef(null);
+
+  const canManageSelectedRole = React.useMemo(() => {
+    if (!canManageRoles || !selectedRole) return false;
+    if (actorRoleId && selectedRole.id === actorRoleId) return false;
+    return Number(selectedRole.level ?? 0) <= Number(actorLevel ?? 0);
+  }, [canManageRoles, selectedRole, actorLevel, actorRoleId]);
+
+  const canManageRole = React.useCallback(
+    (role) => {
+      if (!canManageRoles || !role) return false;
+      if (actorRoleId && role.id === actorRoleId) return false;
+      return Number(role.level ?? 0) <= Number(actorLevel ?? 0);
+    },
+    [canManageRoles, actorLevel, actorRoleId]
+  );
 
   React.useImperativeHandle(
     ref,
     () => ({
       handleCreate: () => {
         setSelectedRole(null);
-        setEditedRoleData({ name: "", description: "" });
+        setEditedRoleData({ name: "", description: "", level: 1 });
         setIsEditingRole(true);
         setIsRoleDialogOpen(true);
       },
@@ -51,14 +71,28 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
   }, [selectedRole?.id]);
 
   const parseRolesList = React.useCallback((response) => {
-    if (!response) return [];
-    if (Array.isArray(response)) return response;
-    if (response.roles && Array.isArray(response.roles)) return response.roles;
-    if (response.data) {
-      if (Array.isArray(response.data)) return response.data;
-      if (response.data.roles && Array.isArray(response.data.roles)) return response.data.roles;
+    if (!response) return { roles: [], actorLevel: 0, actorRoleId: null };
+    if (Array.isArray(response)) return { roles: response, actorLevel: 0, actorRoleId: null };
+    if (response.roles && Array.isArray(response.roles)) {
+      return {
+        roles: response.roles,
+        actorLevel: Number(response.actor_level ?? 0),
+        actorRoleId: response.actor_role_id ?? null,
+      };
     }
-    return [];
+    if (response.data) {
+      if (Array.isArray(response.data)) {
+        return { roles: response.data, actorLevel: 0, actorRoleId: null };
+      }
+      if (response.data.roles && Array.isArray(response.data.roles)) {
+        return {
+          roles: response.data.roles,
+          actorLevel: Number(response.data.actor_level ?? 0),
+          actorRoleId: response.data.actor_role_id ?? null,
+        };
+      }
+    }
+    return { roles: [], actorLevel: 0, actorRoleId: null };
   }, []);
 
   // Load roles list.
@@ -67,7 +101,10 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
     const result = await rolesService.getAllRoles({ returnStatus: true });
     let rolesList = [];
     if (result.status === "success") {
-      rolesList = parseRolesList(result.data);
+      const parsed = parseRolesList(result.data);
+      rolesList = parsed.roles;
+      setActorLevel(parsed.actorLevel);
+      setActorRoleId(parsed.actorRoleId);
       setRoles(rolesList);
       setFilteredRoles(rolesList);
 
@@ -78,6 +115,8 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
     } else {
       setRoles([]);
       setFilteredRoles([]);
+      setActorLevel(0);
+      setActorRoleId(null);
     }
     setIsLoading(false);
   }, [parseRolesList]);
@@ -88,16 +127,44 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
     fetchRoles();
   }, [fetchRoles]);
 
-  // Filter roles by keyword.
+  // Filter and sort roles.
   React.useEffect(() => {
-    if (!searchKeyword.trim()) {
-      setFilteredRoles(roles);
-    } else {
+    let nextRoles = Array.isArray(roles) ? [...roles] : [];
+
+    if (searchKeyword.trim()) {
       const keyword = searchKeyword.toLowerCase();
-      const filtered = roles.filter((role) => role.name?.toLowerCase().includes(keyword) || role.description?.toLowerCase().includes(keyword));
-      setFilteredRoles(filtered);
+      nextRoles = nextRoles.filter(
+        (role) =>
+          role.name?.toLowerCase().includes(keyword) ||
+          role.description?.toLowerCase().includes(keyword)
+      );
     }
-  }, [searchKeyword, roles]);
+
+    const direction = sortDir === "asc" ? 1 : -1;
+    nextRoles.sort((a, b) => {
+      if (sortBy === "level") {
+        const levelDiff = (Number(a.level ?? 0) - Number(b.level ?? 0)) * direction;
+        if (levelDiff !== 0) return levelDiff;
+        return String(a.name || "").localeCompare(String(b.name || ""), undefined, {
+          sensitivity: "base",
+        });
+      }
+
+      const nameDiff =
+        String(a.name || "").localeCompare(String(b.name || ""), undefined, {
+          sensitivity: "base",
+        }) * direction;
+      if (nameDiff !== 0) return nameDiff;
+      return (Number(b.level ?? 0) - Number(a.level ?? 0));
+    });
+
+    setFilteredRoles(nextRoles);
+  }, [searchKeyword, roles, sortBy, sortDir]);
+
+  const handleSortChange = React.useCallback((nextSortBy, nextSortDir) => {
+    setSortBy(nextSortBy);
+    setSortDir(nextSortDir);
+  }, []);
 
   const fetchRoleAttributes = React.useCallback(async (roleId) => {
     if (!roleId) return;
@@ -238,7 +305,13 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
         }
 
         const rolesResult = await rolesService.getAllRoles({ returnStatus: true });
-        const rolesList = rolesResult.status === "success" ? parseRolesList(rolesResult.data) : [];
+        const parsed =
+          rolesResult.status === "success"
+            ? parseRolesList(rolesResult.data)
+            : { roles: [], actorLevel: 0, actorRoleId: null };
+        const rolesList = parsed.roles;
+        setActorLevel(parsed.actorLevel);
+        setActorRoleId(parsed.actorRoleId);
         setRoles(rolesList);
         setFilteredRoles(rolesList);
 
@@ -252,7 +325,7 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
 
         if (!roleId) {
           setIsEditingRole(false);
-          setEditedRoleData({ name: "", description: "" });
+          setEditedRoleData({ name: "", description: "", level: 1 });
         }
 
         return true;
@@ -285,9 +358,10 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
       setEditedRoleData({
         name: selectedRole.name || "",
         description: selectedRole.description || "",
+        level: selectedRole.level ?? 1,
       });
     } else {
-      setEditedRoleData({ name: "", description: "" });
+      setEditedRoleData({ name: "", description: "", level: 1 });
     }
   }, [selectedRole]);
 
@@ -308,15 +382,18 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
           searchKeyword={searchKeyword}
           disabled={isSubmitting}
           canManageRoles={canManageRoles}
+          canEditSelected={canManageSelectedRole}
           isSubmitting={isSubmitting}
           onRoleSelect={handleRoleSelect}
           onSearchChange={setSearchKeyword}
           onEditClick={() => {
             if (!selectedRole?.id) return;
+            if (!canManageRole(selectedRole)) return;
             setIsRoleEditDialogOpen(true);
           }}
           onDeleteClick={() => {
             if (!selectedRole?.id) return;
+            if (!canManageRole(selectedRole)) return;
             setIsRoleDeleteDialogOpen(true);
           }}
         />
@@ -328,7 +405,7 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
           isLoadingAttributes={isLoadingAttributes}
           hasChanges={hasChanges}
           isSubmitting={isSubmitting}
-          canManageRoles={canManageRoles}
+          canManageRoles={canManageSelectedRole}
           onAttributeToggle={handleAttributeToggle}
           onSaveAttributes={handleSaveAttributes}
           onResetAttributes={handleResetAttributes}
@@ -339,6 +416,7 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
           open={isRoleDialogOpen}
           mode="create"
           isSubmitting={isSubmitting}
+          maxLevel={actorLevel}
           onOpenChange={(open) => {
             setIsRoleDialogOpen(open);
             if (!open) handleCancelEdit();
@@ -346,6 +424,7 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
           initialData={{
             name: editedRoleData?.name || "",
             description: editedRoleData?.description || "",
+            level: editedRoleData?.level ?? 1,
           }}
           onCancel={() => {
             handleCancelEdit();
@@ -365,10 +444,12 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
           open={isRoleEditDialogOpen}
           mode="edit"
           isSubmitting={isSubmitting}
+          maxLevel={actorLevel}
           onOpenChange={setIsRoleEditDialogOpen}
           initialData={{
             name: selectedRole?.name || "",
             description: selectedRole?.description || "",
+            level: selectedRole?.level ?? 1,
           }}
           onCancel={() => setIsRoleEditDialogOpen(false)}
           onSubmit={async (data) => {
@@ -402,25 +483,30 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
         isLoading={isLoading}
         searchKeyword={searchKeyword}
         canManageRoles={canManageRoles}
+        actorLevel={actorLevel}
+        actorRoleId={actorRoleId}
         isSubmitting={isSubmitting}
+        sortBy={sortBy}
+        sortDir={sortDir}
         className="w-1/3 h-full"
         onRoleSelect={handleRoleSelect}
         onSearchChange={setSearchKeyword}
+        onSortChange={handleSortChange}
         onCreateClick={() => {
           if (!canManageRoles) return;
           setSelectedRole(null);
-          setEditedRoleData({ name: "", description: "" });
+          setEditedRoleData({ name: "", description: "", level: 1 });
           setIsEditingRole(true);
           setIsRoleDialogOpen(true);
         }}
         onEditClick={(role) => {
-          if (!canManageRoles || isSubmitting) return;
+          if (!canManageRole(role) || isSubmitting) return;
           if (!role?.id) return;
           setSelectedRole(role);
           setIsRoleEditDialogOpen(true);
         }}
         onDeleteClick={(role) => {
-          if (!canManageRoles || isSubmitting) return;
+          if (!canManageRole(role) || isSubmitting) return;
           if (!role?.id) return;
           setSelectedRole(role);
           setIsRoleDeleteDialogOpen(true);
@@ -435,7 +521,7 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
         isLoadingRoles={isLoading}
         hasChanges={hasChanges}
         isSubmitting={isSubmitting}
-        canManageRoles={canManageRoles}
+        canManageRoles={canManageSelectedRole}
         onAttributeToggle={handleAttributeToggle}
         onSaveAttributes={handleSaveAttributes}
         onResetAttributes={handleResetAttributes}
@@ -444,6 +530,7 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
         open={isRoleDialogOpen}
         mode="create"
         isSubmitting={isSubmitting}
+        maxLevel={actorLevel}
         onOpenChange={(open) => {
           setIsRoleDialogOpen(open);
           if (!open) handleCancelEdit();
@@ -451,6 +538,7 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
         initialData={{
           name: editedRoleData?.name || "",
           description: editedRoleData?.description || "",
+          level: editedRoleData?.level ?? 1,
         }}
         onCancel={() => {
           handleCancelEdit();
@@ -470,10 +558,12 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
         open={isRoleEditDialogOpen}
         mode="edit"
         isSubmitting={isSubmitting}
+        maxLevel={actorLevel}
         onOpenChange={setIsRoleEditDialogOpen}
         initialData={{
           name: selectedRole?.name || "",
           description: selectedRole?.description || "",
+          level: selectedRole?.level ?? 1,
         }}
         onCancel={() => setIsRoleEditDialogOpen(false)}
         onSubmit={async (data) => {

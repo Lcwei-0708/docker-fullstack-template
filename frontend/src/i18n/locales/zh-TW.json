@@ -498,7 +498,10 @@
           "label": "電話"
         },
         "role": {
-          "label": "角色"
+          "label": "角色",
+          "values": {
+            "superAdmin": "super admin"
+          }
         },
         "status": {
           "label": "狀態",
@@ -542,18 +545,22 @@
         "getAllUsers": {
           "success": "使用者取得成功"
         },
-        "createUser": {
-          "success": "使用者建立成功",
-          "emailAlreadyExists": "此電子信箱已被使用"
-        },
         "updateUser": {
           "success": "使用者更新成功",
           "userNotFound": "使用者不存在",
-          "emailAlreadyExists": "此電子信箱已被使用"
+          "emailAlreadyExists": "此電子信箱已被使用",
+          "cannotChangeOwnRole": "無法更改自己的角色",
+          "levelTooHigh": "無法管理角色等級高於自己的使用者"
         },
         "deleteUsers": {
           "success": "使用者刪除成功",
-          "userNotFound": "使用者不存在"
+          "userNotFound": "使用者不存在",
+          "levelTooHigh": "無法刪除角色等級高於自己的使用者"
+        },
+        "createUser": {
+          "success": "使用者建立成功",
+          "emailAlreadyExists": "此電子信箱已被使用",
+          "levelTooHigh": "無法指派高於自己等級的角色"
         },
         "resetUserPassword": {
           "success": "使用者密碼重設成功",
@@ -565,6 +572,10 @@
       "title": "角色管理",
       "description": "管理系統角色與權限設定",
       "searchPlaceholder": "搜尋角色名稱",
+      "sortByName": "依名稱",
+      "sortByLevel": "依等級",
+      "sortAsc": "由低到高",
+      "sortDesc": "由高到低",
       "noRolesFound": "找不到符合的角色",
       "noRoles": "目前沒有角色",
       "selectRole": "請選擇角色",
@@ -585,16 +596,25 @@
         "noAttributes": "目前沒有可用的權限屬性",
         "hasChanges": "有未儲存的變更"
       },
-      "fields": {
-        "name": {
-          "label": "角色名稱",
-          "placeholder": "請輸入角色名稱"
+        "fields": {
+          "name": {
+            "label": "角色名稱",
+            "placeholder": "請輸入角色名稱"
+          },
+          "description": {
+            "label": "角色敘述",
+            "placeholder": "請輸入角色敘述"
+          },
+          "level": {
+            "label": "角色等級",
+            "placeholder": "請輸入等級",
+            "hint": "數字越大權限越高，最高可設 {{max}}",
+            "validation": {
+              "min": "等級至少為 1",
+              "max": "等級不可超過自己（最高 {{max}}）"
+            }
+          }
         },
-        "description": {
-          "label": "角色敘述",
-          "placeholder": "請輸入角色敘述"
-        }
-      },
       "groups": {
         "systemManagement": "系統管理"
       },
@@ -615,17 +635,22 @@
         },
         "createRole": {
           "success": "角色建立成功",
-          "roleNameAlreadyExists": "角色名稱已存在"
+          "roleNameAlreadyExists": "角色名稱已存在",
+          "levelTooHigh": "無法設定高於自己的角色等級"
         },
         "updateRole": {
           "success": "角色更新成功",
           "roleNotFound": "角色不存在",
-          "roleNameAlreadyExists": "角色名稱已存在"
+          "roleNameAlreadyExists": "角色名稱已存在",
+          "levelTooHigh": "無法設定高於自己的角色等級",
+          "cannotModifyOwnRole": "無法修改自己目前的角色"
         },
         "deleteRole": {
           "success": "角色刪除成功",
           "roleNotFound": "角色不存在",
-          "roleInUse": "無法刪除已分配給使用者的角色"
+          "roleInUse": "無法刪除已分配給使用者的角色",
+          "levelTooHigh": "無法管理高於自己等級的角色",
+          "cannotModifyOwnRole": "無法刪除自己目前的角色"
         },
         "getRoleAttributes": {
           "success": "角色屬性取得成功",
@@ -634,7 +659,9 @@
         "updateRoleAttributes": {
           "success": "角色屬性更新成功",
           "roleAttributesFailed": "角色屬性更新失敗",
-          "roleNotFound": "角色不存在"
+          "roleNotFound": "角色不存在",
+          "levelTooHigh": "無法管理高於自己等級的角色",
+          "cannotModifyOwnRole": "無法修改自己目前的角色權限"
         }
       }
     }

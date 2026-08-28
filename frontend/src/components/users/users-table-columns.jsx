@@ -39,7 +39,17 @@ import {
  * @param {boolean} params.canManageUsers - Whether user has manage-users permission
  * @returns {Array} Column definitions array
  */
-export function useUsersTableColumns({ t, handleEdit, handleDelete, handleResetPassword, enableSelection, roles, canManageUsers = false }) {
+export function useUsersTableColumns({
+  t,
+  handleEdit,
+  handleDelete,
+  handleResetPassword,
+  enableSelection,
+  roles,
+  canManageUsers = false,
+  canEditUser,
+  canDeleteUser,
+}) {
   const { i18n } = useTranslation();
 
   return React.useMemo(
@@ -277,6 +287,11 @@ export function useUsersTableColumns({ t, handleEdit, handleDelete, handleResetP
           header: () => <div className="w-full h-full" />,
           cell: ({ row }) => {
             const user = row.original;
+            const allowEdit = typeof canEditUser === "function" ? canEditUser(user) : true;
+            const allowDelete = typeof canDeleteUser === "function" ? canDeleteUser(user) : true;
+            if (!allowEdit && !allowDelete) {
+              return null;
+            }
             return (
               <div className="flex items-center justify-center">
                 <DropdownMenu>
@@ -289,26 +304,34 @@ export function useUsersTableColumns({ t, handleEdit, handleDelete, handleResetP
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-auto">
-                    <DropdownMenuItem
-                      className="flex items-center justify-between gap-8 rounded-xs"
-                      onSelect={() => handleEdit(user)}>
-                      {t("common.actions.edit", "Edit")}
-                      <Edit className="size-4" />
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="flex items-center justify-between gap-8 rounded-xs"
-                      onSelect={() => handleResetPassword(user)}>
-                      {t("common.actions.resetPassword", "Reset Password")}
-                      <Key className="size-4" />
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      variant="destructive"
-                      className="flex items-center justify-between gap-8 rounded-xs"
-                      onClick={() => handleDelete(user)}>
-                      {t("common.actions.delete", "Delete")}
-                      <Trash2 className="size-4" />
-                    </DropdownMenuItem>
+                    {allowEdit && (
+                      <DropdownMenuItem
+                        className="flex items-center justify-between gap-8 rounded-xs"
+                        onSelect={() => handleEdit(user)}>
+                        {t("common.actions.edit", "Edit")}
+                        <Edit className="size-4" />
+                      </DropdownMenuItem>
+                    )}
+                    {allowEdit && (
+                      <DropdownMenuItem
+                        className="flex items-center justify-between gap-8 rounded-xs"
+                        onSelect={() => handleResetPassword(user)}>
+                        {t("common.actions.resetPassword", "Reset Password")}
+                        <Key className="size-4" />
+                      </DropdownMenuItem>
+                    )}
+                    {allowDelete && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          variant="destructive"
+                          className="flex items-center justify-between gap-8 rounded-xs"
+                          onClick={() => handleDelete(user)}>
+                          {t("common.actions.delete", "Delete")}
+                          <Trash2 className="size-4" />
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -329,6 +352,6 @@ export function useUsersTableColumns({ t, handleEdit, handleDelete, handleResetP
       }
       return baseColumns;
     },
-    [t, handleEdit, handleDelete, handleResetPassword, enableSelection, roles, i18n.language, canManageUsers]
+    [t, handleEdit, handleDelete, handleResetPassword, enableSelection, roles, i18n.language, canManageUsers, canEditUser, canDeleteUser]
   );
 }

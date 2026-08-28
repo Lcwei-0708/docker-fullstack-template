@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils"
 import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
+import { Badge } from "@/components/ui/badge"
 import { Check, ChevronsUpDown, Edit, Trash2 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { 
@@ -21,6 +22,7 @@ export function RoleSelector({
   searchKeyword = "",
   disabled = false,
   canManageRoles = false,
+  canEditSelected = false,
   isSubmitting = false,
   onRoleSelect,
   onSearchChange,
@@ -33,7 +35,13 @@ export function RoleSelector({
   const selectedLabel = selectedRole?.name || t("pages.rolesManagement.selectRole", "Select a role")
   const rawIsLoading = !!isLoading
   const hasKeyword = !!searchKeyword?.trim()
-  const canEditOrDelete = !!selectedRole && canManageRoles && !rawIsLoading && !disabled && !isSubmitting
+  const canEditOrDelete =
+    !!selectedRole &&
+    canManageRoles &&
+    canEditSelected &&
+    !rawIsLoading &&
+    !disabled &&
+    !isSubmitting
 
   return (
     <div className="flex flex-col gap-2 px-6">
@@ -101,8 +109,18 @@ export function RoleSelector({
                             isSelected && "!bg-primary/15 border border-primary/20"
                           )}
                         >
-                          <div className="min-w-0">
-                            <div className="text-base font-medium truncate">{role.name}</div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="text-base font-medium truncate">{role.name}</div>
+                              {role.level != null && (
+                                <Badge
+                                  variant="outline"
+                                  className="shrink-0 rounded-sm px-1.5 py-0 text-[10px] font-semibold leading-4 border-primary/40 bg-primary/10 text-primary"
+                                >
+                                  Lv.{role.level}
+                                </Badge>
+                              )}
+                            </div>
                             <div className="text-sm text-muted-foreground line-clamp-2">{role.description || "-"}</div>
                           </div>
                           <Check

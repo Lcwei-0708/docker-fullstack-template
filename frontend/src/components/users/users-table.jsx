@@ -139,6 +139,7 @@ export function UsersTable() {
   const [isResettingPassword, setIsResettingPassword] = React.useState(false);
 
   const [roles, setRoles] = React.useState([]);
+  const [actorLevel, setActorLevel] = React.useState(0);
   const rolesFetchingRef = React.useRef(false);
   const rolesFetchedRef = React.useRef(false);
 
@@ -156,11 +157,38 @@ export function UsersTable() {
         ? response.data
         : (response.data.roles || []);
       setRoles(rolesList);
+      setActorLevel(Number(response.data?.actor_level ?? 0));
       rolesFetchedRef.current = true;
     }
     
     rolesFetchingRef.current = false;
   }, []);
+
+  const isCurrentUser = React.useCallback(
+    (user) =>
+      !!user &&
+      !!effectiveCurrentUserId &&
+      String(user.id).trim() === String(effectiveCurrentUserId).trim(),
+    [effectiveCurrentUserId]
+  );
+
+  const canEditUser = React.useCallback(
+    (user) => {
+      if (!canManageUsers || !user) return false;
+      if (isCurrentUser(user)) return true;
+      return Number(user.role_level ?? 0) <= Number(actorLevel ?? 0);
+    },
+    [canManageUsers, isCurrentUser, actorLevel]
+  );
+
+  const canDeleteUser = React.useCallback(
+    (user) => {
+      if (!canManageUsers || !user) return false;
+      if (isCurrentUser(user)) return false;
+      return Number(user.role_level ?? 0) <= Number(actorLevel ?? 0);
+    },
+    [canManageUsers, isCurrentUser, actorLevel]
+  );
 
   // Load roles on component mount
   React.useEffect(() => {
@@ -298,6 +326,9 @@ export function UsersTable() {
 
     if (selectedUser) {
       delete userData.password;
+      if (selectedUser.role === "super-admin" || isCurrentUser(selectedUser)) {
+        delete userData.role;
+      }
     }
 
     const response = selectedUser
@@ -319,7 +350,7 @@ export function UsersTable() {
     }
 
     setIsSubmitting(false);
-  }, [selectedUser, pagination, queryParams, fetchUsers]);
+  }, [selectedUser, pagination, queryParams, fetchUsers, isCurrentUser]);
 
   // Toggle row selection mode (only if user has manager-users permission)
   const handleSelectionToggle = React.useCallback(() => {
@@ -344,6 +375,8 @@ export function UsersTable() {
     enableSelection,
     roles,
     canManageUsers,
+    canEditUser,
+    canDeleteUser,
   });
 
   // Open create user dialog
@@ -895,6 +928,8 @@ export function UsersTable() {
         onSubmit={handleFormSubmit}
         isSubmitting={isSubmitting}
         roles={roles}
+        isSelf={isCurrentUser(selectedUser)}
+        actorLevel={actorLevel}
       />
 
       {/* Delete Confirmation Dialog */}

@@ -23,26 +23,29 @@ class TestRoleResponse:
             "id": "role-123",
             "name": "admin",
             "description": "Administrator role",
+            "level": 50,
         }
 
         role = RoleResponse(**role_data)
         assert role.id == "role-123"
         assert role.name == "admin"
         assert role.description == "Administrator role"
+        assert role.level == 50
 
     def test_role_response_minimal_data(self):
         """Test RoleResponse with minimal required data"""
-        role_data = {"id": "role-456", "name": "user"}
+        role_data = {"id": "role-456", "name": "user", "level": 1}
 
         role = RoleResponse(**role_data)
         assert role.id == "role-456"
         assert role.name == "user"
         assert role.description is None
+        assert role.level == 1
 
     def test_role_response_missing_required_fields(self):
         """Test RoleResponse with missing required fields"""
         with pytest.raises(ValidationError) as exc_info:
-            RoleResponse(id="role-123")
+            RoleResponse(id="role-123", level=1)
 
         errors = exc_info.value.errors()
         assert len(errors) == 1
@@ -57,31 +60,38 @@ class TestRolesListResponse:
         """Test RolesListResponse with valid data"""
         roles_data = {
             "roles": [
-                {"id": "role-1", "name": "admin", "description": "Admin role"},
-                {"id": "role-2", "name": "user", "description": "User role"},
-            ]
+                {"id": "role-1", "name": "admin", "description": "Admin role", "level": 50},
+                {"id": "role-2", "name": "user", "description": "User role", "level": 1},
+            ],
+            "actor_level": 100,
+            "actor_role_id": "actor-role-1",
         }
 
         response = RolesListResponse(**roles_data)
         assert len(response.roles) == 2
         assert response.roles[0].name == "admin"
         assert response.roles[1].name == "user"
+        assert response.actor_level == 100
+        assert response.actor_role_id == "actor-role-1"
 
     def test_roles_list_response_empty_list(self):
         """Test RolesListResponse with empty roles list"""
-        roles_data = {"roles": []}
+        roles_data = {"roles": [], "actor_level": 100, "actor_role_id": None}
         response = RolesListResponse(**roles_data)
         assert len(response.roles) == 0
+        assert response.actor_level == 100
+        assert response.actor_role_id is None
 
     def test_roles_list_response_missing_roles_field(self):
-        """Test RolesListResponse with missing roles field"""
+        """Test RolesListResponse with missing required fields"""
         with pytest.raises(ValidationError) as exc_info:
             RolesListResponse()
 
         errors = exc_info.value.errors()
-        assert len(errors) == 1
-        assert errors[0]["type"] == "missing"
-        assert errors[0]["loc"] == ("roles",)
+        assert len(errors) == 2
+        locs = {error["loc"] for error in errors}
+        assert ("roles",) in locs
+        assert ("actor_level",) in locs
 
 
 class TestRoleCreate:
@@ -92,30 +102,33 @@ class TestRoleCreate:
         role_data = {
             "name": "manager",
             "description": "Manager role with special permissions",
+            "level": 10,
         }
 
         role = RoleCreate(**role_data)
         assert role.name == "manager"
         assert role.description == "Manager role with special permissions"
+        assert role.level == 10
 
     def test_role_create_minimal_data(self):
         """Test RoleCreate with minimal required data"""
-        role_data = {"name": "guest"}
+        role_data = {"name": "guest", "level": 1}
         role = RoleCreate(**role_data)
         assert role.name == "guest"
         assert role.description is None
+        assert role.level == 1
 
     def test_role_create_name_validation(self):
         """Test RoleCreate name field validation"""
         # Test empty name
         with pytest.raises(ValidationError) as exc_info:
-            RoleCreate(name="")
+            RoleCreate(name="", level=1)
         errors = exc_info.value.errors()
         assert any(error["type"] == "string_too_short" for error in errors)
 
         # Test name too long
         with pytest.raises(ValidationError) as exc_info:
-            RoleCreate(name="a" * 101)
+            RoleCreate(name="a" * 101, level=1)
         errors = exc_info.value.errors()
         assert any(error["type"] == "string_too_long" for error in errors)
 
@@ -123,14 +136,21 @@ class TestRoleCreate:
         """Test RoleCreate description field validation"""
         # Test description too long
         with pytest.raises(ValidationError) as exc_info:
-            RoleCreate(name="test", description="a" * 501)
+            RoleCreate(name="test", description="a" * 501, level=1)
         errors = exc_info.value.errors()
         assert any(error["type"] == "string_too_long" for error in errors)
+
+    def test_role_create_level_validation(self):
+        """Test RoleCreate level bounds"""
+        with pytest.raises(ValidationError):
+            RoleCreate(name="test", level=0)
+        with pytest.raises(ValidationError):
+            RoleCreate(name="test", level=100)
 
     def test_role_create_missing_name(self):
         """Test RoleCreate with missing required name field"""
         with pytest.raises(ValidationError) as exc_info:
-            RoleCreate(description="Test description")
+            RoleCreate(description="Test description", level=1)
 
         errors = exc_info.value.errors()
         assert len(errors) == 1

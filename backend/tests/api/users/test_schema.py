@@ -39,6 +39,25 @@ class TestUserResponse:
         assert user.phone == "+1234567890"
         assert user.status == True
         assert user.role == "admin"
+        assert user.role_level is None
+
+    def test_user_response_with_role_level(self):
+        """Test UserResponse with role_level"""
+        user_data = {
+            "id": "user123",
+            "email": "user@example.com",
+            "first_name": "John",
+            "last_name": "Doe",
+            "phone": "+1234567890",
+            "status": True,
+            "created_at": datetime.now(),
+            "role": "admin",
+            "role_level": 50,
+        }
+
+        user = UserResponse(**user_data)
+        assert user.role == "admin"
+        assert user.role_level == 50
 
     def test_user_response_without_role(self):
         """Test UserResponse without optional role field"""

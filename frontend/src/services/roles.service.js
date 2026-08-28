@@ -3,6 +3,14 @@ import i18n from '@/i18n';
 
 const ROLES_BASE = '/roles';
 
+const resolveForbiddenMessage = (error, { ownRoleKey, ownRoleDefault, levelKey, levelDefault }) => {
+  const backendMessage = error?.response?.data?.message || '';
+  if (backendMessage.toLowerCase().includes('own role')) {
+    return i18n.t(ownRoleKey, ownRoleDefault);
+  }
+  return i18n.t(levelKey, levelDefault);
+};
+
 export const rolesService = {
   // Get all roles
   getAllRoles: (config = {}) => 
@@ -24,6 +32,7 @@ export const rolesService = {
       messageMap: {
         success: i18n.t('pages.rolesManagement.messages.createRole.success', 'Role created successfully'),
         409: i18n.t('pages.rolesManagement.messages.createRole.roleNameAlreadyExists', 'Role name already exists'),
+        403: i18n.t('pages.rolesManagement.messages.createRole.levelTooHigh', 'Cannot assign a role level higher than your own'),
         ...config.messageMap,
       },
       ...config,
@@ -38,6 +47,13 @@ export const rolesService = {
         success: i18n.t('pages.rolesManagement.messages.updateRole.success', 'Role updated successfully'),
         404: i18n.t('pages.rolesManagement.messages.updateRole.roleNotFound', 'Role not found'),
         409: i18n.t('pages.rolesManagement.messages.updateRole.roleNameAlreadyExists', 'Role name already exists'),
+        403: (error) =>
+          resolveForbiddenMessage(error, {
+            ownRoleKey: 'pages.rolesManagement.messages.updateRole.cannotModifyOwnRole',
+            ownRoleDefault: 'Cannot modify your own role',
+            levelKey: 'pages.rolesManagement.messages.updateRole.levelTooHigh',
+            levelDefault: 'Cannot assign a role level higher than your own',
+          }),
         ...config.messageMap,
       },
       ...config,
@@ -52,6 +68,13 @@ export const rolesService = {
         success: i18n.t('pages.rolesManagement.messages.deleteRole.success', 'Role deleted successfully'),
         404: i18n.t('pages.rolesManagement.messages.deleteRole.roleNotFound', 'Role not found'),
         409: i18n.t('pages.rolesManagement.messages.deleteRole.roleInUse', 'Cannot delete role that is assigned to users'),
+        403: (error) =>
+          resolveForbiddenMessage(error, {
+            ownRoleKey: 'pages.rolesManagement.messages.deleteRole.cannotModifyOwnRole',
+            ownRoleDefault: 'Cannot delete your own role',
+            levelKey: 'pages.rolesManagement.messages.deleteRole.levelTooHigh',
+            levelDefault: 'Cannot manage a role with higher level than your own',
+          }),
         ...config.messageMap,
       },
       ...config,
@@ -79,6 +102,13 @@ export const rolesService = {
         success: i18n.t('pages.rolesManagement.messages.updateRoleAttributes.success', 'Role attributes updated successfully'),
         400: i18n.t('pages.rolesManagement.messages.updateRoleAttributes.roleAttributesFailed', 'Role attributes failed to update'),
         404: i18n.t('pages.rolesManagement.messages.updateRoleAttributes.roleNotFound', 'Role not found'),
+        403: (error) =>
+          resolveForbiddenMessage(error, {
+            ownRoleKey: 'pages.rolesManagement.messages.updateRoleAttributes.cannotModifyOwnRole',
+            ownRoleDefault: 'Cannot modify permissions on your own role',
+            levelKey: 'pages.rolesManagement.messages.updateRoleAttributes.levelTooHigh',
+            levelDefault: 'Cannot manage a role with higher level than your own',
+          }),
         ...config.messageMap,
       },
       ...config,

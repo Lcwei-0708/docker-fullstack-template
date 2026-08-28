@@ -122,6 +122,12 @@ class Settings(BaseSettings):
     DEFAULT_ADMIN_PHONE: str = "0000000000"
     # System role with full access bypass (not editable via roles UI/API)
     DEFAULT_SUPER_ADMIN_ROLE: str = "super-admin"
+    DEFAULT_SUPER_ADMIN_LEVEL: int = 100
+    DEFAULT_USER_ROLE_LEVEL: int = 1
+    # Custom roles created via API must stay below the system super-admin level
+    MAX_CUSTOM_ROLE_LEVEL: int = 99
+    # When false, users with the system super-admin role are hidden from user list for everyone
+    SHOW_SUPER_ADMIN: bool = False
 
 # Create a settings instance to be imported elsewhere
 settings = Settings()

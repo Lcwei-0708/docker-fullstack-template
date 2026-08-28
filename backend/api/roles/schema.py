@@ -1,21 +1,39 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, List
+from core.config import settings
 
 class RoleResponse(BaseModel):
     id: str = Field(..., description="Role ID")
     name: str = Field(..., description="Role name")
     description: Optional[str] = Field(None, description="Role description")
+    level: int = Field(..., description="Role privilege level (higher is more privileged)")
 
 class RolesListResponse(BaseModel):
     roles: List[RoleResponse] = Field(..., description="List of roles")
+    actor_level: int = Field(..., description="Current user's role level")
+    actor_role_id: Optional[str] = Field(
+        None, description="Current user's primary role ID (cannot self-edit/delete)"
+    )
 
 class RoleCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, description="Role name")
     description: Optional[str] = Field(None, max_length=500, description="Role description")
+    level: int = Field(
+        ...,
+        ge=1,
+        le=settings.MAX_CUSTOM_ROLE_LEVEL,
+        description="Role privilege level (must be lower than the actor's level)",
+    )
 
 class RoleUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100, description="Role name")
     description: Optional[str] = Field(None, max_length=500, description="Role description")
+    level: Optional[int] = Field(
+        None,
+        ge=1,
+        le=settings.MAX_CUSTOM_ROLE_LEVEL,
+        description="Role privilege level (must be lower than the actor's level)",
+    )
 
 class RoleAttributesMapping(BaseModel):
     attributes: Dict[str, bool] = Field(

@@ -83,6 +83,98 @@ class TestGetAllUsers:
         assert result.per_page == 10
 
     @pytest.mark.asyncio
+    async def test_get_all_users_hides_super_admin_when_disabled(
+        self, test_db_session: AsyncSession
+    ):
+        """Super-admin users are excluded when SHOW_SUPER_ADMIN is false"""
+        regular = Users(
+            id="user-regular",
+            email="regular@example.com",
+            first_name="Regular",
+            last_name="User",
+            phone="+1000000100",
+            hash_password="hashed",
+            status=True,
+            created_at=datetime.now(),
+        )
+        super_user = Users(
+            id="user-super",
+            email="super@example.com",
+            first_name="Super",
+            last_name="Admin",
+            phone="+1000000101",
+            hash_password="hashed",
+            status=True,
+            created_at=datetime.now(),
+        )
+        user_role = Roles(id="role-user-list", name="user", description="", level=1)
+        super_role = Roles(
+            id="role-super-list", name="super-admin", description="", level=100
+        )
+        test_db_session.add_all([regular, super_user, user_role, super_role])
+        await test_db_session.commit()
+        test_db_session.add_all(
+            [
+                RoleMapper(user_id=regular.id, role_id=user_role.id),
+                RoleMapper(user_id=super_user.id, role_id=super_role.id),
+            ]
+        )
+        await test_db_session.commit()
+
+        with patch("api.users.services.settings.SHOW_SUPER_ADMIN", False):
+            result = await get_all_users(db=test_db_session, page=1, per_page=10)
+
+        assert result.total == 1
+        assert len(result.users) == 1
+        assert result.users[0].id == "user-regular"
+
+    @pytest.mark.asyncio
+    async def test_get_all_users_shows_super_admin_when_enabled(
+        self, test_db_session: AsyncSession
+    ):
+        """Super-admin users appear when SHOW_SUPER_ADMIN is true"""
+        regular = Users(
+            id="user-regular-2",
+            email="regular2@example.com",
+            first_name="Regular",
+            last_name="Two",
+            phone="+1000000102",
+            hash_password="hashed",
+            status=True,
+            created_at=datetime.now(),
+        )
+        super_user = Users(
+            id="user-super-2",
+            email="super2@example.com",
+            first_name="Super",
+            last_name="Two",
+            phone="+1000000103",
+            hash_password="hashed",
+            status=True,
+            created_at=datetime.now(),
+        )
+        user_role = Roles(id="role-user-list-2", name="user", description="", level=1)
+        super_role = Roles(
+            id="role-super-list-2", name="super-admin", description="", level=100
+        )
+        test_db_session.add_all([regular, super_user, user_role, super_role])
+        await test_db_session.commit()
+        test_db_session.add_all(
+            [
+                RoleMapper(user_id=regular.id, role_id=user_role.id),
+                RoleMapper(user_id=super_user.id, role_id=super_role.id),
+            ]
+        )
+        await test_db_session.commit()
+
+        with patch("api.users.services.settings.SHOW_SUPER_ADMIN", True):
+            result = await get_all_users(db=test_db_session, page=1, per_page=10)
+
+        ids = {user.id for user in result.users}
+        assert result.total == 2
+        assert ids == {"user-regular-2", "user-super-2"}
+
+    @pytest.mark.asyncio
     async def test_get_all_users_with_keyword(self, test_db_session: AsyncSession):
         """Test users retrieval with keyword search"""
         user1 = Users(
@@ -657,6 +749,51 @@ class TestUpdateUser:
         mock_assert.assert_awaited_once()
         mock_update_role.assert_awaited_once()
 
+    @pytest.mark.asyncio
+    async def test_update_user_rejects_higher_role_level(
+        self, test_db_session: AsyncSession
+    ):
+        actor = Users(
+            id="actor-upd",
+            email="actor-upd@example.com",
+            first_name="Actor",
+            last_name="Upd",
+            phone="+1000000011",
+            hash_password="hashed",
+            status=True,
+            created_at=datetime.now(),
+        )
+        target = Users(
+            id="target-upd",
+            email="target-upd@example.com",
+            first_name="Target",
+            last_name="Upd",
+            phone="+1000000012",
+            hash_password="hashed",
+            status=True,
+            created_at=datetime.now(),
+        )
+        actor_role = Roles(id="role-actor-upd", name="staff", description="", level=20)
+        target_role = Roles(id="role-target-upd", name="chief", description="", level=90)
+        test_db_session.add_all([actor, target, actor_role, target_role])
+        await test_db_session.commit()
+        test_db_session.add_all(
+            [
+                RoleMapper(user_id=actor.id, role_id=actor_role.id),
+                RoleMapper(user_id=target.id, role_id=target_role.id),
+            ]
+        )
+        await test_db_session.commit()
+
+        with pytest.raises(AuthorizationException) as exc_info:
+            await update_user(
+                test_db_session,
+                "target-upd",
+                UserUpdate(first_name="Hacked"),
+                actor_user_id="actor-upd",
+            )
+        assert "higher role level" in str(exc_info.value)
+
     """Test delete_users service function"""
 
     @pytest.mark.asyncio
@@ -881,6 +1018,53 @@ class TestUpdateUser:
         assert result.failed_count == 1
         assert result.results[0].message == "Cannot delete your own account"
 
+    @pytest.mark.asyncio
+    async def test_delete_users_rejects_higher_role_level(
+        self, test_db_session: AsyncSession
+    ):
+        actor = Users(
+            id="actor-del",
+            email="actor-del@example.com",
+            first_name="Actor",
+            last_name="Del",
+            phone="+1000000001",
+            hash_password="hashed",
+            status=True,
+            created_at=datetime.now(),
+        )
+        target = Users(
+            id="target-high",
+            email="target-high@example.com",
+            first_name="Target",
+            last_name="High",
+            phone="+1000000002",
+            hash_password="hashed",
+            status=True,
+            created_at=datetime.now(),
+        )
+        actor_role = Roles(id="role-actor", name="manager", description="", level=30)
+        target_role = Roles(id="role-target", name="director", description="", level=80)
+        test_db_session.add_all([actor, target, actor_role, target_role])
+        await test_db_session.commit()
+        test_db_session.add_all(
+            [
+                RoleMapper(user_id=actor.id, role_id=actor_role.id),
+                RoleMapper(user_id=target.id, role_id=target_role.id),
+            ]
+        )
+        await test_db_session.commit()
+
+        mock_redis = AsyncMock()
+        result = await delete_users(
+            test_db_session,
+            mock_redis,
+            ["target-high"],
+            token={"sub": "actor-del"},
+        )
+
+        assert result.failed_count == 1
+        assert "higher role level" in result.results[0].message
+
 
 class TestResetUserPassword:
     """Test reset_user_password service function"""
@@ -1071,8 +1255,106 @@ class TestAssertCanManageUserRole:
             "api.users.services.get_user_attributes",
             new_callable=AsyncMock,
             return_value={"manage-roles": True},
+        ), patch(
+            "api.users.services.get_user_role_level",
+            new_callable=AsyncMock,
+            return_value=50,
+        ), patch(
+            "api.users.services._get_role_level_by_name",
+            new_callable=AsyncMock,
+            return_value=10,
         ):
             await _assert_can_manage_user_role(test_db_session, "actor1", "user")
+
+    @pytest.mark.asyncio
+    async def test_cannot_assign_higher_role_level(self, test_db_session: AsyncSession):
+        with patch(
+            "api.users.services.check_user_has_super_role",
+            new_callable=AsyncMock,
+            return_value=False,
+        ), patch(
+            "api.users.services.get_user_attributes",
+            new_callable=AsyncMock,
+            return_value={"manage-roles": True},
+        ), patch(
+            "api.users.services.get_user_role_level",
+            new_callable=AsyncMock,
+            return_value=20,
+        ), patch(
+            "api.users.services._get_role_level_by_name",
+            new_callable=AsyncMock,
+            return_value=50,
+        ):
+            with pytest.raises(AuthorizationException) as exc_info:
+                await _assert_can_manage_user_role(test_db_session, "actor1", "boss")
+            assert "higher level" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_cannot_manage_user_with_higher_role_level(
+        self, test_db_session: AsyncSession
+    ):
+        async def fake_level(user_id, _db):
+            return 80 if user_id == "target-high" else 20
+
+        with patch(
+            "api.users.services.check_user_has_super_role",
+            new_callable=AsyncMock,
+            return_value=False,
+        ), patch(
+            "api.users.services.get_user_attributes",
+            new_callable=AsyncMock,
+            return_value={"manage-roles": True},
+        ), patch(
+            "api.users.services._get_user_role_name",
+            new_callable=AsyncMock,
+            return_value="manager",
+        ), patch(
+            "api.users.services.get_user_role_level",
+            new_callable=AsyncMock,
+            side_effect=fake_level,
+        ), patch(
+            "api.users.services._get_role_level_by_name",
+            new_callable=AsyncMock,
+            return_value=10,
+        ):
+            with pytest.raises(AuthorizationException) as exc_info:
+                await _assert_can_manage_user_role(
+                    test_db_session,
+                    "actor1",
+                    "user",
+                    target_user_id="target-high",
+                )
+            assert "higher role level" in str(exc_info.value)
+
+
+class TestUpdateUserOwnRole:
+    """Test users cannot change their own role"""
+
+    @pytest.mark.asyncio
+    async def test_update_user_rejects_own_role_change(
+        self, test_db_session: AsyncSession
+    ):
+        user = Users(
+            id="self-user",
+            email="self@example.com",
+            first_name="Self",
+            last_name="User",
+            phone="+1234567890",
+            hash_password="hashed_password",
+            status=True,
+            created_at=datetime.now(),
+        )
+        test_db_session.add(user)
+        await test_db_session.commit()
+
+        with pytest.raises(AuthorizationException) as exc_info:
+            await update_user(
+                test_db_session,
+                "self-user",
+                UserUpdate(role="user"),
+                actor_user_id="self-user",
+            )
+        assert "own role" in str(exc_info.value)
 
 
 class TestRoleManagement:
