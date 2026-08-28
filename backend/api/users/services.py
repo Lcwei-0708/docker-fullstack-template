@@ -19,9 +19,25 @@ from utils.custom_exception import (
     AuthorizationException,
 )
 from core.permissions import Permission
-from core.rbac import check_user_has_super_role, get_user_attributes, is_super_admin_role_name
+from core.config import settings
+from core.rbac import (
+    check_user_has_super_role,
+    get_user_attributes,
+    get_user_role_level,
+    is_super_admin_role_name,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def _super_admin_user_ids_subquery():
+    """Subquery of user IDs assigned to the system super-admin role."""
+    return (
+        select(RoleMapper.user_id)
+        .join(Roles, Roles.id == RoleMapper.role_id)
+        .where(Roles.name == settings.DEFAULT_SUPER_ADMIN_ROLE)
+    )
+
 
 async def get_all_users(
     db: AsyncSession,
@@ -61,6 +77,9 @@ async def get_all_users(
             query = query.join(Roles, RoleMapper.role_id == Roles.id)
             query = query.where(Roles.name.in_(role_list))
             has_role_join = True
+
+        if not settings.SHOW_SUPER_ADMIN:
+            query = query.where(Users.id.not_in(_super_admin_user_ids_subquery()))
         
         if sort_by:
             if sort_by == "role":
@@ -108,6 +127,11 @@ async def get_all_users(
             count_query = count_query.join(RoleMapper, Users.id == RoleMapper.user_id)
             count_query = count_query.join(Roles, RoleMapper.role_id == Roles.id)
             count_query = count_query.where(Roles.name.in_(role_list))
+
+        if not settings.SHOW_SUPER_ADMIN:
+            count_query = count_query.where(
+                Users.id.not_in(_super_admin_user_ids_subquery())
+            )
         
         total_result = await db.execute(count_query)
         total = total_result.scalar()
@@ -131,6 +155,7 @@ async def get_all_users(
 
         user_responses = []
         for user in users:
+            role_name, role_level = user_roles.get(user.id, (None, None))
             user_response = UserResponse(
                 id=user.id,
                 email=user.email,
@@ -139,7 +164,8 @@ async def get_all_users(
                 phone=user.phone,
                 status=user.status,
                 created_at=user.created_at,
-                role=user_roles.get(user.id)
+                role=role_name,
+                role_level=role_level,
             )
             user_responses.append(user_response)
         
@@ -193,9 +219,11 @@ async def create_user(
         await db.refresh(user)
         
         user_role = None
+        user_role_level = None
         if user_data.role:
             await _assign_user_role(db, user.id, user_data.role)
             user_role = user_data.role
+            user_role_level = await _get_role_level_by_name(db, user_data.role)
         
         return UserResponse(
             id=user.id,
@@ -205,10 +233,11 @@ async def create_user(
             phone=user.phone,
             status=user.status,
             created_at=user.created_at,
-            role=user_role
+            role=user_role,
+            role_level=user_role_level,
         )
         
-    except (ConflictException, AuthorizationException):
+    except (ConflictException, NotFoundException, AuthorizationException):
         raise
     except Exception as e:
         raise ServerException(f"Failed to create user: {str(e)}")
@@ -243,6 +272,12 @@ async def update_user(
                 raise ConflictException("Email already exists")
 
         role_update_requested = "role" in user_data.model_dump(exclude_unset=True)
+        if role_update_requested and actor_user_id == user_id:
+            raise AuthorizationException("Cannot change your own role")
+
+        if actor_user_id != user_id:
+            await _assert_can_manage_target_user(db, actor_user_id, user_id)
+
         if role_update_requested:
             await _assert_can_manage_user_role(
                 db,
@@ -277,12 +312,17 @@ async def update_user(
         if role_update_requested:
             await _update_user_role(db, user_id, user_data.role)
         
-        role_query = select(Roles.name).join(
-            RoleMapper, Roles.id == RoleMapper.role_id
-        ).where(RoleMapper.user_id == user.id).limit(1)
-        
+        role_query = (
+            select(Roles.name, Roles.level)
+            .join(RoleMapper, Roles.id == RoleMapper.role_id)
+            .where(RoleMapper.user_id == user.id)
+            .order_by(Roles.level.desc(), Roles.name.asc())
+            .limit(1)
+        )
         role_result = await db.execute(role_query)
-        user_role = role_result.scalar()
+        role_row = role_result.one_or_none()
+        user_role = role_row[0] if role_row else None
+        user_role_level = role_row[1] if role_row else None
         
         return UserResponse(
             id=user.id,
@@ -292,7 +332,8 @@ async def update_user(
             phone=user.phone,
             status=user.status,
             created_at=user.created_at,
-            role=user_role
+            role=user_role,
+            role_level=user_role_level,
         )
         
     except (ConflictException, NotFoundException, AuthorizationException):
@@ -309,6 +350,12 @@ async def delete_users(db: AsyncSession, redis_client: redis.Redis, user_ids: Li
         
         # Get current user ID from token
         current_user_id = token.get("sub") if token else None
+        actor_is_super = False
+        actor_level = 0
+        if current_user_id:
+            actor_is_super = await check_user_has_super_role(current_user_id, db)
+            if not actor_is_super:
+                actor_level = await get_user_role_level(current_user_id, db)
         
         # Check which users exist
         result = await db.execute(
@@ -338,6 +385,17 @@ async def delete_users(db: AsyncSession, redis_client: redis.Redis, user_ids: Li
                         ))
                         failed_count += 1
                         continue
+
+                    if not actor_is_super:
+                        target_level = await get_user_role_level(user_id, db)
+                        if target_level > actor_level:
+                            results.append(UserDeleteResult(
+                                user_id=user_id,
+                                status="failed",
+                                message="Cannot delete a user with a higher role level than your own"
+                            ))
+                            failed_count += 1
+                            continue
 
                     # Clear user sessions and tokens before deletion
                     await clear_user_all_sessions(db, redis_client, user_id)
@@ -416,21 +474,22 @@ async def reset_user_password(
 
 async def _get_user_roles_map(
     db: AsyncSession, user_ids: List[str]
-) -> Dict[str, Optional[str]]:
-    """Batch-load one role name per user (matches limit(1) per-user query)."""
+) -> Dict[str, tuple[Optional[str], Optional[int]]]:
+    """Batch-load primary role name/level per user (highest level wins)."""
     if not user_ids:
         return {}
 
     roles_query = (
-        select(RoleMapper.user_id, Roles.name)
+        select(RoleMapper.user_id, Roles.name, Roles.level)
         .join(Roles, Roles.id == RoleMapper.role_id)
         .where(RoleMapper.user_id.in_(user_ids))
+        .order_by(Roles.level.desc(), Roles.name.asc())
     )
     role_result = await db.execute(roles_query)
-    user_roles: Dict[str, Optional[str]] = {}
-    for user_id, role_name in role_result.all():
+    user_roles: Dict[str, tuple[Optional[str], Optional[int]]] = {}
+    for user_id, role_name, role_level in role_result.all():
         if user_id not in user_roles:
-            user_roles[user_id] = role_name
+            user_roles[user_id] = (role_name, role_level)
     return user_roles
 
 async def _get_user_role_name(db: AsyncSession, user_id: str) -> Optional[str]:
@@ -438,9 +497,37 @@ async def _get_user_role_name(db: AsyncSession, user_id: str) -> Optional[str]:
         select(Roles.name)
         .join(RoleMapper, Roles.id == RoleMapper.role_id)
         .where(RoleMapper.user_id == user_id)
+        .order_by(Roles.level.desc(), Roles.name.asc())
         .limit(1)
     )
     return result.scalar_one_or_none()
+
+
+async def _get_role_level_by_name(db: AsyncSession, role_name: str) -> Optional[int]:
+    result = await db.execute(
+        select(Roles.level).where(Roles.name == role_name).limit(1)
+    )
+    level = result.scalar_one_or_none()
+    return int(level) if level is not None else None
+
+
+async def _assert_can_manage_target_user(
+    db: AsyncSession,
+    actor_user_id: str,
+    target_user_id: str,
+) -> None:
+    """Block update/delete when the target user's role level is higher than the actor's."""
+    if actor_user_id == target_user_id:
+        return
+    if await check_user_has_super_role(actor_user_id, db):
+        return
+
+    actor_level = await get_user_role_level(actor_user_id, db)
+    target_level = await get_user_role_level(target_user_id, db)
+    if target_level > actor_level:
+        raise AuthorizationException(
+            "Cannot manage a user with a higher role level than your own"
+        )
 
 
 async def _assert_can_manage_user_role(
@@ -453,6 +540,7 @@ async def _assert_can_manage_user_role(
     """
     Require manage-roles (or super-admin) to change roles.
     The system super-admin role cannot be assigned or removed via API.
+    Assigned / target role levels cannot exceed the actor's level.
     """
     if is_super_admin_role_name(role_name):
         raise AuthorizationException("Cannot assign the system super-admin role")
@@ -468,6 +556,24 @@ async def _assert_can_manage_user_role(
     attributes = await get_user_attributes(actor_user_id, db)
     if not attributes.get(Permission.MANAGE_ROLES.value, False):
         raise AuthorizationException("Permission denied to assign roles")
+
+    actor_level = await get_user_role_level(actor_user_id, db)
+
+    if target_user_id:
+        target_level = await get_user_role_level(target_user_id, db)
+        if target_level > actor_level:
+            raise AuthorizationException(
+                "Cannot manage a user with a higher role level than your own"
+            )
+
+    if role_name:
+        new_role_level = await _get_role_level_by_name(db, role_name)
+        if new_role_level is None:
+            raise NotFoundException(f"Role '{role_name}' not found")
+        if new_role_level > actor_level:
+            raise AuthorizationException(
+                "Cannot assign a role with a higher level than your own"
+            )
 
 
 async def _assign_user_role(db: AsyncSession, user_id: str, role_name: str) -> None:
