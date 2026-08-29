@@ -150,17 +150,27 @@ services:
       retries: 5
 
   mariadb:
-    image: mariadb:12.3.2
+    build:
+      context: ./db
     environment:
       - TZ=${TIMEZONE:-UTC}
       - MYSQL_DATABASE=${DB_DATABASE:-app}
       - MYSQL_USER=${DB_USER:-app}
       - MYSQL_PASSWORD=${DB_PASSWORD:-app}
       - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-root}
+      - DB_BACKUP_ENABLE=${DB_BACKUP_ENABLE:-true}
+      - DB_BACKUP_SCHEDULE=${DB_BACKUP_SCHEDULE:-0 2 * * *}
+      - DB_BACKUP_RETENTION_DAYS=${DB_BACKUP_RETENTION_DAYS:-7}
+      - DB_BACKUP_LOG_RETENTION_DAYS=${DB_BACKUP_LOG_RETENTION_DAYS:-7}
     volumes:
       - db-data:/var/lib/mysql
       - ./db/custom.cnf:/etc/mysql/conf.d/custom.cnf
-      - ./db/init-test-db.sh:/docker-entrypoint-initdb.d/init-test-db.sh
+      - ./db/docker-entrypoint.sh:/docker-entrypoint.sh:ro
+      - ./db/scripts/init-test-db.sh:/docker-entrypoint-initdb.d/init-test-db.sh
+      - ./db/scripts/backup.sh:/scripts/backup.sh:ro
+      - ./db/scripts/retention.sh:/scripts/retention.sh:ro
+      - ./db/scripts/restore.sh:/scripts/restore.sh:ro
+      - ${DB_BACKUP_PATH:-./db/backups}:/backups
     networks:
       - backend-network
     restart: always
