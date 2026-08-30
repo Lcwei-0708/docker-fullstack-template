@@ -28,6 +28,7 @@ services:
       # Redis Insight authentication
       - REDIS_INSIGHT_USER=${REDIS_INSIGHT_USER:-}
       - REDIS_INSIGHT_PASSWORD=${REDIS_INSIGHT_PASSWORD:-}
+      - LOG_LOCAL_RETENTION_DAYS=${LOG_LOCAL_RETENTION_DAYS:-7}
     entrypoint: ["/docker-entrypoint.sh"]
     ports:
       - "${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}"
@@ -93,8 +94,6 @@ services:
       - DEBUG_MODE=true
       - RATE_LIMIT_WHITELIST=${RATE_LIMIT_WHITELIST:-}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - LOG_HTTP_BODY=${LOG_HTTP_BODY:-false}
-      - LOG_HTTP_BODY_MAX_BYTES=${LOG_HTTP_BODY_MAX_BYTES:-8192}
       - SSL_ENABLE=${SSL_ENABLE:-false}
       - SECRET_KEY=${SECRET_KEY:-change-me}
       - PROJECT_NAME=${PROJECT_NAME:-docker-fullstack-template}
@@ -117,8 +116,8 @@ services:
       # Redis settings
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redis}@redis:6379/0
       # OpenTelemetry settings
-      - OTEL_ENABLE=true
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4318
+      - OTEL_ENABLE=${OTEL_ENABLE:-true}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://alloy:4318}
       # SMTP settings
       - SMTP_ENABLE=${SMTP_ENABLE:-false}
       - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
@@ -132,6 +131,10 @@ services:
       - EMAIL_VERIFICATION_ENABLE=${EMAIL_VERIFICATION_ENABLE:-false}
       # Registration settings
       - REGISTRATION_ENABLE=${REGISTRATION_ENABLE:-true}
+      # Log settings
+      - LOG_HTTP_BODY=${LOG_HTTP_BODY:-false}
+      - LOG_HTTP_BODY_MAX_BYTES=${LOG_HTTP_BODY_MAX_BYTES:-8192}
+      - LOG_LOCAL_RETENTION_DAYS=${LOG_LOCAL_RETENTION_DAYS:-7}
     command: ["sh", "./init-dev.sh"]
     depends_on:
       mariadb:
@@ -263,6 +266,7 @@ services:
     image: grafana/loki:3.7.3
     environment:
       - TZ=${TIMEZONE:-UTC}
+      - LOG_LOKI_RETENTION_DAYS=${LOG_LOKI_RETENTION_DAYS:-365}
     volumes:
       - loki-data:/loki
       - loki-wal-data:/wal

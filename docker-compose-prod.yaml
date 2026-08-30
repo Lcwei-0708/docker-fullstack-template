@@ -29,6 +29,7 @@ services:
       # Redis Insight authentication
       - REDIS_INSIGHT_USER=${REDIS_INSIGHT_USER}
       - REDIS_INSIGHT_PASSWORD=${REDIS_INSIGHT_PASSWORD}
+      - LOG_LOCAL_RETENTION_DAYS=${LOG_LOCAL_RETENTION_DAYS:-7}
     entrypoint: ["/docker-entrypoint.sh"]
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
@@ -94,8 +95,6 @@ services:
       - DEBUG_MODE=false
       - RATE_LIMIT_WHITELIST=${RATE_LIMIT_WHITELIST:-}
       - LOG_LEVEL=${LOG_LEVEL}
-      - LOG_HTTP_BODY=${LOG_HTTP_BODY:-false}
-      - LOG_HTTP_BODY_MAX_BYTES=${LOG_HTTP_BODY_MAX_BYTES:-8192}
       - SSL_ENABLE=${SSL_ENABLE}
       - SECRET_KEY=${SECRET_KEY}
       - PROJECT_NAME=${PROJECT_NAME}
@@ -118,8 +117,8 @@ services:
       # Redis settings
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       # OpenTelemetry settings
-      - OTEL_ENABLE=true
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4318
+      - OTEL_ENABLE=${OTEL_ENABLE:-true}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://alloy:4318}
       # SMTP settings
       - SMTP_ENABLE=${SMTP_ENABLE}
       - SMTP_HOST=${SMTP_HOST}
@@ -133,6 +132,10 @@ services:
       - EMAIL_VERIFICATION_ENABLE=${EMAIL_VERIFICATION_ENABLE}
       # Registration settings
       - REGISTRATION_ENABLE=${REGISTRATION_ENABLE}
+      # Log settings
+      - LOG_HTTP_BODY=${LOG_HTTP_BODY:-false}
+      - LOG_HTTP_BODY_MAX_BYTES=${LOG_HTTP_BODY_MAX_BYTES:-8192}
+      - LOG_LOCAL_RETENTION_DAYS=${LOG_LOCAL_RETENTION_DAYS:-7}
     command: ["sh", "./init-prod.sh"]
     depends_on:
       mariadb:
@@ -260,6 +263,7 @@ services:
     image: grafana/loki:3.7.3
     environment:
       - TZ=${TIMEZONE}
+      - LOG_LOKI_RETENTION_DAYS=${LOG_LOKI_RETENTION_DAYS:-365}
     volumes:
       - loki-data:/loki
       - loki-wal-data:/wal

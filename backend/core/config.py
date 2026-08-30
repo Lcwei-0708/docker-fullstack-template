@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     # Basic settings
     DEBUG_MODE: bool = True
     LOG_LEVEL: str = "INFO"
+    LOG_LOCAL_RETENTION_DAYS: int = 7
     LOG_HTTP_BODY: bool = False
     LOG_HTTP_BODY_MAX_BYTES: int = 8192
     SSL_ENABLE: bool = False
@@ -144,4 +145,6 @@ def setup_logging(yaml_path="logging_config.yaml"):
     if "loggers" in config:
         for logger in config["loggers"].values():
             logger["level"] = log_level
+    if "handlers" in config and "file" in config["handlers"]:
+        config["handlers"]["file"]["backupCount"] = settings.LOG_LOCAL_RETENTION_DAYS
     logging.config.dictConfig(config)
