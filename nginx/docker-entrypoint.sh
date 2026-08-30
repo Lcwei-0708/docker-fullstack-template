@@ -13,14 +13,19 @@ fi
 # Create log directory if it doesn't exist
 mkdir -p /var/log/nginx
 
+LOG_LOCAL_RETENTION_DAYS="${LOG_LOCAL_RETENTION_DAYS:-7}"
+if [ -f /etc/logrotate.d/nginx ]; then
+  sed -i "s/^    rotate .*/    rotate ${LOG_LOCAL_RETENTION_DAYS}/" /etc/logrotate.d/nginx
+fi
+
 # Set correct permissions and ownership for all nginx-related directories and files
 chown -R root:root /var/log/nginx /etc/logrotate.d /var/lib/logrotate
 chmod 755 /var/log/nginx /etc/logrotate.d /var/lib/logrotate
 
-# Ensure log files exist with correct permissions
-touch /var/log/nginx/nginx.log /var/log/nginx/error.log
-chown root:root /var/log/nginx/*.log /etc/logrotate.d/nginx
-chmod 644 /var/log/nginx/*.log /etc/logrotate.d/nginx
+# Ensure log file exists with correct permissions
+touch /var/log/nginx/nginx.log
+chown root:root /var/log/nginx/nginx.log /etc/logrotate.d/nginx
+chmod 644 /var/log/nginx/nginx.log /etc/logrotate.d/nginx
 
 # Setup Redis Insight authentication if environment variables are provided
 if [ ! -z "$REDIS_INSIGHT_USER" ] && [ ! -z "$REDIS_INSIGHT_PASSWORD" ]; then

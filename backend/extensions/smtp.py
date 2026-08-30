@@ -10,7 +10,7 @@ from email.message import EmailMessage
 from email.mime.multipart import MIMEMultipart
 from utils.custom_exception import SMTPNotConfiguredException
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("smtp")
 
 
 @dataclass(frozen=True)

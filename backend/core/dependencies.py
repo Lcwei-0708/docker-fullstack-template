@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import AsyncSessionLocal, SessionLocal
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("dependencies")
 
 # Async DB dependency
 async def get_db() -> AsyncSession:

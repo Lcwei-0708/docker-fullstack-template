@@ -51,7 +51,7 @@ from utils.custom_exception import (
     RegistrationDisabledException,
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("auth")
 router = APIRouter(tags=["Auth"])
 
 @router.post(

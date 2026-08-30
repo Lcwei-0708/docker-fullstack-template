@@ -27,7 +27,7 @@ from core.rbac import (
     is_super_admin_role_name,
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("users")
 
 
 def _super_admin_user_ids_subquery():

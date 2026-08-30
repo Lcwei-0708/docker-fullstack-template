@@ -4,7 +4,7 @@ from .services import get_ip_debug_info, clear_blocked_ips
 from .schema import IPDebugResponse, ClearBlockedIPsResponse
 from fastapi import APIRouter, Request, HTTPException
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("debug")
 
 router = APIRouter(tags=["Debug"])
 

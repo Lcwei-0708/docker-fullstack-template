@@ -11,7 +11,7 @@ from models.role_attributes import RoleAttributes
 from utils.custom_exception import ServerException
 from models.role_attributes_mapper import RoleAttributesMapper
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("rbac")
 
 def is_super_admin_role_name(role_name: str | None) -> bool:
     """True when role_name is the ENV-configured system super-admin role."""
