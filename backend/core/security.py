@@ -16,7 +16,7 @@ from utils.custom_exception import ServerException
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("security")
 
 async def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")

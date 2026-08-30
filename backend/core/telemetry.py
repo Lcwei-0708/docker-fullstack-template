@@ -13,7 +13,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from core.config import SKIP_METHODS, otel_excluded_urls, settings
 from core.database import async_engine, engine
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("telemetry")
 
 EXCLUDED_URLS = otel_excluded_urls()
 

@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from core.config import SKIP_METHODS, SKIP_PATHS
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("rate_limiter")
 
 RATE_LIMIT = settings.RATE_LIMIT
 RATE_LIMIT_WINDOW_SECONDS = settings.RATE_LIMIT_WINDOW_SECONDS
@@ -129,11 +129,6 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
                         await redis.expire(api_fail_key, window_seconds)
 
                     if api_fails >= limit_count:
-                        logger.warning(
-                            f"API RateLimit blocked: method={method} path={path} "
-                            f"count={api_fails} limit={limit_count} "
-                            f"block_seconds={BLOCK_TIME_SECONDS} ipAddress={ip}"
-                        )
                         await redis.set(api_block_key, 1, ex=BLOCK_TIME_SECONDS)
                         await redis.delete(api_fail_key)
                         resp = APIResponse[None](code=429, message="Too many requests. Try again later.")

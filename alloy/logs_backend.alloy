@@ -49,30 +49,9 @@ loki.process "backend_logs" {
 		}
 	}
 
-	stage.regex {
-		expression = "API RateLimit blocked: method=(?P<method>\\w+) path=(?P<path>[^ ]+).* ipAddress=(?P<ip_address>[^ ]+)"
-	}
-	stage.labels {
-		values = {
-			method      = "method",
-			path        = "path",
-			ip_address  = "ip_address",
-			status_code = "status_code",
-		}
-	}
-
-	stage.regex {
-		expression = "\\[(?P<error_code>[A-Z_]+)\\] \\| (?P<error_message>.*)"
-	}
-	stage.labels {
-		values = {
-			error_code = "error_code",
-		}
-	}
-
 	stage.template {
 		source   = "event_type"
-		template = "{{ if eq (index .Values \"api_action\") \"Request\" }}api_request{{ else if eq (index .Values \"api_action\") \"Response\" }}api_response{{ else if index .Values \"error_code\" }}error{{ end }}"
+		template = "{{ if eq (index .Values \"api_action\") \"Request\" }}api_request{{ else if eq (index .Values \"api_action\") \"Response\" }}api_response{{ else if eq (index .Values \"logger\") \"exception\" }}error{{ end }}"
 	}
 	stage.labels {
 		values = {
@@ -111,8 +90,6 @@ loki.process "backend_logs" {
 			user_agent     = "user_agent",
 			status_code    = "status_code",
 			duration       = "duration",
-			error_code     = "error_code",
-			error_message  = "error_message",
 			traceID        = "traceID",
 			request_query  = "request_query",
 			payload        = "payload",

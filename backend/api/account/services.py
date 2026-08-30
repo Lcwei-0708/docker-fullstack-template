@@ -13,7 +13,7 @@ from core.security import hash_password, verify_password, clear_user_all_session
 from utils.email_templates import EMAIL_VERIFICATION_TEMPLATE
 from api.auth.services import _request_email_change_verification_email
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("account")
 
 async def get_user_by_id(db: AsyncSession, user_id: str) -> Optional[Users]:
     """Get user info by id"""
