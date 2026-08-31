@@ -22,13 +22,13 @@ repos:
     hooks:
       - id: prettier-frontend
         name: prettier (frontend)
-        entry: bash -c 'cd frontend && npm run format'
+        entry: bash -c 'cd frontend && args=(); for f in "$@"; do args+=("${f#frontend/}"); done; npx prettier --write --ignore-unknown "${args[@]}"' --
         language: system
         files: ^frontend/.*\.(js|jsx|json|css|md)$
-        pass_filenames: false
+        pass_filenames: true
       - id: eslint-frontend
         name: eslint (frontend)
-        entry: bash -c 'cd frontend && npm run lint:fix && npm run lint'
+        entry: bash -c 'cd frontend && args=(); for f in "$@"; do args+=("${f#frontend/}"); done; npx eslint --fix "${args[@]}" && npx eslint "${args[@]}"' --
         language: system
         files: ^frontend/(src/.*\.(js|jsx)|eslint\.config\.js)$
-        pass_filenames: false
+        pass_filenames: true
