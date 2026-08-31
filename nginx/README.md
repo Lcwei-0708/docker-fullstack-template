@@ -25,18 +25,17 @@ This Nginx configuration provides a secure, high-performance reverse proxy servi
 
 ### 1. IP Whitelist Setup
 
-Copy the example whitelist configuration:
-```bash
-cp whitelist.conf.example whitelist.conf
-```
+On first `docker compose up`, `whitelist.conf` is auto-created from
+`whitelist.conf.example` (not tracked by git). Edit `whitelist.conf` to add allowed IPs:
 
-Edit the whitelist.conf file to add your allowed IPs:
 ```bash
-# Example whitelist.conf content:
-0.0.0.0/0 1;         # Allow all IPs
+# Example entries in whitelist.conf:
 192.168.1.0/24 1;    # Allow specific subnet
 192.168.0.1 1;       # Allow specific IP
 ```
+
+Default mode allows all requests (`default 1;` in `nginx.conf`). To enforce the whitelist,
+change `nginx.conf` to `default 0;`.
 
 ### 2. SSL Certificates Setup
 

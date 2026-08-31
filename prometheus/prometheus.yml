@@ -2,7 +2,7 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
-# Metrics are pushed by Alloy (node-exporter + docker-stats). Keep a self-scrape so
+# Metrics are pushed by Alloy (docker-stats). Keep a self-scrape so
 # Prometheus health is visible in Grafana if needed.
 scrape_configs:
   - job_name: prometheus

@@ -6,3 +6,4 @@
 
 # Custom Configurations
 custom.d/*.conf
+whitelist.conf

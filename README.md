@@ -41,7 +41,8 @@ This project is a ready-to-use fullstack template that leverages Docker Compose 
 
 #### 4. **Set up Nginx IP whitelist and SSL certificates**
 
-     If you need to restrict the range of allowed IP addresses, edit this file.
+     On first start, `nginx/whitelist.conf` is auto-created from `whitelist.conf.example`
+     (not tracked by git). Edit that file if you need to restrict allowed IP addresses.
 
   
    - To enable SSL (HTTPS), you need to configure SSL settings in your `.env` file and place your SSL certificates in the `nginx/ssl` directory.

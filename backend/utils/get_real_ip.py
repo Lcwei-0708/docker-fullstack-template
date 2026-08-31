@@ -2,14 +2,13 @@ from fastapi import Request
 
 def get_real_ip(request: Request) -> str:
     """
-    Get the real client IP address from the trusted reverse proxy.
+    Get the client IP address from the X-Real-IP header set by nginx.
+
+    Nginx sets X-Real-IP from $remote_addr (TCP connection IP).
 
     Priority order:
-    1. X-Real-IP (set by nginx from $remote_addr — not client-controlled)
-    2. request.client.host (direct connection IP)
-
-    Do not trust X-Forwarded-For here: with nginx $proxy_add_x_forwarded_for,
-    a client-supplied value is prepended and would spoof rate-limit keys.
+    1. X-Real-IP (from nginx $remote_addr)
+    2. request.client.host (fallback)
     """
     real_ip = request.headers.get("x-real-ip")
     if real_ip:
