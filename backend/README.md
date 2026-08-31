@@ -6,7 +6,7 @@ This backend project is built with modern Python technologies to provide a robus
 
 - **FastAPI**: Modern, fast (high-performance) web framework for building APIs with Python 3.7+ and full async/await support.
 - **SQLAlchemy (Async)**: Powerful and flexible ORM for database operations, using async engine and sessions.
-- **Alembic**: Database migrations tool for SQLAlchemy.  
+- **Alembic**: Database migrations tool for SQLAlchemy.
   _See [Migration Docs](./migrations/README.md) for details._
 - **Pydantic**: Data validation and settings management using Python type annotations.
 - **Redis (Async)**: Used for rate limiting, integrated via `redis.asyncio`.
@@ -14,7 +14,7 @@ This backend project is built with modern Python technologies to provide a robus
 - **Docker**: Containerization for development and deployment.
 - **uv**: Fast Python package and project manager (`pyproject.toml` + `uv.lock`).
 - **Asyncio**: Native Python async event loop for high concurrency and performance.
-- **Testing**: Pytest (asyncio, coverage); fully isolated environment with a dedicated test database.  
+- **Testing**: Pytest (asyncio, coverage); fully isolated environment with a dedicated test database.
   _See [Test Docs](./tests/README.md) for details._
 
 ## Features
@@ -28,3 +28,20 @@ This backend project is built with modern Python technologies to provide a robus
 - 🧠 Redis integration for caching, rate limiting, and fast in-memory operations
 - 🐳 Easy containerization with Docker
 - ✅ Async Testing & coverage with a fully isolated test environment
+
+## Lint
+
+Requires [uv](https://docs.astral.sh/uv/) and dev dependencies (`uv sync`).
+
+```bash
+cd backend
+uv run ruff check .
+uv run ruff format --check .
+```
+
+Auto-fix:
+
+```bash
+uv run ruff check --fix .
+uv run ruff format .
+```
