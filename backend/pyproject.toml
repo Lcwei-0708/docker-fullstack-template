@@ -78,6 +78,7 @@ precision = 2
 [tool.ruff]
 target-version = "py314"
 line-length = 100
+indent-width = 4
 src = ["."]
 exclude = [
     ".venv",
@@ -93,3 +94,4 @@ ignore = ["B008"]
 
 [tool.ruff.format]
 quote-style = "double"
+indent-style = "space"

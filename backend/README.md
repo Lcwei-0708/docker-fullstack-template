@@ -29,19 +29,56 @@ This backend project is built with modern Python technologies to provide a robus
 - 🐳 Easy containerization with Docker
 - ✅ Async Testing & coverage with a fully isolated test environment
 
-## Lint
+## Lint & format
 
-Requires [uv](https://docs.astral.sh/uv/) and dev dependencies (`uv sync`).
+### Standards
+
+| Item | Value |
+|------|--------|
+| Config | [`pyproject.toml`](./pyproject.toml) — `[tool.ruff]`, `[tool.ruff.lint]`, `[tool.ruff.format]` |
+| Formatter | [Ruff format](https://docs.astral.sh/ruff/formatter/) (Black-compatible) |
+| Line length | 100 |
+| Indent | 4 spaces; tabs are rewritten on format |
+| Quotes | Double quotes |
+| Target Python | 3.14 |
+
+| Rule set | Source | Purpose |
+|----------|--------|---------|
+| `E` | pycodestyle | PEP 8 style |
+| `F` | Pyflakes | Unused imports, syntax issues |
+| `I` | isort | Import order |
+| `UP` | pyupgrade | Modern Python syntax |
+| `B` | flake8-bugbear | Common bug patterns |
+
+| Ignored | Reason |
+|---------|--------|
+| `B008` | FastAPI `Depends()` in default arguments |
+| `B` in `tests/**` | Relaxed rules for tests |
+
+### Manual commands
+
+> Run from the `backend/` directory. Requires [uv](https://docs.astral.sh/uv/) and dev dependencies (`uv sync`).
+
+Lint the project; report issues without changing files:
 
 ```bash
-cd backend
 uv run ruff check .
+```
+
+Check formatting only; report mismatches without writing:
+
+```bash
 uv run ruff format --check .
 ```
 
-Auto-fix:
+Lint and auto-fix what Ruff can (imports, safe rewrites):
 
 ```bash
 uv run ruff check --fix .
+```
+
+Apply formatting to all Python files (including tab → spaces):
+
+```bash
 uv run ruff format .
 ```
