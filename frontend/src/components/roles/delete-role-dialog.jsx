@@ -11,17 +11,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-export function DeleteRoleDialog({
-  roleName = "",
-  isSubmitting = false,
-  onConfirm,
-}) {
+export function DeleteRoleDialog({ roleName = "", isSubmitting = false, onConfirm }) {
   const { t } = useTranslation();
 
   return (
-    <AlertDialogContent
-      onCloseAutoFocus={(e) => e.preventDefault()}
-    >
+    <AlertDialogContent onCloseAutoFocus={(e) => e.preventDefault()}>
       <AlertDialogHeader>
         <AlertDialogTitle>
           {t("pages.rolesManagement.dialog.deleteTitle", "Delete role")}

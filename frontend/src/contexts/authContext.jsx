@@ -1,5 +1,13 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo, useRef } from 'react';
-import { setTokenGetter } from '@/services/api.service';
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
+import { setTokenGetter } from "@/services/api.service";
 
 const initialState = {
   user: null,
@@ -12,15 +20,15 @@ const initialState = {
 };
 
 const AUTH_ACTIONS = {
-  SET_LOADING: 'SET_LOADING',
-  SET_USER: 'SET_USER',
-  SET_TOKEN: 'SET_TOKEN',
-  LOGIN_SUCCESS: 'LOGIN_SUCCESS',
-  LOGOUT: 'LOGOUT',
-  SET_ERROR: 'SET_ERROR',
-  CLEAR_ERROR: 'CLEAR_ERROR',
-  SET_PERMISSIONS: 'SET_PERMISSIONS',
-  SET_LOADING_PERMISSIONS: 'SET_LOADING_PERMISSIONS',
+  SET_LOADING: "SET_LOADING",
+  SET_USER: "SET_USER",
+  SET_TOKEN: "SET_TOKEN",
+  LOGIN_SUCCESS: "LOGIN_SUCCESS",
+  LOGOUT: "LOGOUT",
+  SET_ERROR: "SET_ERROR",
+  CLEAR_ERROR: "CLEAR_ERROR",
+  SET_PERMISSIONS: "SET_PERMISSIONS",
+  SET_LOADING_PERMISSIONS: "SET_LOADING_PERMISSIONS",
 };
 
 // Reducer for auth state
@@ -28,18 +36,19 @@ const authReducer = (state, action) => {
   switch (action.type) {
     case AUTH_ACTIONS.SET_LOADING:
       return { ...state, isLoading: action.payload };
-    
+
     case AUTH_ACTIONS.SET_USER:
       return { ...state, user: action.payload };
-    
-    case AUTH_ACTIONS.SET_TOKEN:
+
+    case AUTH_ACTIONS.SET_TOKEN: {
       const setTokenState = { ...state, token: action.payload, isAuthenticated: !!action.payload };
       // If token is null, clear user as well
       if (!action.payload && state.user) {
         setTokenState.user = null;
       }
       return setTokenState;
-    
+    }
+
     case AUTH_ACTIONS.LOGIN_SUCCESS:
       return {
         ...state,
@@ -49,7 +58,7 @@ const authReducer = (state, action) => {
         isLoading: false,
         error: null,
       };
-    
+
     case AUTH_ACTIONS.LOGOUT:
       return {
         ...state,
@@ -61,19 +70,19 @@ const authReducer = (state, action) => {
         permissions: null,
         isLoadingPermissions: false,
       };
-    
+
     case AUTH_ACTIONS.SET_PERMISSIONS:
       return { ...state, permissions: action.payload, isLoadingPermissions: false };
-    
+
     case AUTH_ACTIONS.SET_LOADING_PERMISSIONS:
       return { ...state, isLoadingPermissions: action.payload };
-    
+
     case AUTH_ACTIONS.SET_ERROR:
       return { ...state, error: action.payload, isLoading: false };
-    
+
     case AUTH_ACTIONS.CLEAR_ERROR:
       return { ...state, error: null };
-    
+
     default:
       return state;
   }
@@ -133,18 +142,21 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Check if user has required permissions
-  const checkPermissions = useCallback((requiredPermissions) => {
-    if (!requiredPermissions || requiredPermissions.length === 0) {
-      return true;
-    }
+  const checkPermissions = useCallback(
+    (requiredPermissions) => {
+      if (!requiredPermissions || requiredPermissions.length === 0) {
+        return true;
+      }
 
-    if (!state.permissions) {
-      return false;
-    }
+      if (!state.permissions) {
+        return false;
+      }
 
-    // user needs at least one of the required permissions
-    return requiredPermissions.some(perm => state.permissions[perm] === true);
-  }, [state.permissions]);
+      // user needs at least one of the required permissions
+      return requiredPermissions.some((perm) => state.permissions[perm] === true);
+    },
+    [state.permissions]
+  );
 
   useEffect(() => {
     setTokenGetter(
@@ -195,20 +207,16 @@ export const AuthProvider = ({ children }) => {
     checkPermissions,
   ]);
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  
+
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error("useAuth must be used within AuthProvider");
   }
-  
+
   return context;
 };
 

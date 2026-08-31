@@ -1,19 +1,14 @@
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 // Column visibility toggle dropdown
-function DataGridColumnVisibility(
-  {
-    table,
-    trigger
-  }
-) {
+function DataGridColumnVisibility({ table, trigger }) {
   const { t } = useTranslation();
 
   // Get display title for column
@@ -22,7 +17,7 @@ function DataGridColumnVisibility(
       return column.columnDef.meta.headerTitle;
     }
 
-    if (typeof column.columnDef.header === 'string') {
+    if (typeof column.columnDef.header === "string") {
       return column.columnDef.header;
     }
 
@@ -33,12 +28,12 @@ function DataGridColumnVisibility(
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[150px]">
-        <DropdownMenuLabel className="font-medium">{t('components.dataGrid.columnVisibility.toggleColumns', 'Toggle columns')}</DropdownMenuLabel>
+        <DropdownMenuLabel className="font-medium">
+          {t("components.dataGrid.columnVisibility.toggleColumns", "Toggle columns")}
+        </DropdownMenuLabel>
         {table
           .getAllColumns()
-          .filter(
-          (column) => typeof column.accessorFn !== 'undefined' && column.getCanHide()
-        )
+          .filter((column) => typeof column.accessorFn !== "undefined" && column.getCanHide())
           .map((column) => {
             const title = getColumnTitle(column);
             return (
@@ -47,7 +42,8 @@ function DataGridColumnVisibility(
                 className="capitalize"
                 checked={column.getIsVisible()}
                 onSelect={(event) => event.preventDefault()}
-                onCheckedChange={(value) => column.toggleVisibility(!!value)}>
+                onCheckedChange={(value) => column.toggleVisibility(!!value)}
+              >
                 {title}
               </DropdownMenuCheckboxItem>
             );
@@ -58,4 +54,3 @@ function DataGridColumnVisibility(
 }
 
 export { DataGridColumnVisibility };
-

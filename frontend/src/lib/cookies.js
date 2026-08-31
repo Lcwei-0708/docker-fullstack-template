@@ -1,11 +1,11 @@
-export const CSRF_COOKIE_NAME = 'csrf_token';
+export const CSRF_COOKIE_NAME = "csrf_token";
 
 export function getCookie(name) {
-  if (typeof document === 'undefined' || !document.cookie) {
+  if (typeof document === "undefined" || !document.cookie) {
     return null;
   }
 
-  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${escapedName}=([^;]*)`));
 
   return match ? decodeURIComponent(match[1]) : null;

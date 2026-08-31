@@ -32,7 +32,7 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
   const { hasPermission } = useAuthStatus();
   const { userId: currentUserId, user: currentUser } = useAuth();
   const canManageUsers = hasPermission("manage-users");
-  
+
   // Get current user ID from user object if userId is not available
   const effectiveCurrentUserId = React.useMemo(() => {
     return currentUserId || currentUser?.id;
@@ -87,76 +87,78 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
 
   // Query parameters state
   const [queryParams, setQueryParams] = React.useState({
-    keyword: '',
+    keyword: "",
     status: null,
     role: null,
-    sort_by: 'first_name',
+    sort_by: "first_name",
     desc: false,
   });
 
   // Parse URL search params to query params
-  const parseUrlParams = React.useCallback((paramsToParse = null) => {
-    const params = paramsToParse || searchParams;
-    const sortByParam = params.get('sort_by');
-    const descParam = params.get('desc');
-    const result = {
-      keyword: params.get('keyword') || '',
-      status: params.get('status') || null,
-      role: params.get('role') || null,
-      sort_by: sortByParam || 'first_name',
-      desc: descParam === 'true' ? true : (descParam === 'false' ? false : false),
-    };
+  const parseUrlParams = React.useCallback(
+    (paramsToParse = null) => {
+      const params = paramsToParse || searchParams;
+      const sortByParam = params.get("sort_by");
+      const descParam = params.get("desc");
+      const result = {
+        keyword: params.get("keyword") || "",
+        status: params.get("status") || null,
+        role: params.get("role") || null,
+        sort_by: sortByParam || "first_name",
+        desc: descParam === "true" ? true : descParam === "false" ? false : false,
+      };
 
-    // Parse status and role as arrays if they contain commas
-    if (result.status) {
-      result.status = result.status.includes(',')
-        ? result.status.split(',').filter(Boolean)
-        : result.status;
-    }
-    if (result.role) {
-      result.role = result.role.includes(',')
-        ? result.role.split(',').filter(Boolean)
-        : result.role;
-    }
+      // Parse status and role as arrays if they contain commas
+      if (result.status) {
+        result.status = result.status.includes(",")
+          ? result.status.split(",").filter(Boolean)
+          : result.status;
+      }
+      if (result.role) {
+        result.role = result.role.includes(",")
+          ? result.role.split(",").filter(Boolean)
+          : result.role;
+      }
 
-    return result;
-  }, [searchParams]);
+      return result;
+    },
+    [searchParams]
+  );
 
   // Update URL search params from query params
-  const updateUrlParams = React.useCallback((params) => {
-    const newSearchParams = new URLSearchParams();
+  const updateUrlParams = React.useCallback(
+    (params) => {
+      const newSearchParams = new URLSearchParams();
 
-    if (params.keyword && params.keyword.trim()) {
-      newSearchParams.set('keyword', params.keyword.trim());
-    }
+      if (params.keyword && params.keyword.trim()) {
+        newSearchParams.set("keyword", params.keyword.trim());
+      }
 
-    if (params.status !== null && params.status !== undefined && params.status !== '') {
-      const statusValue = Array.isArray(params.status)
-        ? params.status.join(',')
-        : params.status;
-      newSearchParams.set('status', statusValue);
-    }
+      if (params.status !== null && params.status !== undefined && params.status !== "") {
+        const statusValue = Array.isArray(params.status) ? params.status.join(",") : params.status;
+        newSearchParams.set("status", statusValue);
+      }
 
-    if (params.role !== null && params.role !== undefined && params.role !== '') {
-      const roleValue = Array.isArray(params.role)
-        ? params.role.join(',')
-        : params.role;
-      newSearchParams.set('role', roleValue);
-    }
+      if (params.role !== null && params.role !== undefined && params.role !== "") {
+        const roleValue = Array.isArray(params.role) ? params.role.join(",") : params.role;
+        newSearchParams.set("role", roleValue);
+      }
 
-    if (params.sort_by) {
-      newSearchParams.set('sort_by', params.sort_by);
-      newSearchParams.set('desc', params.desc ? 'true' : 'false');
-    }
+      if (params.sort_by) {
+        newSearchParams.set("sort_by", params.sort_by);
+        newSearchParams.set("desc", params.desc ? "true" : "false");
+      }
 
-    // Only update URL if params changed
-    const currentParams = searchParams.toString();
-    const newParams = newSearchParams.toString();
+      // Only update URL if params changed
+      const currentParams = searchParams.toString();
+      const newParams = newSearchParams.toString();
 
-    if (currentParams !== newParams) {
-      setSearchParams(newSearchParams, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
+      if (currentParams !== newParams) {
+        setSearchParams(newSearchParams, { replace: true });
+      }
+    },
+    [searchParams, setSearchParams]
+  );
 
   // Dialog states
   const [isUserFormDialogOpen, setIsUserFormDialogOpen] = React.useState(false);
@@ -180,16 +182,14 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
 
     rolesFetchingRef.current = true;
     const response = await rolesService.getAllRoles({ returnStatus: true });
-    
+
     if (response.status === "success" && response.data) {
-      const rolesList = Array.isArray(response.data)
-        ? response.data
-        : (response.data.roles || []);
+      const rolesList = Array.isArray(response.data) ? response.data : response.data.roles || [];
       setRoles(rolesList);
       setActorLevel(Number(response.data?.actor_level ?? 0));
       rolesFetchedRef.current = true;
     }
-    
+
     rolesFetchingRef.current = false;
   }, []);
 
@@ -225,93 +225,100 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
   }, [fetchRoles]);
 
   // Fetch users data from API
-  const fetchUsers = React.useCallback(async (params = {}, append = false) => {
-    if (append) {
-      setIsLoadingMore(true);
-    } else {
-      setIsLoading(true);
-    }
+  const fetchUsers = React.useCallback(
+    async (params = {}, append = false) => {
+      if (append) {
+        setIsLoadingMore(true);
+      } else {
+        setIsLoading(true);
+      }
 
-    const {
-      page = 1,
-      keyword = '',
-      status = null,
-      role = null,
-      sort_by = null,
-      desc = false,
-    } = params;
+      const {
+        page = 1,
+        keyword = "",
+        status = null,
+        role = null,
+        sort_by = null,
+        desc = false,
+      } = params;
 
-    const apiParams = {
-      page,
-      per_page: perPage,
-    };
+      const apiParams = {
+        page,
+        per_page: perPage,
+      };
 
-    if (keyword && keyword.trim()) {
-      apiParams.keyword = keyword.trim();
-    }
+      if (keyword && keyword.trim()) {
+        apiParams.keyword = keyword.trim();
+      }
 
-    if (status !== null && status !== undefined && status !== '') {
-      const statusValue = Array.isArray(status) ? status.join(',') : status;
-      apiParams.status = statusValue;
-    }
+      if (status !== null && status !== undefined && status !== "") {
+        const statusValue = Array.isArray(status) ? status.join(",") : status;
+        apiParams.status = statusValue;
+      }
 
-    if (role !== null && role !== undefined && role !== '') {
-      const roleValue = Array.isArray(role) ? role.join(',') : role;
-      apiParams.role = roleValue;
-    }
+      if (role !== null && role !== undefined && role !== "") {
+        const roleValue = Array.isArray(role) ? role.join(",") : role;
+        apiParams.role = roleValue;
+      }
 
-    if (sort_by) {
-      apiParams.sort_by = sort_by;
-      apiParams.desc = desc;
-    }
+      if (sort_by) {
+        apiParams.sort_by = sort_by;
+        apiParams.desc = desc;
+      }
 
-    try {
-      const response = await usersService.getAllUsers(apiParams, { returnStatus: true });
+      try {
+        const response = await usersService.getAllUsers(apiParams, { returnStatus: true });
 
-      if (response.status === "success" && response.data) {
-        const usersList = response.data.users && Array.isArray(response.data.users)
-          ? response.data.users
-          : (Array.isArray(response.data) ? response.data : []);
+        if (response.status === "success" && response.data) {
+          const usersList =
+            response.data.users && Array.isArray(response.data.users)
+              ? response.data.users
+              : Array.isArray(response.data)
+                ? response.data
+                : [];
 
-        if (append) {
-          setData((prev) => [...prev, ...usersList]);
-        } else {
-          setData(usersList);
-          scrollToTopSafely();
-          if (page === 1) {
+          if (append) {
+            setData((prev) => [...prev, ...usersList]);
+          } else {
+            setData(usersList);
+            scrollToTopSafely();
+            if (page === 1) {
+              initialLoadCompleteRef.current = true;
+            }
+          }
+
+          const responsePage = response.data.page ?? page;
+          const totalPages = response.data.total_pages;
+          const total = response.data.total;
+
+          const hasNext =
+            typeof totalPages === "number" && totalPages > 0
+              ? responsePage < totalPages
+              : typeof total === "number"
+                ? responsePage * perPage < total
+                : usersList.length >= perPage;
+
+          setHasMore(hasNext);
+          setCurrentPage(responsePage);
+
+          if (usersList.length === 0 && !append) {
             initialLoadCompleteRef.current = true;
           }
         }
-
-        const responsePage = response.data.page ?? page;
-        const totalPages = response.data.total_pages;
-        const total = response.data.total;
-
-        const hasNext = (typeof totalPages === "number" && totalPages > 0)
-          ? responsePage < totalPages
-          : (typeof total === "number"
-            ? responsePage * perPage < total
-            : (usersList.length >= perPage));
-
-        setHasMore(hasNext);
-        setCurrentPage(responsePage);
-
-        if (usersList.length === 0 && !append) {
+      } catch (error) {
+        console.error("Failed to fetch users:", error);
+        if (!append) {
+          setData([]);
           initialLoadCompleteRef.current = true;
         }
+        setHasMore(false);
+      } finally {
+        setIsLoading(false);
+        setIsLoadingMore(false);
       }
-    } catch (error) {
-      console.error("Failed to fetch users:", error);
-      if (!append) {
-        setData([]);
-        initialLoadCompleteRef.current = true;
-      }
-      setHasMore(false);
-    } finally {
-      setIsLoading(false);
-      setIsLoadingMore(false);
-    }
-  }, [scrollToTopSafely]);
+    },
+    [scrollToTopSafely]
+  );
 
   // Open edit dialog for user
   const handleEdit = React.useCallback((user) => {
@@ -359,7 +366,9 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
     if (!user || !user.id || !newPassword) return;
 
     setIsResettingPassword(true);
-    const response = await usersService.resetUserPassword(user.id, newPassword, { returnStatus: true });
+    const response = await usersService.resetUserPassword(user.id, newPassword, {
+      returnStatus: true,
+    });
 
     if (response.status === "success") {
       setIsResetPasswordDialogOpen(false);
@@ -370,48 +379,51 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
   }, []);
 
   // Handle form submission (create or update user)
-  const handleFormSubmit = React.useCallback(async (formValues) => {
-    setIsSubmitting(true);
+  const handleFormSubmit = React.useCallback(
+    async (formValues) => {
+      setIsSubmitting(true);
 
-    const userData = { ...formValues };
+      const userData = { ...formValues };
 
-    if (selectedUser) {
-      delete userData.password;
-      if (selectedUser.role === "super-admin" || isCurrentUser(selectedUser)) {
-        delete userData.role;
-      }
-    }
-
-    const response = selectedUser
-      ? await usersService.updateUser(selectedUser.id, userData, { returnStatus: true })
-      : await usersService.createUser(userData, { returnStatus: true });
-
-    if (response.status === "success") {
-      setIsUserFormDialogOpen(false);
-      setSelectedUser(null);
-      
       if (selectedUser) {
-        // Update existing user in list
-        setData((prev) =>
-          prev.map((u) => (u.id === selectedUser.id ? { ...u, ...userData } : u))
-        );
-      } else {
-        // Reset and reload from first page for new user
-        setCurrentPage(1);
-        setHasMore(true);
-        fetchUsers({
-          page: 1,
-          keyword: queryParams.keyword || '',
-          status: queryParams.status,
-          role: queryParams.role,
-          sort_by: queryParams.sort_by,
-          desc: queryParams.desc,
-        });
+        delete userData.password;
+        if (selectedUser.role === "super-admin" || isCurrentUser(selectedUser)) {
+          delete userData.role;
+        }
       }
-    }
 
-    setIsSubmitting(false);
-  }, [selectedUser, queryParams, fetchUsers, isCurrentUser]);
+      const response = selectedUser
+        ? await usersService.updateUser(selectedUser.id, userData, { returnStatus: true })
+        : await usersService.createUser(userData, { returnStatus: true });
+
+      if (response.status === "success") {
+        setIsUserFormDialogOpen(false);
+        setSelectedUser(null);
+
+        if (selectedUser) {
+          // Update existing user in list
+          setData((prev) =>
+            prev.map((u) => (u.id === selectedUser.id ? { ...u, ...userData } : u))
+          );
+        } else {
+          // Reset and reload from first page for new user
+          setCurrentPage(1);
+          setHasMore(true);
+          fetchUsers({
+            page: 1,
+            keyword: queryParams.keyword || "",
+            status: queryParams.status,
+            role: queryParams.role,
+            sort_by: queryParams.sort_by,
+            desc: queryParams.desc,
+          });
+        }
+      }
+
+      setIsSubmitting(false);
+    },
+    [selectedUser, queryParams, fetchUsers, isCurrentUser]
+  );
 
   // Open create user dialog
   const handleAdd = React.useCallback(() => {
@@ -422,9 +434,13 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
   }, []);
 
   // Expose handleAdd via ref for parent component
-  React.useImperativeHandle(ref, () => ({
-    handleAdd,
-  }), [handleAdd]);
+  React.useImperativeHandle(
+    ref,
+    () => ({
+      handleAdd,
+    }),
+    [handleAdd]
+  );
 
   // Handle selection mode toggle
   const handleSelectionModeToggle = React.useCallback(() => {
@@ -440,7 +456,7 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
   // Handle user selection toggle
   const handleUserSelect = React.useCallback((user) => {
     if (!user || !user.id) return;
-    
+
     setSelectedUsers((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(user.id)) {
@@ -502,7 +518,7 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
     if (isLoadingMore || !hasMore || isLoading || isRequestingRef.current) return;
 
     const nextPage = currentPage + 1;
-    
+
     // Prevent duplicate requests for the same page
     if (loadingPagesRef.current.has(nextPage)) {
       return;
@@ -510,19 +526,21 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
 
     isRequestingRef.current = true;
     loadingPagesRef.current.add(nextPage);
-    
+
     // Wrap fetchUsers in Promise to track completion
-    Promise.resolve(fetchUsers(
-      {
-        page: nextPage,
-        keyword: queryParams.keyword || '',
-        status: queryParams.status,
-        role: queryParams.role,
-        sort_by: queryParams.sort_by,
-        desc: queryParams.desc,
-      },
-      true // append mode
-    )).finally(() => {
+    Promise.resolve(
+      fetchUsers(
+        {
+          page: nextPage,
+          keyword: queryParams.keyword || "",
+          status: queryParams.status,
+          role: queryParams.role,
+          sort_by: queryParams.sort_by,
+          desc: queryParams.desc,
+        },
+        true // append mode
+      )
+    ).finally(() => {
       loadingPagesRef.current.delete(nextPage);
       isRequestingRef.current = false;
     });
@@ -530,7 +548,7 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
 
   // Virtualization: Container ref for Virtuoso
   const [listHeight, setListHeight] = React.useState(600); // Default height
-  
+
   // Calculate list height from container
   React.useEffect(() => {
     const updateHeight = () => {
@@ -540,42 +558,47 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
         setListHeight(Math.max(height, 400)); // Minimum height
       }
     };
-    
+
     // Use ResizeObserver for better performance
     const resizeObserver = new ResizeObserver(() => {
       updateHeight();
     });
-    
+
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
       updateHeight();
     }
-    
+
     // Also listen to window resize as fallback
-    window.addEventListener('resize', updateHeight);
-    
+    window.addEventListener("resize", updateHeight);
+
     return () => {
       resizeObserver.disconnect();
-      window.removeEventListener('resize', updateHeight);
+      window.removeEventListener("resize", updateHeight);
     };
   }, []);
 
   // Track if user has scrolled (to prevent immediate endReached trigger)
   const hasUserScrolledRef = React.useRef(false);
-  
+
   // Infinite scroll: Load more when reaching the end
   const handleEndReached = React.useCallback(() => {
     // Prevent loading more during initialization or before initial load completes
     if (!urlParamsInitializedRef.current || isInitializingRef.current) {
       return;
     }
-    
+
     // Only load more if we have more data and not already loading
-    if (hasMore && !isLoadingMore && !isRequestingRef.current && !isLoading && initialLoadCompleteRef.current) {
+    if (
+      hasMore &&
+      !isLoadingMore &&
+      !isRequestingRef.current &&
+      !isLoading &&
+      initialLoadCompleteRef.current
+    ) {
       loadMoreUsers();
     }
   }, [hasMore, isLoadingMore, isLoading, loadMoreUsers]);
-
 
   const isUpdatingUrlRef = React.useRef(false);
   const urlParamsInitializedRef = React.useRef(false);
@@ -592,46 +615,48 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
     isUpdatingUrlRef.current = true;
 
     const initialParams = {
-      keyword: urlParams.keyword || '',
+      keyword: urlParams.keyword || "",
       status: urlParams.status,
       role: urlParams.role,
-      sort_by: urlParams.sort_by || 'first_name',
+      sort_by: urlParams.sort_by || "first_name",
       desc: urlParams.desc || false,
     };
 
     // Set prevQueryParamsRef BEFORE setQueryParams to prevent useEffect from triggering
     prevQueryParamsRef.current = { ...initialParams };
-    
+
     // Mark as fetching to prevent other effects from triggering
     isFetchingRef.current = true;
-    
+
     // Reset initial load flag for new initialization
     initialLoadCompleteRef.current = false;
     hasUserScrolledRef.current = false;
-    
+
     // Mark as initialized immediately to prevent re-initialization
     urlParamsInitializedRef.current = true;
-    
+
     setQueryParams(initialParams);
 
     // Reset flag after state updates
     requestAnimationFrame(() => {
       isUpdatingUrlRef.current = false;
       isInitializingRef.current = false;
-      
+
       // Trigger initial fetch after initialization is complete
       setCurrentPage(1);
       setHasMore(true);
-      fetchUsersRef.current({
-        page: 1,
-        keyword: initialParams.keyword || '',
-        status: initialParams.status,
-        role: initialParams.role,
-        sort_by: initialParams.sort_by,
-        desc: initialParams.desc,
-      }).finally(() => {
-        isFetchingRef.current = false;
-      });
+      fetchUsersRef
+        .current({
+          page: 1,
+          keyword: initialParams.keyword || "",
+          status: initialParams.status,
+          role: initialParams.role,
+          sort_by: initialParams.sort_by,
+          desc: initialParams.desc,
+        })
+        .finally(() => {
+          isFetchingRef.current = false;
+        });
     });
   }, [parseUrlParams]); // Only run once on mount, not when searchParams change
 
@@ -685,12 +710,12 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
   const prevQueryParamsRef = React.useRef(null);
   const fetchUsersRef = React.useRef(fetchUsers);
   const isFetchingRef = React.useRef(false);
-  
+
   // Keep fetchUsers ref up to date
   React.useEffect(() => {
     fetchUsersRef.current = fetchUsers;
   }, [fetchUsers]);
-  
+
   // Load users when query params change (not on initial mount)
   React.useEffect(() => {
     if (!urlParamsInitializedRef.current) return;
@@ -700,14 +725,13 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
     // Check if query params actually changed
     const prev = prevQueryParamsRef.current;
     if (prev === null) return; // Initial mount is handled separately
-    
-    const queryParamsChanged = (
+
+    const queryParamsChanged =
       prev.keyword !== queryParams.keyword ||
       prev.status !== queryParams.status ||
       prev.role !== queryParams.role ||
       prev.sort_by !== queryParams.sort_by ||
-      prev.desc !== queryParams.desc
-    );
+      prev.desc !== queryParams.desc;
 
     // Only load when query params actually changed
     if (queryParamsChanged) {
@@ -715,20 +739,22 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
       isFetchingRef.current = true;
       initialLoadCompleteRef.current = false; // Reset initial load flag when params change
       hasUserScrolledRef.current = false; // Reset scroll flag when params change
-      
+
       setCurrentPage(1);
       setHasMore(true);
-      
-      fetchUsersRef.current({
-        page: 1,
-        keyword: queryParams.keyword || '',
-        status: queryParams.status,
-        role: queryParams.role,
-        sort_by: queryParams.sort_by,
-        desc: queryParams.desc,
-      }).finally(() => {
-        isFetchingRef.current = false;
-      });
+
+      fetchUsersRef
+        .current({
+          page: 1,
+          keyword: queryParams.keyword || "",
+          status: queryParams.status,
+          role: queryParams.role,
+          sort_by: queryParams.sort_by,
+          desc: queryParams.desc,
+        })
+        .finally(() => {
+          isFetchingRef.current = false;
+        });
     }
   }, [queryParams]);
 
@@ -741,8 +767,8 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
             onSearchChange={handleSearchChange}
             onSearch={handleSearch}
             onClear={() => {
-              handleSearchChange('');
-              handleSearch('');
+              handleSearchChange("");
+              handleSearch("");
             }}
             status={queryParams.status}
             role={queryParams.role}
@@ -762,10 +788,7 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
         </div>
 
         <div className="flex-1">
-          <div 
-            ref={containerRef}
-            className="h-full"
-          >
+          <div ref={containerRef} className="h-full">
             {isLoading && data.length === 0 ? (
               <div className="flex items-center justify-center py-12 text-muted-foreground px-0">
                 <Spinner className="!size-6" />
@@ -780,7 +803,7 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
                 scrollerRef={(ref) => {
                   virtuosoScrollerRef.current = ref;
                 }}
-                style={{ height: `${listHeight}px`, width: '100%' }}
+                style={{ height: `${listHeight}px`, width: "100%" }}
                 data={data}
                 totalCount={data.length}
                 itemContent={(index, user) => {
@@ -838,7 +861,7 @@ export const UsersCardList = React.forwardRef(function UsersCardList(_, ref) {
                     }
                     return null;
                   },
-              }}
+                }}
               />
             )}
           </div>

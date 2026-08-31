@@ -1,12 +1,8 @@
-import { Loader } from "@/components/animate-ui/icons/loader"
-import { AnimateIcon } from "@/components/animate-ui/icons/icon"
-import { cn } from "@/lib/utils"
+import { Loader } from "@/components/animate-ui/icons/loader";
+import { AnimateIcon } from "@/components/animate-ui/icons/icon";
+import { cn } from "@/lib/utils";
 
-function Spinner({
-  className,
-  animation = "default",
-  ...props
-}) {
+function Spinner({ className, animation = "default", ...props }) {
   return (
     <AnimateIcon animate loop>
       <Loader
@@ -14,9 +10,10 @@ function Spinner({
         aria-label="Loading"
         animation={animation}
         className={cn("size-4", className)}
-        {...props} />
+        {...props}
+      />
     </AnimateIcon>
   );
 }
 
-export { Spinner }
+export { Spinner };

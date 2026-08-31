@@ -29,10 +29,12 @@ export function getIsFileCellData(item) {
 }
 
 export function matchSelectOption(value, options) {
-  return options.find((o) =>
-    o.value === value ||
-    o.value.toLowerCase() === value.toLowerCase() ||
-    o.label.toLowerCase() === value.toLowerCase())?.value;
+  return options.find(
+    (o) =>
+      o.value === value ||
+      o.value.toLowerCase() === value.toLowerCase() ||
+      o.label.toLowerCase() === value.toLowerCase()
+  )?.value;
 }
 
 export function getCellKey(rowIndex, columnId) {
@@ -78,17 +80,13 @@ export function getCommonPinningStyles(params) {
   const { column, withBorder = false, dir = "ltr" } = params;
 
   const isPinned = column.getIsPinned();
-  const isLastLeftPinnedColumn =
-    isPinned === "left" && column.getIsLastColumn("left");
-  const isFirstRightPinnedColumn =
-    isPinned === "right" && column.getIsFirstColumn("right");
+  const isLastLeftPinnedColumn = isPinned === "left" && column.getIsLastColumn("left");
+  const isFirstRightPinnedColumn = isPinned === "right" && column.getIsFirstColumn("right");
 
   const isRtl = dir === "rtl";
 
-  const leftPosition =
-    isPinned === "left" ? `${column.getStart("left")}px` : undefined;
-  const rightPosition =
-    isPinned === "right" ? `${column.getAfter("right")}px` : undefined;
+  const leftPosition = isPinned === "left" ? `${column.getStart("left")}px` : undefined;
+  const rightPosition = isPinned === "right" ? `${column.getAfter("right")}px` : undefined;
 
   return {
     boxShadow: withBorder
@@ -127,8 +125,7 @@ export function getScrollDirection(direction) {
 }
 
 export function scrollCellIntoView(params) {
-  const { container, targetCell, tableRef, direction, viewportOffset, isRtl } =
-    params;
+  const { container, targetCell, tableRef, direction, viewportOffset, isRtl } = params;
 
   const containerRect = container.getBoundingClientRect();
   const cellRect = targetCell.getBoundingClientRect();
@@ -150,8 +147,7 @@ export function scrollCellIntoView(params) {
     ? containerRect.right - leftPinnedWidth - viewportOffset
     : containerRect.right - rightPinnedWidth - viewportOffset;
 
-  const isFullyVisible =
-    cellRect.left >= viewportLeft && cellRect.right <= viewportRight;
+  const isFullyVisible = cellRect.left >= viewportLeft && cellRect.right <= viewportRight;
 
   if (isFullyVisible) return;
 
@@ -182,8 +178,10 @@ export function scrollCellIntoView(params) {
 }
 
 export function getIsInPopover(element) {
-  return (element instanceof Element && (element.closest("[data-grid-cell-editor]") ||
-    element.closest("[data-grid-popover]")) !== null);
+  return (
+    element instanceof Element &&
+    (element.closest("[data-grid-cell-editor]") || element.closest("[data-grid-popover]")) !== null
+  );
 }
 
 export function getColumnVariant(variant) {

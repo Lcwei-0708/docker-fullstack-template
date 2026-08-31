@@ -1,10 +1,10 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useTranslation } from 'react-i18next';
-import { cn, debugError } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useTranslation } from "react-i18next";
+import { cn, debugError } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -12,10 +12,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import { useAuth } from '@/hooks/useAuth';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
+import { useAuth } from "@/hooks/useAuth";
 
 export function UpdateProfileForm({
   user,
@@ -38,32 +38,34 @@ export function UpdateProfileForm({
     return z.object({
       first_name: z
         .string()
-        .min(1, t('pages.profile.profile.fields.firstName.validation.required')),
-      last_name: z
-        .string()
-        .min(1, t('pages.profile.profile.fields.lastName.validation.required')),
+        .min(1, t("pages.profile.profile.fields.firstName.validation.required")),
+      last_name: z.string().min(1, t("pages.profile.profile.fields.lastName.validation.required")),
       email: z
         .string()
-        .min(1, t('pages.profile.profile.fields.email.validation.required'))
+        .min(1, t("pages.profile.profile.fields.email.validation.required"))
         .transform((val) => val.trim().toLowerCase())
-        .refine((val) => {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          return emailRegex.test(val);
-        }, {
-          message: t('pages.profile.profile.fields.email.validation.invalid'),
-        }),
-      phone: z
-        .string()
-        .min(1, t('pages.profile.profile.fields.phone.validation.required')),
+        .refine(
+          (val) => {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(val);
+          },
+          {
+            message: t("pages.profile.profile.fields.email.validation.invalid"),
+          }
+        ),
+      phone: z.string().min(1, t("pages.profile.profile.fields.phone.validation.required")),
     });
   }, [t]);
 
-  const defaultValues = useMemo(() => ({
-    first_name: user?.first_name || '',
-    last_name: user?.last_name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-  }), [user]);
+  const defaultValues = useMemo(
+    () => ({
+      first_name: user?.first_name || "",
+      last_name: user?.last_name || "",
+      email: user?.email || "",
+      phone: user?.phone || "",
+    }),
+    [user]
+  );
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -73,43 +75,49 @@ export function UpdateProfileForm({
   useEffect(() => {
     if (user) {
       form.reset({
-        first_name: user.first_name || '',
-        last_name: user.last_name || '',
-        email: user.email || '',
-        phone: user.phone || '',
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        email: user.email || "",
+        phone: user.phone || "",
       });
     }
   }, [user, form]);
 
-  const handleSubmit = useCallback(async (formValues) => {
-    setIsSubmitting(true);
+  const handleSubmit = useCallback(
+    async (formValues) => {
+      setIsSubmitting(true);
 
-    try {
-      const result = await updateUserProfile({
-        first_name: formValues.first_name,
-        last_name: formValues.last_name,
-        email: formValues.email,
-        phone: formValues.phone,
-      }, {returnStatus: true});
+      try {
+        const result = await updateUserProfile(
+          {
+            first_name: formValues.first_name,
+            last_name: formValues.last_name,
+            email: formValues.email,
+            phone: formValues.phone,
+          },
+          { returnStatus: true }
+        );
 
-      if (result?.requiresEmailVerification) {
-        if (onRequiresEmailVerification) {
-          await onRequiresEmailVerification({
-            email: result.email || result.data?.pending_email || formValues.email,
-            profile: result.data,
-          });
+        if (result?.requiresEmailVerification) {
+          if (onRequiresEmailVerification) {
+            await onRequiresEmailVerification({
+              email: result.email || result.data?.pending_email || formValues.email,
+              profile: result.data,
+            });
+          }
+        } else if (result?.status === "success") {
+          if (onSuccess) {
+            await onSuccess(result.data);
+          }
         }
-      } else if (result?.status === 'success') {
-        if (onSuccess) {
-          await onSuccess(result.data);
-        }
+      } catch (error) {
+        debugError("Update profile error:", error);
+      } finally {
+        setIsSubmitting(false);
       }
-    } catch (error) {
-      debugError('Update profile error:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [updateUserProfile, onSuccess, onRequiresEmailVerification]);
+    },
+    [updateUserProfile, onSuccess, onRequiresEmailVerification]
+  );
 
   return (
     <Form {...form}>
@@ -123,11 +131,11 @@ export function UpdateProfileForm({
                 <FormLabel
                   htmlFor="first_name"
                   className={cn(
-                    'flex items-center gap-1',
-                    form.formState.errors.first_name && 'text-destructive'
+                    "flex items-center gap-1",
+                    form.formState.errors.first_name && "text-destructive"
                   )}
                 >
-                  {t('pages.profile.profile.fields.firstName.label')}
+                  {t("pages.profile.profile.fields.firstName.label")}
                   <span className="text-destructive">*</span>
                 </FormLabel>
                 <FormControl>
@@ -138,7 +146,7 @@ export function UpdateProfileForm({
                     disabled={isSubmitting || isLoading}
                     className={cn(
                       form.formState.errors.first_name &&
-                        'ring-2 ring-destructive focus-visible:ring-destructive'
+                        "ring-2 ring-destructive focus-visible:ring-destructive"
                     )}
                   />
                 </FormControl>
@@ -154,11 +162,11 @@ export function UpdateProfileForm({
                 <FormLabel
                   htmlFor="last_name"
                   className={cn(
-                    'flex items-center gap-1',
-                    form.formState.errors.last_name && 'text-destructive'
+                    "flex items-center gap-1",
+                    form.formState.errors.last_name && "text-destructive"
                   )}
                 >
-                  {t('pages.profile.profile.fields.lastName.label')}
+                  {t("pages.profile.profile.fields.lastName.label")}
                   <span className="text-destructive">*</span>
                 </FormLabel>
                 <FormControl>
@@ -169,7 +177,7 @@ export function UpdateProfileForm({
                     disabled={isSubmitting || isLoading}
                     className={cn(
                       form.formState.errors.last_name &&
-                        'ring-2 ring-destructive focus-visible:ring-destructive'
+                        "ring-2 ring-destructive focus-visible:ring-destructive"
                     )}
                   />
                 </FormControl>
@@ -187,11 +195,11 @@ export function UpdateProfileForm({
                 <FormLabel
                   htmlFor="email"
                   className={cn(
-                    'flex items-center gap-1',
-                    form.formState.errors.email && 'text-destructive'
+                    "flex items-center gap-1",
+                    form.formState.errors.email && "text-destructive"
                   )}
                 >
-                  {t('pages.profile.profile.fields.email.label')}
+                  {t("pages.profile.profile.fields.email.label")}
                   <span className="text-destructive">*</span>
                 </FormLabel>
                 <FormControl>
@@ -203,7 +211,7 @@ export function UpdateProfileForm({
                     disabled={isSubmitting || isLoading}
                     className={cn(
                       form.formState.errors.email &&
-                        'ring-2 ring-destructive focus-visible:ring-destructive'
+                        "ring-2 ring-destructive focus-visible:ring-destructive"
                     )}
                   />
                 </FormControl>
@@ -219,11 +227,11 @@ export function UpdateProfileForm({
                 <FormLabel
                   htmlFor="phone"
                   className={cn(
-                    'flex items-center gap-1',
-                    form.formState.errors.phone && 'text-destructive'
+                    "flex items-center gap-1",
+                    form.formState.errors.phone && "text-destructive"
                   )}
                 >
-                  {t('pages.profile.profile.fields.phone.label')}
+                  {t("pages.profile.profile.fields.phone.label")}
                   <span className="text-destructive">*</span>
                 </FormLabel>
                 <FormControl>
@@ -235,7 +243,7 @@ export function UpdateProfileForm({
                     disabled={isSubmitting || isLoading}
                     className={cn(
                       form.formState.errors.phone &&
-                        'ring-2 ring-destructive focus-visible:ring-destructive'
+                        "ring-2 ring-destructive focus-visible:ring-destructive"
                     )}
                   />
                 </FormControl>
@@ -253,7 +261,7 @@ export function UpdateProfileForm({
               disabled={isSubmitting || isLoading}
               className="flex items-center gap-1.5 md:gap-2 text-sm"
             >
-              {t('common.actions.cancel')}
+              {t("common.actions.cancel")}
             </Button>
           )}
           <Button
@@ -266,7 +274,7 @@ export function UpdateProfileForm({
                 <Spinner className="size-4" />
               </span>
             ) : (
-              t('common.actions.save')
+              t("common.actions.save")
             )}
           </Button>
         </div>

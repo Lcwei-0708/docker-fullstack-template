@@ -1,8 +1,8 @@
-export const CSRF_INVALID_MSG = 'Invalid or expired CSRF token';
-export const SESSION_INVALID_MSG = 'Invalid or expired session';
+export const CSRF_INVALID_MSG = "Invalid or expired CSRF token";
+export const SESSION_INVALID_MSG = "Invalid or expired session";
 
 export function getApiErrorMessage(error) {
-  return error?.response?.data?.message ?? error?.message ?? '';
+  return error?.response?.data?.message ?? error?.message ?? "";
 }
 
 export function isCsrfInvalidError(error) {

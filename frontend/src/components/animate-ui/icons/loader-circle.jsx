@@ -1,6 +1,10 @@
-import * as React from 'react';
-import { motion } from 'motion/react';
-import { getVariants, useAnimateIconContext, IconWrapper } from '@/components/animate-ui/icons/icon';
+import * as React from "react";
+import { motion } from "motion/react";
+import {
+  getVariants,
+  useAnimateIconContext,
+  IconWrapper,
+} from "@/components/animate-ui/icons/icon";
 
 const animations = {
   default: {
@@ -10,21 +14,18 @@ const animations = {
         rotate: 360,
         transition: {
           duration: 1,
-          ease: 'linear',
+          ease: "linear",
           repeat: Infinity,
-          repeatType: 'loop',
+          repeatType: "loop",
         },
       },
     },
 
-    path: {}
-  }
+    path: {},
+  },
 };
 
-function IconComponent({
-  size,
-  ...props
-}) {
+function IconComponent({ size, ...props }) {
   const { controls } = useAnimateIconContext();
   const variants = getVariants(animations);
 
@@ -42,12 +43,14 @@ function IconComponent({
       variants={variants.group}
       initial="initial"
       animate={controls}
-      {...props}>
+      {...props}
+    >
       <motion.path
         d="M21 12a9 9 0 1 1-6.219-8.56"
         variants={variants.path}
         initial="initial"
-        animate={controls} />
+        animate={controls}
+      />
     </motion.svg>
   );
 }

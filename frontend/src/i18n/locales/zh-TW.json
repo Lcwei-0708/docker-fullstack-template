@@ -596,25 +596,25 @@
         "noAttributes": "目前沒有可用的權限屬性",
         "hasChanges": "有未儲存的變更"
       },
-        "fields": {
-          "name": {
-            "label": "角色名稱",
-            "placeholder": "請輸入角色名稱"
-          },
-          "description": {
-            "label": "角色敘述",
-            "placeholder": "請輸入角色敘述"
-          },
-          "level": {
-            "label": "角色等級",
-            "placeholder": "請輸入等級",
-            "hint": "數字越大權限越高，最高可設 {{max}}",
-            "validation": {
-              "min": "等級至少為 1",
-              "max": "等級不可超過自己（最高 {{max}}）"
-            }
-          }
+      "fields": {
+        "name": {
+          "label": "角色名稱",
+          "placeholder": "請輸入角色名稱"
         },
+        "description": {
+          "label": "角色敘述",
+          "placeholder": "請輸入角色敘述"
+        },
+        "level": {
+          "label": "角色等級",
+          "placeholder": "請輸入等級",
+          "hint": "數字越大權限越高，最高可設 {{max}}",
+          "validation": {
+            "min": "等級至少為 1",
+            "max": "等級不可超過自己（最高 {{max}}）"
+          }
+        }
+      },
       "groups": {
         "systemManagement": "系統管理"
       },

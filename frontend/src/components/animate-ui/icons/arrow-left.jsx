@@ -1,37 +1,41 @@
-import * as React from 'react';
-import { motion } from 'motion/react';
-import { getVariants, useAnimateIconContext, IconWrapper } from '@/components/animate-ui/icons/icon';
+import * as React from "react";
+import { motion } from "motion/react";
+import {
+  getVariants,
+  useAnimateIconContext,
+  IconWrapper,
+} from "@/components/animate-ui/icons/icon";
 
 const animations = {
   default: {
     group: {
       initial: {
         x: 0,
-        transition: { ease: 'easeInOut', duration: 0.3 },
+        transition: { ease: "easeInOut", duration: 0.3 },
       },
       animate: {
-        x: '-25%',
-        transition: { ease: 'easeInOut', duration: 0.3 },
+        x: "-25%",
+        transition: { ease: "easeInOut", duration: 0.3 },
       },
     },
 
     path1: {},
-    path2: {}
+    path2: {},
   },
 
-  'default-loop': {
+  "default-loop": {
     group: {
       initial: {
         x: 0,
       },
       animate: {
-        x: [0, '-25%', 0],
-        transition: { ease: 'easeInOut', duration: 0.6 },
+        x: [0, "-25%", 0],
+        transition: { ease: "easeInOut", duration: 0.6 },
       },
     },
 
     path1: {},
-    path2: {}
+    path2: {},
   },
 
   pointing: {
@@ -39,49 +43,49 @@ const animations = {
 
     path1: {
       initial: {
-        d: 'M19 12H5',
-        transition: { ease: 'easeInOut', duration: 0.3 },
+        d: "M19 12H5",
+        transition: { ease: "easeInOut", duration: 0.3 },
       },
       animate: {
-        d: 'M19 12H10',
-        transition: { ease: 'easeInOut', duration: 0.3 },
+        d: "M19 12H10",
+        transition: { ease: "easeInOut", duration: 0.3 },
       },
     },
 
     path2: {
       initial: {
-        d: 'm12 19-7-7 7-7',
-        transition: { ease: 'easeInOut', duration: 0.3 },
+        d: "m12 19-7-7 7-7",
+        transition: { ease: "easeInOut", duration: 0.3 },
       },
       animate: {
-        d: 'm15.5 19-7-7 7-7',
-        transition: { ease: 'easeInOut', duration: 0.3 },
+        d: "m15.5 19-7-7 7-7",
+        transition: { ease: "easeInOut", duration: 0.3 },
       },
-    }
+    },
   },
 
-  'pointing-loop': {
+  "pointing-loop": {
     group: {},
 
     path1: {
       initial: {
-        d: 'M19 12H5',
+        d: "M19 12H5",
       },
       animate: {
-        d: ['M19 12H5', 'M19 12H10', 'M19 12H5'],
-        transition: { ease: 'easeInOut', duration: 0.6 },
+        d: ["M19 12H5", "M19 12H10", "M19 12H5"],
+        transition: { ease: "easeInOut", duration: 0.6 },
       },
     },
 
     path2: {
       initial: {
-        d: 'm12 19-7-7 7-7',
+        d: "m12 19-7-7 7-7",
       },
       animate: {
-        d: ['m12 19-7-7 7-7', 'm15.5 19-7-7 7-7', 'm12 19-7-7 7-7'],
-        transition: { ease: 'easeInOut', duration: 0.6 },
+        d: ["m12 19-7-7 7-7", "m15.5 19-7-7 7-7", "m12 19-7-7 7-7"],
+        transition: { ease: "easeInOut", duration: 0.6 },
       },
-    }
+    },
   },
 
   out: {
@@ -90,11 +94,11 @@ const animations = {
         x: 0,
       },
       animate: {
-        x: [0, '-150%', '150%', 0],
+        x: [0, "-150%", "150%", 0],
         transition: {
-          default: { ease: 'easeInOut', duration: 0.6 },
+          default: { ease: "easeInOut", duration: 0.6 },
           x: {
-            ease: 'easeInOut',
+            ease: "easeInOut",
             duration: 0.6,
             times: [0, 0.5, 0.5, 1],
           },
@@ -103,14 +107,11 @@ const animations = {
     },
 
     path1: {},
-    path2: {}
-  }
+    path2: {},
+  },
 };
 
-function IconComponent({
-  size,
-  ...props
-}) {
+function IconComponent({ size, ...props }) {
   const { controls } = useAnimateIconContext();
   const variants = getVariants(animations);
 
@@ -125,18 +126,16 @@ function IconComponent({
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      {...props}>
+      {...props}
+    >
       <motion.g variants={variants.group} initial="initial" animate={controls}>
-        <motion.path
-          d="M19 12H5"
-          variants={variants.path1}
-          initial="initial"
-          animate={controls} />
+        <motion.path d="M19 12H5" variants={variants.path1} initial="initial" animate={controls} />
         <motion.path
           d="m12 19-7-7 7-7"
           variants={variants.path2}
           initial="initial"
-          animate={controls} />
+          animate={controls}
+        />
       </motion.g>
     </motion.svg>
   );

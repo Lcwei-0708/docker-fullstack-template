@@ -1,20 +1,28 @@
-import React, { useRef, useEffect } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { Spinner } from '@/components/ui/spinner';
-import Error from '@/pages/Error';
-import { debugError } from '@/lib/utils';
+import React, { useRef, useEffect } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { Spinner } from "@/components/ui/spinner";
+import Error from "@/pages/Error";
+import { debugError } from "@/lib/utils";
 
 /**
  * ProtectedRoute - Protects routes by checking authentication and permissions
  */
 export const ProtectedRoute = ({ children, requireAuth = true, permissions = null }) => {
-  const { isAuthenticated, isLoading, isLoadingPermissions, checkPermissions, logout, isResettingPasswordRef, user } = useAuth();
+  const {
+    isAuthenticated,
+    isLoading,
+    isLoadingPermissions,
+    checkPermissions,
+    logout,
+    isResettingPasswordRef,
+    user,
+  } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isInitialLoadRef = useRef(true);
   const wasAuthenticatedRef = useRef(isAuthenticated);
-  
+
   // Track initial load state
   useEffect(() => {
     if (!isLoading && isInitialLoadRef.current) {
@@ -22,11 +30,11 @@ export const ProtectedRoute = ({ children, requireAuth = true, permissions = nul
     }
   }, [isLoading]);
 
-  const isResetPasswordPage = location.pathname === '/auth/reset-password';
-  const isVerificationPage = location.pathname === '/auth/verify-email';
-  const isForgotPasswordPage = location.pathname === '/auth/forgot-password';
+  const isResetPasswordPage = location.pathname === "/auth/reset-password";
+  const isVerificationPage = location.pathname === "/auth/verify-email";
+  const isForgotPasswordPage = location.pathname === "/auth/forgot-password";
   const isAuthFlowPage = isResetPasswordPage || isVerificationPage || isForgotPasswordPage;
-  
+
   // Auto logout authenticated users visiting reset password page (except during password reset)
   useEffect(() => {
     if (isResetPasswordPage && isAuthenticated && !isLoading && !isResettingPasswordRef?.current) {
@@ -36,8 +44,13 @@ export const ProtectedRoute = ({ children, requireAuth = true, permissions = nul
 
   // Redirect to login when user becomes unauthenticated
   useEffect(() => {
-    if (wasAuthenticatedRef.current && !isAuthenticated && location.pathname !== '/auth/login' && !isAuthFlowPage) {
-      navigate('/auth/login', { state: { from: location }, replace: true });
+    if (
+      wasAuthenticatedRef.current &&
+      !isAuthenticated &&
+      location.pathname !== "/auth/login" &&
+      !isAuthFlowPage
+    ) {
+      navigate("/auth/login", { state: { from: location }, replace: true });
     }
     wasAuthenticatedRef.current = isAuthenticated;
   }, [isAuthenticated, location, navigate, isAuthFlowPage]);
@@ -47,15 +60,15 @@ export const ProtectedRoute = ({ children, requireAuth = true, permissions = nul
     if (!permissions || permissions.length === 0) {
       return true;
     }
-    
+
     if (!isAuthenticated || !checkPermissions) {
       return false;
     }
-    
+
     try {
       return checkPermissions(permissions);
     } catch (error) {
-      debugError('Failed to check permissions:', error);
+      debugError("Failed to check permissions:", error);
       return false;
     }
   }, [permissions, isAuthenticated, checkPermissions]);
@@ -104,7 +117,7 @@ export const ProtectedRoute = ({ children, requireAuth = true, permissions = nul
     return React.Children.map(children, (child) => {
       if (React.isValidElement(child)) {
         return React.cloneElement(child, {
-          children: <Error errorCode="403" />
+          children: <Error errorCode="403" />,
         });
       }
       return child;

@@ -1,7 +1,7 @@
-import * as React from "react"
-import { ChevronsUpDown, Plus } from "lucide-react"
-import { useNavigate } from "react-router-dom"
-import { useTranslation } from "react-i18next"
+import * as React from "react";
+import { ChevronsUpDown, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,40 +10,38 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
-export function TeamSwitcher({
-  teams = []
-}) {
-  const { isMobile, state, toggleSidebar } = useSidebar()
-  const navigate = useNavigate()
-  const { t } = useTranslation()
-  const [activeTeam, setActiveTeam] = React.useState(teams?.[0])
-  
-  const shouldShowDropdown = teams && teams.length > 1
-  const isCollapsed = state === "collapsed"
+export function TeamSwitcher({ teams = [] }) {
+  const { isMobile, state, toggleSidebar } = useSidebar();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const [activeTeam, setActiveTeam] = React.useState(teams?.[0]);
+
+  const shouldShowDropdown = teams && teams.length > 1;
+  const isCollapsed = state === "collapsed";
 
   const handleClick = () => {
     if (!shouldShowDropdown) {
-      navigate("/")
+      navigate("/");
       if (isMobile) {
-        toggleSidebar()
+        toggleSidebar();
       }
     }
-  }
+  };
 
   if (!shouldShowDropdown) {
-    const appName = t("components.app.name")
-    const displayTeam = activeTeam || { logo: null, name: appName, plan: "" }
-    const LogoComponent = displayTeam.logo
-    
+    const appName = t("components.app.name");
+    const displayTeam = activeTeam || { logo: null, name: appName, plan: "" };
+    const LogoComponent = displayTeam.logo;
+
     return (
       <SidebarMenu>
         <SidebarMenuItem>
@@ -56,30 +54,33 @@ export function TeamSwitcher({
               "group-data-[collapsible=icon]:size-13!",
               "group-data-[collapsible=icon]:p-1!",
               "group-data-[collapsible=icon]:mx-0.5!",
-              "group-data-[collapsible=icon]:rounded-lg!",
-            )}>
+              "group-data-[collapsible=icon]:rounded-lg!"
+            )}
+          >
             {LogoComponent ? (
-              <LogoComponent 
+              <LogoComponent
                 className={cn(
                   "transition-[width,height] duration-300 ease-in-out",
                   isCollapsed ? "size-11" : "size-10"
-                )} 
+                )}
               />
             ) : (
-              <img 
-                src="/logo.ico" 
-                alt={appName} 
+              <img
+                src="/logo.ico"
+                alt={appName}
                 className={cn(
                   "object-cover border",
                   "transition-[width,height] duration-300 ease-in-out",
                   isCollapsed ? "size-11 rounded-md" : "size-10 rounded-md"
-                )} 
+                )}
               />
             )}
-            <div className={cn(
-              "grid flex-1 text-left text-base leading-tight",
-              "group-data-[collapsible=icon]:hidden"
-            )}>
+            <div
+              className={cn(
+                "grid flex-1 text-left text-base leading-tight",
+                "group-data-[collapsible=icon]:hidden"
+              )}
+            >
               <span className={cn("truncate font-bold")}>{displayTeam.name}</span>
               {displayTeam.plan && (
                 <span className={cn("truncate text-sm")}>{displayTeam.plan}</span>
@@ -88,11 +89,11 @@ export function TeamSwitcher({
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
-    )
+    );
   }
 
   if (!activeTeam) {
-    return null
+    return null;
   }
 
   return (
@@ -105,12 +106,14 @@ export function TeamSwitcher({
               className={cn(
                 "data-[state=open]:bg-sidebar-accent",
                 "data-[state=open]:text-sidebar-accent-foreground"
-              )}>
+              )}
+            >
               <div
                 className={cn(
                   "bg-sidebar-primary text-sidebar-primary-foreground",
                   "flex aspect-square size-8 items-center justify-center rounded-lg"
-                )}>
+                )}
+              >
                 <activeTeam.logo className={cn("size-4")} />
               </div>
               <div className={cn("grid flex-1 text-left text-sm leading-tight")}>
@@ -121,24 +124,21 @@ export function TeamSwitcher({
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className={cn(
-              "w-(--radix-dropdown-menu-trigger-width)",
-              "min-w-56 rounded-lg"
-            )}
+            className={cn("w-(--radix-dropdown-menu-trigger-width)", "min-w-56 rounded-lg")}
             align="start"
             side={isMobile ? "bottom" : "right"}
-            sideOffset={4}>
+            sideOffset={4}
+          >
             <DropdownMenuLabel className={cn("text-muted-foreground text-xs")}>
               Teams
             </DropdownMenuLabel>
             {teams.map((team, index) => (
-              <DropdownMenuItem 
-                key={team.name} 
-                onClick={() => setActiveTeam(team)} 
-                className={cn("gap-2 p-2")}>
-                <div className={cn(
-                  "flex size-6 items-center justify-center rounded-md border"
-                )}>
+              <DropdownMenuItem
+                key={team.name}
+                onClick={() => setActiveTeam(team)}
+                className={cn("gap-2 p-2")}
+              >
+                <div className={cn("flex size-6 items-center justify-center rounded-md border")}>
                   <team.logo className={cn("size-3.5 shrink-0")} />
                 </div>
                 {team.name}
@@ -150,7 +150,8 @@ export function TeamSwitcher({
               <div
                 className={cn(
                   "flex size-6 items-center justify-center rounded-md border bg-transparent"
-                )}>
+                )}
+              >
                 <Plus className={cn("size-4")} />
               </div>
               <div className={cn("text-muted-foreground font-medium")}>Add team</div>

@@ -2,7 +2,15 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Home, ArrowLeft, AlertCircle, FileQuestion, ShieldAlert, Server, Lock } from "lucide-react";
+import {
+  Home,
+  ArrowLeft,
+  AlertCircle,
+  FileQuestion,
+  ShieldAlert,
+  Server,
+  Lock,
+} from "lucide-react";
 
 /**
  * Error - Universal error page component
@@ -11,11 +19,15 @@ import { Home, ArrowLeft, AlertCircle, FileQuestion, ShieldAlert, Server, Lock }
  * @param {string} customMessage - Custom message (optional)
  * @returns {JSX.Element}
  */
-function Error({ errorCode: propErrorCode, customTitle: propCustomTitle, customMessage: propCustomMessage }) {
+function Error({
+  errorCode: propErrorCode,
+  customTitle: propCustomTitle,
+  customMessage: propCustomMessage,
+}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Get error info from props or location.state
   const errorCode = propErrorCode || location.state?.errorCode || "404";
   const customTitle = propCustomTitle || location.state?.customTitle;
@@ -24,10 +36,10 @@ function Error({ errorCode: propErrorCode, customTitle: propCustomTitle, customM
   // Get icon based on error code
   const getErrorIcon = (code) => {
     const iconMap = {
-      "404": FileQuestion,
-      "403": ShieldAlert,
-      "500": Server,
-      "401": Lock,
+      404: FileQuestion,
+      403: ShieldAlert,
+      500: Server,
+      401: Lock,
       default: AlertCircle,
     };
 
@@ -36,8 +48,11 @@ function Error({ errorCode: propErrorCode, customTitle: propCustomTitle, customM
 
   const Icon = getErrorIcon(errorCode);
 
-  const title = customTitle || t(`errors.${errorCode}.title`, { defaultValue: t("errors.unknown.title") });
-  const message = customMessage || t(`errors.${errorCode}.message`, { defaultValue: t("errors.unknown.message") });
+  const title =
+    customTitle || t(`errors.${errorCode}.title`, { defaultValue: t("errors.unknown.title") });
+  const message =
+    customMessage ||
+    t(`errors.${errorCode}.message`, { defaultValue: t("errors.unknown.message") });
 
   const handleGoHome = () => {
     navigate("/");
@@ -69,15 +84,9 @@ function Error({ errorCode: propErrorCode, customTitle: propCustomTitle, customM
 
         {/* Error Code */}
         <div className="space-y-2">
-          <h1 className="text-4xl sm:text-6xl font-bold text-foreground">
-            {errorCode}
-          </h1>
-          <h2 className="text-xl sm:text-2xl font-semibold text-foreground">
-            {title}
-          </h2>
-          <p className="text-sm sm:text-base text-muted-foreground mt-4">
-            {message}
-          </p>
+          <h1 className="text-4xl sm:text-6xl font-bold text-foreground">{errorCode}</h1>
+          <h2 className="text-xl sm:text-2xl font-semibold text-foreground">{title}</h2>
+          <p className="text-sm sm:text-base text-muted-foreground mt-4">{message}</p>
         </div>
 
         {/* Action Buttons */}

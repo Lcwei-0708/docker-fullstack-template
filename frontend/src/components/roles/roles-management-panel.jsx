@@ -9,7 +9,10 @@ import { RolePermissionsMobile } from "./role-permissions-mobile";
 import { AlertDialog } from "@/components/ui/alert-dialog";
 import { DeleteRoleDialog } from "@/components/roles/delete-role-dialog";
 
-export const RolesManagementPanel = React.forwardRef(function RolesManagementPanel({ canManageRoles = false }, ref) {
+export const RolesManagementPanel = React.forwardRef(function RolesManagementPanel(
+  { canManageRoles = false },
+  ref
+) {
   const isMobile = useIsMobile();
   const [roles, setRoles] = React.useState([]);
   const [filteredRoles, setFilteredRoles] = React.useState([]);
@@ -155,7 +158,7 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
           sensitivity: "base",
         }) * direction;
       if (nameDiff !== 0) return nameDiff;
-      return (Number(b.level ?? 0) - Number(a.level ?? 0));
+      return Number(b.level ?? 0) - Number(a.level ?? 0);
     });
 
     setFilteredRoles(nextRoles);
@@ -257,7 +260,8 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
         ...prev,
         [attributeName]: !prev[attributeName],
       };
-      const hasChanged = JSON.stringify(newAttributes) !== JSON.stringify(initialAttributesRef.current);
+      const hasChanged =
+        JSON.stringify(newAttributes) !== JSON.stringify(initialAttributesRef.current);
       setHasChanges(hasChanged);
       return newAttributes;
     });
@@ -267,7 +271,11 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
   const handleSaveAttributes = React.useCallback(async () => {
     if (!selectedRole?.id) return;
     setIsSubmitting(true);
-    const result = await rolesService.updateRoleAttributes(selectedRole.id, { attributes }, { returnStatus: true });
+    const result = await rolesService.updateRoleAttributes(
+      selectedRole.id,
+      { attributes },
+      { returnStatus: true }
+    );
     if (result.status === "success") {
       initialAttributesRef.current = { ...attributes };
       setHasChanges(false);
@@ -291,7 +299,9 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
       try {
         let createdOrUpdatedRoleId = roleId || null;
         if (createdOrUpdatedRoleId) {
-          const updateResult = await rolesService.updateRole(createdOrUpdatedRoleId, roleData, { returnStatus: true });
+          const updateResult = await rolesService.updateRole(createdOrUpdatedRoleId, roleData, {
+            returnStatus: true,
+          });
           if (updateResult.status !== "success") {
             return false;
           }
@@ -365,12 +375,9 @@ export const RolesManagementPanel = React.forwardRef(function RolesManagementPan
     }
   }, [selectedRole]);
 
-  const handleRoleSelect = React.useCallback(
-    (role) => {
-      setSelectedRole(role);
-    },
-    []
-  );
+  const handleRoleSelect = React.useCallback((role) => {
+    setSelectedRole(role);
+  }, []);
 
   if (isMobile) {
     return (

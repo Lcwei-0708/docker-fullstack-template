@@ -1,16 +1,16 @@
-import * as React from "react"
-import { useTranslation } from "react-i18next"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Spinner } from "@/components/ui/spinner"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle
-} from "@/components/ui/dialog"
+import * as React from "react";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function RoleFormDialog({
   open,
@@ -63,10 +63,7 @@ export function RoleFormDialog({
     const level = Number(formData.level);
     if (!Number.isInteger(level) || level < 1) {
       setLevelError(
-        t(
-          "pages.rolesManagement.fields.level.validation.min",
-          "Level must be at least 1"
-        )
+        t("pages.rolesManagement.fields.level.validation.min", "Level must be at least 1")
       );
       return;
     }
@@ -106,24 +103,21 @@ export function RoleFormDialog({
     [formData, isSubmitting, validateAndSubmit]
   );
 
-  const canSubmit =
-    !isSubmitting &&
-    !!formData?.name?.trim() &&
-    maxAssignableLevel >= 1;
+  const canSubmit = !isSubmitting && !!formData?.name?.trim() && maxAssignableLevel >= 1;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent showCloseButton={false} className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {isCreate 
-            ? t("pages.rolesManagement.dialog.createTitle", "Create role") 
-            : t("pages.rolesManagement.dialog.editTitle", "Edit role")}
+            {isCreate
+              ? t("pages.rolesManagement.dialog.createTitle", "Create role")
+              : t("pages.rolesManagement.dialog.editTitle", "Edit role")}
           </DialogTitle>
           <DialogDescription>
-            {isCreate 
-            ? t("pages.rolesManagement.dialog.createDescription", "Create a new role") 
-            : t("pages.rolesManagement.dialog.editDescription", "Update role info")}
+            {isCreate
+              ? t("pages.rolesManagement.dialog.createDescription", "Create a new role")
+              : t("pages.rolesManagement.dialog.editDescription", "Update role info")}
           </DialogDescription>
         </DialogHeader>
 
@@ -164,7 +158,10 @@ export function RoleFormDialog({
                   description: e.target.value,
                 }))
               }
-              placeholder={t("pages.rolesManagement.fields.description.placeholder", "Enter description")}
+              placeholder={t(
+                "pages.rolesManagement.fields.description.placeholder",
+                "Enter description"
+              )}
             />
           </div>
 
@@ -188,10 +185,7 @@ export function RoleFormDialog({
                   level: e.target.value === "" ? "" : Number(e.target.value),
                 }));
               }}
-              placeholder={t(
-                "pages.rolesManagement.fields.level.placeholder",
-                "Enter level"
-              )}
+              placeholder={t("pages.rolesManagement.fields.level.placeholder", "Enter level")}
             />
             <p className="text-xs text-muted-foreground mt-1.5">
               {t(
@@ -200,9 +194,7 @@ export function RoleFormDialog({
                 { max: maxAssignableLevel }
               )}
             </p>
-            {levelError ? (
-              <p className="text-xs text-destructive mt-1">{levelError}</p>
-            ) : null}
+            {levelError ? <p className="text-xs text-destructive mt-1">{levelError}</p> : null}
           </div>
         </div>
 
@@ -210,13 +202,19 @@ export function RoleFormDialog({
           <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
             {t("common.actions.cancel", "Cancel")}
           </Button>
-          <Button onClick={handleSubmit} disabled={!canSubmit} className="bg-primary hover:bg-primary/90">
+          <Button
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+            className="bg-primary hover:bg-primary/90"
+          >
             {isSubmitting ? (
               <span className="inline-flex items-center gap-2">
                 <Spinner className="size-4" />
               </span>
             ) : (
-              <>{isCreate ? t("common.actions.create", "Create") : t("common.actions.save", "Save")}</>
+              <>
+                {isCreate ? t("common.actions.create", "Create") : t("common.actions.save", "Save")}
+              </>
             )}
           </Button>
         </DialogFooter>

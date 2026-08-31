@@ -5,23 +5,31 @@ import { routes } from "@/router/routes";
 import { useAuth } from "@/hooks/useAuth";
 import { debugError } from "@/lib/utils";
 
-export function transformRoutesToSidebar(filterByAuth = true, isAuthenticated = false, t = null, permissionMap = {}) {
+export function transformRoutesToSidebar(
+  filterByAuth = true,
+  isAuthenticated = false,
+  t = null,
+  permissionMap = {}
+) {
   const visibleRoutes = routes.filter((route) => {
     if (!route.sidebar) return false;
-    
-    const showInSidebar = route.sidebar.showInSidebar !== undefined 
-      ? route.sidebar.showInSidebar 
-      : (route.requireAuth && filterByAuth ? isAuthenticated : !route.requireAuth);
-    
+
+    const showInSidebar =
+      route.sidebar.showInSidebar !== undefined
+        ? route.sidebar.showInSidebar
+        : route.requireAuth && filterByAuth
+          ? isAuthenticated
+          : !route.requireAuth;
+
     if (!showInSidebar) return false;
-    
+
     // Check if user has required permissions
     if (route.permissions && route.permissions.length > 0) {
       if (!isAuthenticated) return false;
       const hasPermission = permissionMap[route.path];
       if (hasPermission !== true) return false;
     }
-    
+
     return true;
   });
 
@@ -48,13 +56,15 @@ export function transformRoutesToSidebar(filterByAuth = true, isAuthenticated = 
       const hasPermission = permissionMap[childRoute.path];
       if (hasPermission !== true) return;
     }
-    
+
     const parentPath = childRoute.sidebar.parent;
-    for (const [group, routes] of routeMap.entries()) {
+    for (const [, routes] of routeMap.entries()) {
       const parentRoute = routes.find((r) => r.path === parentPath);
       if (parentRoute) {
-        const label = childRoute.sidebar.label 
-          ? (t ? t(childRoute.sidebar.label, { defaultValue: childRoute.path }) : childRoute.sidebar.label)
+        const label = childRoute.sidebar.label
+          ? t
+            ? t(childRoute.sidebar.label, { defaultValue: childRoute.path })
+            : childRoute.sidebar.label
           : childRoute.path;
         parentRoute.items.push({
           title: label,
@@ -79,10 +89,12 @@ export function transformRoutesToSidebar(filterByAuth = true, isAuthenticated = 
     });
 
     const formattedRoutes = groupRoutes.map((route) => {
-      const label = route.sidebar.label 
-        ? (t ? t(route.sidebar.label, { defaultValue: route.path }) : route.sidebar.label)
+      const label = route.sidebar.label
+        ? t
+          ? t(route.sidebar.label, { defaultValue: route.path })
+          : route.sidebar.label
         : route.path;
-      
+
       return {
         title: label,
         label: route.sidebar.label,
@@ -126,7 +138,7 @@ export function useSidebarRoutes(isAuthenticated = false) {
       return {};
     }
 
-    if (typeof permissions !== 'object' || Object.keys(permissions).length === 0) {
+    if (typeof permissions !== "object" || Object.keys(permissions).length === 0) {
       return {};
     }
 
@@ -148,7 +160,12 @@ export function useSidebarRoutes(isAuthenticated = false) {
     return map;
   }, [isAuthenticated, isLoadingPermissions, permissions, checkPermissions]);
 
-  const { navMain, projects, groups } = transformRoutesToSidebar(true, isAuthenticated, t, permissionMap);
+  const { navMain, projects, groups } = transformRoutesToSidebar(
+    true,
+    isAuthenticated,
+    t,
+    permissionMap
+  );
 
   // Set active state: parent is active if any child is active, or if current route has this parent
   const navMainWithActive = navMain.map((item) => {
@@ -165,14 +182,14 @@ export function useSidebarRoutes(isAuthenticated = false) {
         title: subItem.label ? t(subItem.label, { defaultValue: subItem.path }) : subItem.title,
         isActive: location.pathname === subItem.path,
       }));
-    
+
     const hasActiveSubItem = subItemsWithActive.some((subItem) => subItem.isActive);
     const isExactMatch = location.pathname === item.path;
     const currentRoute = routes.find((r) => r.path === location.pathname);
     const hasThisAsParent = currentRoute?.sidebar?.parent === item.path;
-    
+
     const isItemActive = hasActiveSubItem || isExactMatch || hasThisAsParent;
-    
+
     return {
       ...item,
       title: item.label ? t(item.label, { defaultValue: item.path }) : item.title,

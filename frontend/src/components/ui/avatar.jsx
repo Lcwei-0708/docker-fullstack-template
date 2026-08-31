@@ -1,29 +1,26 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
 const Avatar = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn(
-      "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full",
-      className
-    )}
+    className={cn("relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full", className)}
     {...props}
   />
-))
-Avatar.displayName = "Avatar"
+));
+Avatar.displayName = "Avatar";
 
 const AvatarImage = React.forwardRef(({ className, src, onError, ...props }, ref) => {
-  const [imageError, setImageError] = React.useState(false)
+  const [imageError, setImageError] = React.useState(false);
 
   const handleError = (e) => {
-    setImageError(true)
-    if (onError) onError(e)
-  }
+    setImageError(true);
+    if (onError) onError(e);
+  };
 
   // If no src or image error, don't render the image
   if (!src || imageError) {
-    return null
+    return null;
   }
 
   return (
@@ -34,20 +31,18 @@ const AvatarImage = React.forwardRef(({ className, src, onError, ...props }, ref
       onError={handleError}
       {...props}
     />
-  )
-})
-AvatarImage.displayName = "AvatarImage"
+  );
+});
+AvatarImage.displayName = "AvatarImage";
 
 const AvatarFallback = React.forwardRef(({ className, children, ...props }, ref) => {
   // If children is provided, use it; otherwise show default fallback
-  const displayText = children || "U"
-  
+  const displayText = children || "U";
+
   // If it's a single character or initials (2 chars), show as is
   // Otherwise, show first character of the text
-  const fallbackText = displayText.length <= 2 
-    ? displayText 
-    : displayText.charAt(0).toUpperCase()
-  
+  const fallbackText = displayText.length <= 2 ? displayText : displayText.charAt(0).toUpperCase();
+
   return (
     <div
       ref={ref}
@@ -59,8 +54,8 @@ const AvatarFallback = React.forwardRef(({ className, children, ...props }, ref)
     >
       {fallbackText}
     </div>
-  )
-})
-AvatarFallback.displayName = "AvatarFallback"
+  );
+});
+AvatarFallback.displayName = "AvatarFallback";
 
-export { Avatar, AvatarImage, AvatarFallback }
+export { Avatar, AvatarImage, AvatarFallback };

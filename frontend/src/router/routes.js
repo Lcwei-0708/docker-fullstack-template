@@ -1,4 +1,4 @@
-import ENV from '@/config/env.config';
+import ENV from "@/config/env.config";
 
 /**
  * Route Configuration
@@ -15,7 +15,7 @@ import ENV from '@/config/env.config';
  * @property {string} [sidebar.parent] - Parent route path (for nested structure). Set this to create a subitem under a parent item
  * @property {number} [sidebar.order] - Sort order (lower number appears first)
  * @property {boolean} [sidebar.isActive] - Whether to expand by default (only for parent items with subitems)
- * 
+ *
  * @example
  * // Parent item with subitems:
  * {
@@ -65,15 +65,19 @@ export const routes = [
     },
   },
   // Only include register route when registration is enabled
-  ...(ENV.REGISTRATION_ENABLE ? [{
-    path: "/auth/register",
-    element: "Auth",
-    requireAuth: false,
-    permissions: [],
-    sidebar: {
-      showInSidebar: false,
-    },
-  }] : []),
+  ...(ENV.REGISTRATION_ENABLE
+    ? [
+        {
+          path: "/auth/register",
+          element: "Auth",
+          requireAuth: false,
+          permissions: [],
+          sidebar: {
+            showInSidebar: false,
+          },
+        },
+      ]
+    : []),
   {
     path: "/auth/reset-password",
     element: "Auth",
@@ -84,25 +88,33 @@ export const routes = [
     },
   },
   // Only include forgot-password route when SMTP is enabled
-  ...(ENV.SMTP_ENABLE ? [{
-    path: "/auth/forgot-password",
-    element: "Auth",
-    requireAuth: false,
-    permissions: [],
-    sidebar: {
-      showInSidebar: false,
-    },
-  }] : []),
+  ...(ENV.SMTP_ENABLE
+    ? [
+        {
+          path: "/auth/forgot-password",
+          element: "Auth",
+          requireAuth: false,
+          permissions: [],
+          sidebar: {
+            showInSidebar: false,
+          },
+        },
+      ]
+    : []),
   // Only include verify-email route when SMTP is enabled
-  ...(ENV.SMTP_ENABLE ? [{
-    path: "/auth/verify-email",
-    element: "Auth",
-    requireAuth: false,
-    permissions: [],
-    sidebar: {
-      showInSidebar: false,
-    },
-  }] : []),
+  ...(ENV.SMTP_ENABLE
+    ? [
+        {
+          path: "/auth/verify-email",
+          element: "Auth",
+          requireAuth: false,
+          permissions: [],
+          sidebar: {
+            showInSidebar: false,
+          },
+        },
+      ]
+    : []),
   {
     path: "/profile",
     element: "Profile",
@@ -137,5 +149,5 @@ export const routes = [
       showInSidebar: true,
       order: 2,
     },
-  }
+  },
 ];

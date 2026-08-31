@@ -1,43 +1,41 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { debugWarn } from '@/lib/utils';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { debugWarn } from "@/lib/utils";
 
 const ThemeContext = createContext();
 
 export const THEMES = {
-  LIGHT: 'light',
-  DARK: 'dark'
+  LIGHT: "light",
+  DARK: "dark",
 };
 
-const THEME_STORAGE_KEY = 'app-theme';
+const THEME_STORAGE_KEY = "app-theme";
 const getSystemTheme = () => {
-  if (typeof window !== 'undefined' && window.matchMedia) {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches 
-      ? THEMES.DARK 
-      : THEMES.LIGHT;
+  if (typeof window !== "undefined" && window.matchMedia) {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? THEMES.DARK : THEMES.LIGHT;
   }
   return THEMES.LIGHT;
 };
 
 const getStoredTheme = () => {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     try {
       const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
       if (storedTheme && Object.values(THEMES).includes(storedTheme)) {
         return storedTheme;
       }
     } catch (error) {
-      debugWarn('Failed to read theme from localStorage:', error);
+      debugWarn("Failed to read theme from localStorage:", error);
     }
   }
   return null;
 };
 
 const setStoredTheme = (theme) => {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     try {
       localStorage.setItem(THEME_STORAGE_KEY, theme);
     } catch (error) {
-      debugWarn('Failed to save theme to localStorage:', error);
+      debugWarn("Failed to save theme to localStorage:", error);
     }
   }
 };
@@ -60,17 +58,17 @@ export const ThemeProvider = ({ children }) => {
 
   useEffect(() => {
     setStoredTheme(theme);
-    
-    if (typeof document !== 'undefined') {
-      document.documentElement.classList.toggle('dark', theme === THEMES.DARK);
+
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.toggle("dark", theme === THEMES.DARK);
     }
   }, [theme]);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
+    if (typeof window === "undefined" || !window.matchMedia) return;
 
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
     const handleSystemThemeChange = (e) => {
       if (!getStoredTheme()) {
         const systemTheme = e.matches ? THEMES.DARK : THEMES.LIGHT;
@@ -78,10 +76,10 @@ export const ThemeProvider = ({ children }) => {
       }
     };
 
-    mediaQuery.addEventListener('change', handleSystemThemeChange);
-    
+    mediaQuery.addEventListener("change", handleSystemThemeChange);
+
     return () => {
-      mediaQuery.removeEventListener('change', handleSystemThemeChange);
+      mediaQuery.removeEventListener("change", handleSystemThemeChange);
     };
   }, []);
 
@@ -91,24 +89,20 @@ export const ThemeProvider = ({ children }) => {
     isLight: theme === THEMES.LIGHT,
     toggleTheme,
     setTheme: setSpecificTheme,
-    themes: THEMES
+    themes: THEMES,
   };
 
-  return (
-    <ThemeContext.Provider value={contextValue}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;
 };
 
 // Hook for using theme
 export const useTheme = () => {
   const context = useContext(ThemeContext);
-  
+
   if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+    throw new Error("useTheme must be used within a ThemeProvider");
   }
-  
+
   return context;
 };
 
