@@ -11,6 +11,7 @@ COPY logrotate/nginx /etc/logrotate.d/nginx
 
 # Copy main nginx configuration and template files
 COPY nginx.conf /etc/nginx/nginx.conf
+COPY whitelist.conf.example /etc/nginx/whitelist.conf.example
 COPY templates/ /etc/nginx/templates/
 
 # Copy custom entrypoint script

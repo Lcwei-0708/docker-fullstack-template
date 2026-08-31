@@ -53,6 +53,11 @@ EOF
 # Start cron service
 service cron start
 
+# Auto-create whitelist.conf from example on first run (nginx/whitelist.conf on host)
+if [ -f /etc/nginx/host/whitelist.conf.example ] && [ ! -f /etc/nginx/host/whitelist.conf ]; then
+    cp /etc/nginx/host/whitelist.conf.example /etc/nginx/host/whitelist.conf
+fi
+
 # Process all template files
 for template in /etc/nginx/templates/*.conf; do
     if [ -f "$template" ]; then

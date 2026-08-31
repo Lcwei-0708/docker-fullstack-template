@@ -8,7 +8,7 @@ services:
       - ./nginx/custom.d:/etc/nginx/custom.d
       - ./nginx/ssl:/etc/nginx/ssl
       - ./nginx/logs:/var/log/nginx
-      - ./nginx/whitelist.conf:/etc/nginx/whitelist.conf
+      - ./nginx:/etc/nginx/host:rw
       - ./nginx/logrotate/nginx:/etc/logrotate.d/nginx
       - ./nginx/docker-entrypoint.sh:/docker-entrypoint.sh
       - ./frontend/dist:/usr/share/nginx/html
@@ -313,26 +313,6 @@ services:
       - backend-network
     restart: always
 
-  # Linux VM / WSL host metrics (not a single container).
-  # Host network has no Compose DNS name; Alloy scrapes docker0 at 172.17.0.1:9100.
-  node-exporter:
-    image: prom/node-exporter:v1.9.1
-    pid: host
-    network_mode: host
-    command:
-      - --path.procfs=/host/proc
-      - --path.sysfs=/host/sys
-      - --path.rootfs=/host/rootfs
-      - --no-collector.filesystem
-      - --web.listen-address=:9100
-    environment:
-      - TZ=${TIMEZONE}
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/host/rootfs:ro
-    restart: always
-
   alloy:
     image: grafana/alloy:v1.17.1
     user: root
@@ -354,7 +334,6 @@ services:
       - tempo
       - prometheus
       - docker-stats-exporter
-      - node-exporter
 
   grafana:
     image: grafana/grafana:12.3.11
