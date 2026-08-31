@@ -1,26 +1,28 @@
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 from httpx import AsyncClient
+
 from api.auth.schema import (
     ActionRequiredResponse,
 )
-from utils.custom_exception import (
-    ConflictException,
-    AuthenticationException,
-    PasswordResetRequiredException,
-    NotFoundException,
-    SMTPNotConfiguredException,
-    ValidationException,
-    EmailVerificationRequiredException,
-    RegistrationDisabledException,
-)
+from core.redis import get_redis
 from core.security import (
+    verify_email_verification_token,
     verify_password_reset_token,
     verify_token,
-    verify_email_verification_token,
 )
-from core.redis import get_redis
 from main import app
+from utils.custom_exception import (
+    AuthenticationException,
+    ConflictException,
+    EmailVerificationRequiredException,
+    NotFoundException,
+    PasswordResetRequiredException,
+    RegistrationDisabledException,
+    SMTPNotConfiguredException,
+    ValidationException,
+)
 
 
 class TestAuthController:
@@ -185,9 +187,7 @@ class TestAuthController:
         login_data = {"email": "john.doe@example.com", "password": "WrongPassword"}
 
         with patch("api.auth.controller.login") as mock_login:
-            mock_login.side_effect = AuthenticationException(
-                "Invalid email or password"
-            )
+            mock_login.side_effect = AuthenticationException("Invalid email or password")
 
             response = await client.post("/api/auth/login", json=login_data)
 
@@ -259,9 +259,7 @@ class TestAuthController:
             return {"sub": "test-user-id", "sid": None}
 
         with patch("api.auth.controller.logout") as mock_logout:
-            mock_logout.side_effect = AuthenticationException(
-                "Invalid or expired session"
-            )
+            mock_logout.side_effect = AuthenticationException("Invalid or expired session")
             app.dependency_overrides[verify_token] = mock_verify_token
 
             try:
@@ -294,9 +292,10 @@ class TestAuthController:
     @pytest.mark.asyncio
     async def test_token_refresh_success(self, client: AsyncClient):
         """Test successful token refresh"""
-        with patch("api.auth.controller.verify_csrf_token") as mock_verify_csrf, patch(
-            "api.auth.controller.token"
-        ) as mock_token:
+        with (
+            patch("api.auth.controller.verify_csrf_token") as mock_verify_csrf,
+            patch("api.auth.controller.token") as mock_token,
+        ):
             mock_verify_csrf.return_value = "test-session-id"
             mock_token.return_value = "new-access-token"
 
@@ -329,9 +328,7 @@ class TestAuthController:
     async def test_token_refresh_invalid_csrf(self, client: AsyncClient):
         """Test token refresh with invalid CSRF token"""
         with patch("api.auth.controller.verify_csrf_token") as mock_verify_csrf:
-            mock_verify_csrf.side_effect = AuthenticationException(
-                "Invalid or expired CSRF token"
-            )
+            mock_verify_csrf.side_effect = AuthenticationException("Invalid or expired CSRF token")
 
             response = await client.post(
                 "/api/auth/token",
@@ -347,9 +344,10 @@ class TestAuthController:
     @pytest.mark.asyncio
     async def test_token_refresh_invalid_session(self, client: AsyncClient):
         """Test token refresh with invalid session"""
-        with patch("api.auth.controller.verify_csrf_token") as mock_verify_csrf, patch(
-            "api.auth.controller.token"
-        ) as mock_token:
+        with (
+            patch("api.auth.controller.verify_csrf_token") as mock_verify_csrf,
+            patch("api.auth.controller.token") as mock_token,
+        ):
             mock_verify_csrf.return_value = "other-session-id"
 
             response = await client.post(
@@ -367,9 +365,10 @@ class TestAuthController:
     @pytest.mark.asyncio
     async def test_token_refresh_user_not_found(self, client: AsyncClient):
         """Test token refresh with user not found"""
-        with patch("api.auth.controller.verify_csrf_token") as mock_verify_csrf, patch(
-            "api.auth.controller.token"
-        ) as mock_token:
+        with (
+            patch("api.auth.controller.verify_csrf_token") as mock_verify_csrf,
+            patch("api.auth.controller.token") as mock_token,
+        ):
             mock_verify_csrf.return_value = "test-session-id"
             mock_token.side_effect = NotFoundException("User not found")
 
@@ -387,9 +386,10 @@ class TestAuthController:
     @pytest.mark.asyncio
     async def test_token_refresh_server_error(self, client: AsyncClient):
         """Test token refresh with server error"""
-        with patch("api.auth.controller.verify_csrf_token") as mock_verify_csrf, patch(
-            "api.auth.controller.token"
-        ) as mock_token:
+        with (
+            patch("api.auth.controller.verify_csrf_token") as mock_verify_csrf,
+            patch("api.auth.controller.token") as mock_token,
+        ):
             mock_verify_csrf.return_value = "test-session-id"
             mock_token.side_effect = Exception("Database error")
 
@@ -503,9 +503,7 @@ class TestAuthController:
                 "csrf_token": "test-csrf-token",
             }
 
-            app.dependency_overrides[verify_password_reset_token] = (
-                mock_verify_password_reset_token
-            )
+            app.dependency_overrides[verify_password_reset_token] = mock_verify_password_reset_token
 
             try:
                 response = await client.post(
@@ -546,9 +544,7 @@ class TestAuthController:
 
         with patch("api.auth.controller.reset_password") as mock_reset:
             mock_reset.side_effect = AuthenticationException("Invalid or expired token")
-            app.dependency_overrides[verify_password_reset_token] = (
-                mock_verify_password_reset_token
-            )
+            app.dependency_overrides[verify_password_reset_token] = mock_verify_password_reset_token
 
             try:
                 response = await client.post(
@@ -577,9 +573,7 @@ class TestAuthController:
 
         with patch("api.auth.controller.reset_password") as mock_reset:
             mock_reset.side_effect = Exception("Database error")
-            app.dependency_overrides[verify_password_reset_token] = (
-                mock_verify_password_reset_token
-            )
+            app.dependency_overrides[verify_password_reset_token] = mock_verify_password_reset_token
 
             try:
                 response = await client.post(
@@ -608,9 +602,7 @@ class TestAuthController:
 
         with patch("api.auth.controller.reset_password") as mock_reset:
             mock_reset.side_effect = NotFoundException("User not found")
-            app.dependency_overrides[verify_password_reset_token] = (
-                mock_verify_password_reset_token
-            )
+            app.dependency_overrides[verify_password_reset_token] = mock_verify_password_reset_token
 
             try:
                 response = await client.post(
@@ -636,15 +628,9 @@ class TestAuthController:
                 "email": "test@example.com",
             }
 
-        with patch(
-            "api.auth.controller.validate_password_reset_token"
-        ) as mock_validate:
-            mock_validate.return_value = type(
-                "ValidationResult", (), {"is_valid": True}
-            )()
-            app.dependency_overrides[verify_password_reset_token] = (
-                mock_verify_password_reset_token
-            )
+        with patch("api.auth.controller.validate_password_reset_token") as mock_validate:
+            mock_validate.return_value = type("ValidationResult", (), {"is_valid": True})()
+            app.dependency_overrides[verify_password_reset_token] = mock_verify_password_reset_token
 
             try:
                 response = await client.get(
@@ -680,13 +666,9 @@ class TestAuthController:
                 "email": "test@example.com",
             }
 
-        with patch(
-            "api.auth.controller.validate_password_reset_token"
-        ) as mock_validate:
+        with patch("api.auth.controller.validate_password_reset_token") as mock_validate:
             mock_validate.side_effect = Exception("Database error")
-            app.dependency_overrides[verify_password_reset_token] = (
-                mock_verify_password_reset_token
-            )
+            app.dependency_overrides[verify_password_reset_token] = mock_verify_password_reset_token
 
             try:
                 response = await client.get(
@@ -748,9 +730,7 @@ class TestAuthController:
                 "csrf_token": "test-csrf-token",
             }
 
-            app.dependency_overrides[verify_password_reset_token] = (
-                mock_verify_password_reset_token
-            )
+            app.dependency_overrides[verify_password_reset_token] = mock_verify_password_reset_token
 
             try:
                 response = await client.post(
@@ -769,7 +749,9 @@ class TestAuthController:
         """Test forgot password sends reset email"""
         req_data = {"email": "john.doe@example.com"}
         with patch("api.auth.controller.forgot_password", new_callable=AsyncMock) as mock_send:
-            mock_send.return_value = {"reset_url": "http://localhost:3000/reset-password?token=test"}
+            mock_send.return_value = {
+                "reset_url": "http://localhost:3000/reset-password?token=test"
+            }
 
             response = await client.post("/api/auth/forgot-password", json=req_data)
             assert response.status_code == 200
@@ -798,7 +780,7 @@ class TestAuthController:
         with patch("api.auth.controller.forgot_password", new_callable=AsyncMock) as mock_send:
             mock_send.side_effect = ValidationException(
                 "Please wait 60 seconds before requesting another password reset email",
-                details={"cooldown_seconds": 60}
+                details={"cooldown_seconds": 60},
             )
 
             response = await client.post("/api/auth/forgot-password", json=req_data)
@@ -836,7 +818,9 @@ class TestAuthController:
     @pytest.mark.asyncio
     async def test_get_password_reset_cooldown_success(self, client: AsyncClient):
         """Test get password reset cooldown returns remaining time"""
-        with patch("api.auth.controller.get_password_reset_cooldown", new_callable=AsyncMock) as mock_cooldown:
+        with patch(
+            "api.auth.controller.get_password_reset_cooldown", new_callable=AsyncMock
+        ) as mock_cooldown:
             mock_cooldown.return_value = {"cooldown_seconds": 120}
 
             response = await client.get("/api/auth/forgot-password/cooldown?email=test@example.com")
@@ -850,7 +834,9 @@ class TestAuthController:
     @pytest.mark.asyncio
     async def test_get_password_reset_cooldown_no_cooldown(self, client: AsyncClient):
         """Test get password reset cooldown returns 0 when no cooldown"""
-        with patch("api.auth.controller.get_password_reset_cooldown", new_callable=AsyncMock) as mock_cooldown:
+        with patch(
+            "api.auth.controller.get_password_reset_cooldown", new_callable=AsyncMock
+        ) as mock_cooldown:
             mock_cooldown.return_value = {"cooldown_seconds": 0}
 
             response = await client.get("/api/auth/forgot-password/cooldown?email=test@example.com")
@@ -862,7 +848,9 @@ class TestAuthController:
     @pytest.mark.asyncio
     async def test_get_password_reset_cooldown_server_error(self, client: AsyncClient):
         """Test get password reset cooldown with server error"""
-        with patch("api.auth.controller.get_password_reset_cooldown", new_callable=AsyncMock) as mock_cooldown:
+        with patch(
+            "api.auth.controller.get_password_reset_cooldown", new_callable=AsyncMock
+        ) as mock_cooldown:
             mock_cooldown.side_effect = Exception("Redis error")
             response = await client.get("/api/auth/forgot-password/cooldown?email=test@example.com")
             assert response.status_code == 500
@@ -870,6 +858,7 @@ class TestAuthController:
     @pytest.mark.asyncio
     async def test_verify_email_success(self, client: AsyncClient):
         """Test verify email success"""
+
         async def mock_verify_email_token():
             return {
                 "sub": "test-user-id",
@@ -895,9 +884,7 @@ class TestAuthController:
                 "access_token": "test-access-token",
                 "csrf_token": "test-csrf-token",
             }
-            app.dependency_overrides[verify_email_verification_token] = (
-                mock_verify_email_token
-            )
+            app.dependency_overrides[verify_email_verification_token] = mock_verify_email_token
 
             try:
                 response = await client.get(
@@ -925,6 +912,7 @@ class TestAuthController:
     @pytest.mark.asyncio
     async def test_verify_email_user_not_found(self, client: AsyncClient):
         """Test verify email when user not found"""
+
         async def mock_verify_email_token():
             return {
                 "sub": "test-user-id",
@@ -935,9 +923,7 @@ class TestAuthController:
 
         with patch("api.auth.controller.verify_email") as mock_verify:
             mock_verify.side_effect = NotFoundException("User not found")
-            app.dependency_overrides[verify_email_verification_token] = (
-                mock_verify_email_token
-            )
+            app.dependency_overrides[verify_email_verification_token] = mock_verify_email_token
             try:
                 response = await client.get(
                     "/api/auth/verify-email",
@@ -953,6 +939,7 @@ class TestAuthController:
     @pytest.mark.asyncio
     async def test_verify_email_conflict(self, client: AsyncClient):
         """Test verify email when email already exists"""
+
         async def mock_verify_email_token():
             return {
                 "sub": "test-user-id",
@@ -963,9 +950,7 @@ class TestAuthController:
 
         with patch("api.auth.controller.verify_email") as mock_verify:
             mock_verify.side_effect = ConflictException("Email already exists")
-            app.dependency_overrides[verify_email_verification_token] = (
-                mock_verify_email_token
-            )
+            app.dependency_overrides[verify_email_verification_token] = mock_verify_email_token
             try:
                 response = await client.get(
                     "/api/auth/verify-email",
@@ -981,6 +966,7 @@ class TestAuthController:
     @pytest.mark.asyncio
     async def test_verify_email_server_error(self, client: AsyncClient):
         """Test verify email with server error"""
+
         async def mock_verify_email_token():
             return {
                 "sub": "test-user-id",
@@ -991,9 +977,7 @@ class TestAuthController:
 
         with patch("api.auth.controller.verify_email") as mock_verify:
             mock_verify.side_effect = Exception("Database error")
-            app.dependency_overrides[verify_email_verification_token] = (
-                mock_verify_email_token
-            )
+            app.dependency_overrides[verify_email_verification_token] = mock_verify_email_token
             try:
                 response = await client.get(
                     "/api/auth/verify-email",
@@ -1010,7 +994,9 @@ class TestAuthController:
     async def test_resend_verification_email_success(self, client: AsyncClient):
         """Test resend verification email success"""
         req_data = {"email": "john.doe@example.com"}
-        with patch("api.auth.controller.resend_verification_email", new_callable=AsyncMock) as mock_send:
+        with patch(
+            "api.auth.controller.resend_verification_email", new_callable=AsyncMock
+        ) as mock_send:
             mock_send.return_value = {"message": "Verification email sent"}
             response = await client.post("/api/auth/resend-verification", json=req_data)
             assert response.status_code == 200
@@ -1023,7 +1009,9 @@ class TestAuthController:
     async def test_resend_verification_email_cooldown(self, client: AsyncClient):
         """Test resend verification email with cooldown"""
         req_data = {"email": "john.doe@example.com"}
-        with patch("api.auth.controller.resend_verification_email", new_callable=AsyncMock) as mock_send:
+        with patch(
+            "api.auth.controller.resend_verification_email", new_callable=AsyncMock
+        ) as mock_send:
             mock_send.side_effect = ValidationException("Please wait")
             response = await client.post("/api/auth/resend-verification", json=req_data)
             assert response.status_code == 400
@@ -1035,7 +1023,9 @@ class TestAuthController:
     async def test_resend_verification_email_disabled_account(self, client: AsyncClient):
         """Test resend verification email with disabled account"""
         req_data = {"email": "disabled@example.com"}
-        with patch("api.auth.controller.resend_verification_email", new_callable=AsyncMock) as mock_send:
+        with patch(
+            "api.auth.controller.resend_verification_email", new_callable=AsyncMock
+        ) as mock_send:
             mock_send.side_effect = AuthenticationException("Account is disabled")
             response = await client.post("/api/auth/resend-verification", json=req_data)
             assert response.status_code == 403
@@ -1047,7 +1037,9 @@ class TestAuthController:
     async def test_resend_verification_email_not_found(self, client: AsyncClient):
         """Test resend verification email when user not found"""
         req_data = {"email": "missing@example.com"}
-        with patch("api.auth.controller.resend_verification_email", new_callable=AsyncMock) as mock_send:
+        with patch(
+            "api.auth.controller.resend_verification_email", new_callable=AsyncMock
+        ) as mock_send:
             mock_send.side_effect = NotFoundException("User not registered")
             response = await client.post("/api/auth/resend-verification", json=req_data)
             assert response.status_code == 404
@@ -1059,7 +1051,9 @@ class TestAuthController:
     async def test_resend_verification_email_smtp_disabled(self, client: AsyncClient):
         """Test resend verification email when SMTP disabled"""
         req_data = {"email": "john.doe@example.com"}
-        with patch("api.auth.controller.resend_verification_email", new_callable=AsyncMock) as mock_send:
+        with patch(
+            "api.auth.controller.resend_verification_email", new_callable=AsyncMock
+        ) as mock_send:
             mock_send.side_effect = SMTPNotConfiguredException("SMTP is disabled")
             response = await client.post("/api/auth/resend-verification", json=req_data)
             assert response.status_code == 503
@@ -1071,7 +1065,9 @@ class TestAuthController:
     async def test_resend_verification_email_server_error(self, client: AsyncClient):
         """Test resend verification email with server error"""
         req_data = {"email": "john.doe@example.com"}
-        with patch("api.auth.controller.resend_verification_email", new_callable=AsyncMock) as mock_send:
+        with patch(
+            "api.auth.controller.resend_verification_email", new_callable=AsyncMock
+        ) as mock_send:
             mock_send.side_effect = Exception("Database error")
             response = await client.post("/api/auth/resend-verification", json=req_data)
             assert response.status_code == 500
@@ -1081,8 +1077,10 @@ class TestAuthController:
         """Test get email verification cooldown returns remaining time"""
         mock_redis = AsyncMock()
         mock_redis.ttl.return_value = 120
+
         async def override_get_redis():
             return mock_redis
+
         app.dependency_overrides[get_redis] = override_get_redis
 
         try:
@@ -1102,8 +1100,10 @@ class TestAuthController:
         """Test get email verification cooldown with server error"""
         mock_redis = AsyncMock()
         mock_redis.ttl.side_effect = Exception("Redis error")
+
         async def override_get_redis():
             return mock_redis
+
         app.dependency_overrides[get_redis] = override_get_redis
 
         try:

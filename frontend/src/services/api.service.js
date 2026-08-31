@@ -1,10 +1,10 @@
-import axios from 'axios';
-import ENV from '@/config/env.config';
-import { handleApiError, setErrorHandler } from './error.service';
-import { toast } from 'sonner';
+import axios from "axios";
+import ENV from "@/config/env.config";
+import { handleApiError, setErrorHandler } from "./error.service";
+import { toast } from "sonner";
 
 const getApiBaseUrl = () => {
-  const protocol = ENV.SSL_ENABLED ? 'https' : 'http';
+  const protocol = ENV.SSL_ENABLED ? "https" : "http";
   return `${protocol}://${ENV.API_HOST}:${ENV.API_PORT}/api`;
 };
 
@@ -13,7 +13,7 @@ const apiClient = axios.create({
   timeout: 15000,
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -51,7 +51,7 @@ apiClient.interceptors.request.use(
 
     try {
       const latestToken = getTokenFunction();
-      
+
       if (latestToken) {
         config.headers.Authorization = `Bearer ${latestToken}`;
       } else {
@@ -60,7 +60,7 @@ apiClient.interceptors.request.use(
     } catch {
       delete config.headers.Authorization;
     }
-    
+
     return config;
   },
   (error) => {
@@ -74,7 +74,7 @@ apiClient.interceptors.response.use(
     const showSuccessToast = config?.showSuccessToast;
     const messageMap = config?.messageMap;
     const successMessage = config?.successMessage || (messageMap && messageMap.success);
-    
+
     // 202 indicates password reset or email verification is required
     if (response.status === 202) {
       if (response.data) {
@@ -87,16 +87,16 @@ apiClient.interceptors.response.use(
           const { code: _code, message: _message, ...rest } = response.data;
           responseData = rest;
         }
-        
+
         return { ...responseData, _statusCode: 202 };
       }
       return { _statusCode: 202 };
     }
-    
+
     if (successMessage && showSuccessToast === true) {
       toast.success(successMessage);
     }
-    
+
     if (response.data && response.data.data !== undefined) {
       return response.data.data;
     }
@@ -106,15 +106,21 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
     const retryOn401 = originalRequest.retryOn401 !== false; // Default to true for backward compatibility
 
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.noToken && retryOn401) {
-      const errorMessage = error.response?.data?.message || '';
-      const isPasswordError = errorMessage.includes('Current password is incorrect') || 
-                             errorMessage.includes('password is incorrect') ||
-                             errorMessage.toLowerCase().includes('incorrect password');
-      
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.noToken &&
+      retryOn401
+    ) {
+      const errorMessage = error.response?.data?.message || "";
+      const isPasswordError =
+        errorMessage.includes("Current password is incorrect") ||
+        errorMessage.includes("password is incorrect") ||
+        errorMessage.toLowerCase().includes("incorrect password");
+
       if (isPasswordError) {
         // Password error: set custom status and skip token refresh
-        error.customStatus = 'incorrect';
+        error.customStatus = "incorrect";
       } else {
         // Token expired: try to refresh
         originalRequest._retry = true;
@@ -122,7 +128,7 @@ apiClient.interceptors.response.use(
         // If token refresh is already in progress, add to queue and wait for it
         if (tokenRefreshPromise) {
           failedQueue.push(originalRequest);
-          
+
           try {
             const tokenResult = await tokenRefreshPromise;
             if (tokenResult?.success && tokenResult?.token) {
@@ -139,37 +145,37 @@ apiClient.interceptors.response.use(
           }
         } else {
           failedQueue.push(originalRequest);
-          
+
           tokenRefreshPromise = (async () => {
             try {
               if (getTokenFunctionFromContext) {
                 const tokenResult = await getTokenFunctionFromContext(false, true);
-                
+
                 if (tokenResult?.success && tokenResult?.token) {
                   // Update all queued requests with new token
-                  failedQueue.forEach(request => {
+                  failedQueue.forEach((request) => {
                     request.headers.Authorization = `Bearer ${tokenResult.token}`;
                   });
-                  
+
                   return tokenResult;
                 }
               }
-              
+
               // Token refresh failed
               if (logoutFunction) {
                 logoutFunction(true);
                 error.config = error.config || {};
                 error.config.showErrorToast = false;
               }
-              
-              throw new Error('Token refresh failed');
+
+              throw new Error("Token refresh failed");
             } catch (tokenError) {
               if (logoutFunction) {
                 logoutFunction(true);
                 error.config = error.config || {};
                 error.config.showErrorToast = false;
               }
-              
+
               throw tokenError;
             } finally {
               tokenRefreshPromise = null;
@@ -207,17 +213,17 @@ apiClient.interceptors.response.use(
  */
 const wrapApiCall = (apiCall) => {
   return apiCall
-    .then(data => ({
+    .then((data) => ({
       data,
-      status: 'success',
+      status: "success",
       error: null,
     }))
-    .catch(error => {
+    .catch((error) => {
       return {
         data: null,
-        status: 'error',
+        status: "error",
         error: {
-          message: error.response?.data?.message || error.message || 'Request failed',
+          message: error.response?.data?.message || error.message || "Request failed",
           status: error.response?.status,
           code: error.code,
         },
@@ -304,7 +310,7 @@ export const apiService = {
   upload: (url, formData) => {
     return apiClient.post(url, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   },

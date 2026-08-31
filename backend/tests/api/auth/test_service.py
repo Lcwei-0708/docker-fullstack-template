@@ -1,48 +1,50 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.users import Users
-from models.user_sessions import UserSessions
-from models.password_reset_tokens import PasswordResetTokens
-from models.email_verification_tokens import EmailVerificationTokens
-from core.security import hash_password, create_access_token, create_csrf_token
-from extensions.smtp import SMTPMailer
+
+from api.auth.schema import UserLogin, UserRegister
 from api.auth.services import (
-    register,
+    _create_user,
+    _create_user_session,
+    _request_email_change_verification_email,
+    _request_registration_verification_email,
+    _send_registration_verification_email,
+    _update_session_expiry,
+    forgot_password,
+    get_or_create_csrf_token,
+    get_password_reset_cooldown,
     login,
     logout,
     logout_all_devices,
-    token,
-    reset_password,
-    validate_password_reset_token,
-    forgot_password,
-    get_password_reset_cooldown,
-    verify_email,
+    register,
     resend_verification_email,
-    _send_registration_verification_email,
-    _request_registration_verification_email,
-    _request_email_change_verification_email,
-    _create_user,
-    _create_user_session,
-    _update_session_expiry,
-    get_or_create_csrf_token,
+    reset_password,
+    token,
+    validate_password_reset_token,
     verify_csrf_token,
-)
-from api.auth.schema import UserRegister, UserLogin
-from utils.custom_exception import (
-    ConflictException,
-    AuthenticationException,
-    PasswordResetRequiredException,
-    ServerException,
-    NotFoundException,
-    SMTPNotConfiguredException,
-    ValidationException,
-    EmailVerificationRequiredException,
-    RegistrationDisabledException,
+    verify_email,
 )
 from core.config import settings
+from core.security import create_access_token, create_csrf_token, hash_password
+from extensions.smtp import SMTPMailer
+from models.email_verification_tokens import EmailVerificationTokens
+from models.password_reset_tokens import PasswordResetTokens
+from models.user_sessions import UserSessions
+from models.users import Users
+from utils.custom_exception import (
+    AuthenticationException,
+    ConflictException,
+    EmailVerificationRequiredException,
+    NotFoundException,
+    PasswordResetRequiredException,
+    RegistrationDisabledException,
+    ServerException,
+    SMTPNotConfiguredException,
+    ValidationException,
+)
 
 
 class TestAuthService:
@@ -89,9 +91,7 @@ class TestAuthService:
 
         with patch.object(settings, "REGISTRATION_ENABLE", True):
             with pytest.raises(ConflictException) as exc_info:
-                await register(
-                    test_db_session, mock_redis, user_data, "127.0.0.1", "TestAgent/1.0"
-                )
+                await register(test_db_session, mock_redis, user_data, "127.0.0.1", "TestAgent/1.0")
 
             assert "Email already exists" in str(exc_info.value)
 
@@ -109,9 +109,7 @@ class TestAuthService:
 
         with patch.object(settings, "REGISTRATION_ENABLE", False):
             with pytest.raises(RegistrationDisabledException) as exc_info:
-                await register(
-                    test_db_session, mock_redis, user_data, "127.0.0.1", "TestAgent/1.0"
-                )
+                await register(test_db_session, mock_redis, user_data, "127.0.0.1", "TestAgent/1.0")
 
             assert "Registration is disabled" in str(exc_info.value)
 
@@ -121,9 +119,7 @@ class TestAuthService:
         mock_redis = AsyncMock()
         login_data = UserLogin(email=test_user.email, password="TestPassword123!")
 
-        result = await login(
-            test_db_session, mock_redis, login_data, "127.0.0.1", "TestAgent/1.0"
-        )
+        result = await login(test_db_session, mock_redis, login_data, "127.0.0.1", "TestAgent/1.0")
 
         assert "user" in result
         assert "session_id" in result
@@ -134,14 +130,10 @@ class TestAuthService:
     async def test_login_user_not_found(self, test_db_session: AsyncSession):
         """Test login with non-existent user"""
         mock_redis = AsyncMock()
-        login_data = UserLogin(
-            email="nonexistent@example.com", password="TestPassword123!"
-        )
+        login_data = UserLogin(email="nonexistent@example.com", password="TestPassword123!")
 
         with pytest.raises(AuthenticationException) as exc_info:
-            await login(
-                test_db_session, mock_redis, login_data, "127.0.0.1", "TestAgent/1.0"
-            )
+            await login(test_db_session, mock_redis, login_data, "127.0.0.1", "TestAgent/1.0")
 
         assert "Invalid email or password" in str(exc_info.value)
 
@@ -169,24 +161,18 @@ class TestAuthService:
         login_data = UserLogin(email=disabled_user.email, password="TestPassword123!")
 
         with pytest.raises(AuthenticationException) as exc_info:
-            await login(
-                test_db_session, mock_redis, login_data, "127.0.0.1", "TestAgent/1.0"
-            )
+            await login(test_db_session, mock_redis, login_data, "127.0.0.1", "TestAgent/1.0")
 
         assert "Account is disabled" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_login_invalid_password(
-        self, test_db_session: AsyncSession, test_user: Users
-    ):
+    async def test_login_invalid_password(self, test_db_session: AsyncSession, test_user: Users):
         """Test login with invalid password"""
         mock_redis = AsyncMock()
         login_data = UserLogin(email=test_user.email, password="WrongPassword123!")
 
         with pytest.raises(AuthenticationException) as exc_info:
-            await login(
-                test_db_session, mock_redis, login_data, "127.0.0.1", "TestAgent/1.0"
-            )
+            await login(test_db_session, mock_redis, login_data, "127.0.0.1", "TestAgent/1.0")
 
         assert "Invalid email or password" in str(exc_info.value)
 
@@ -214,9 +200,7 @@ class TestAuthService:
         login_data = UserLogin(email=reset_user.email, password="TestPassword123!")
 
         with pytest.raises(PasswordResetRequiredException) as exc_info:
-            await login(
-                test_db_session, mock_redis, login_data, "127.0.0.1", "TestAgent/1.0"
-            )
+            await login(test_db_session, mock_redis, login_data, "127.0.0.1", "TestAgent/1.0")
 
         assert "Password reset required" in str(exc_info.value)
         assert exc_info.value.details is not None
@@ -235,9 +219,7 @@ class TestAuthService:
         mock_redis = AsyncMock()
         mock_redis.delete.return_value = 1
 
-        result = await logout(
-            test_db_session, mock_redis, test_user.id, test_user_session.id
-        )
+        result = await logout(test_db_session, mock_redis, test_user.id, test_user_session.id)
 
         assert result is True
         mock_redis.delete.assert_called_once_with(
@@ -252,15 +234,11 @@ class TestAuthService:
         """Test successful logout all devices"""
         mock_redis = AsyncMock()
 
-        with patch(
-            "api.auth.services.clear_user_all_sessions", return_value=True
-        ) as mock_clear:
+        with patch("api.auth.services.clear_user_all_sessions", return_value=True) as mock_clear:
             result = await logout_all_devices(test_db_session, mock_redis, test_user.id)
 
             assert result is True
-            mock_clear.assert_called_once_with(
-                test_db_session, mock_redis, test_user.id
-            )
+            mock_clear.assert_called_once_with(test_db_session, mock_redis, test_user.id)
 
     @pytest.mark.asyncio
     async def test_logout_all_devices_failure(
@@ -299,9 +277,7 @@ class TestAuthService:
         mock_redis.get.return_value = str(session_data)
         mock_redis.setex.return_value = True
 
-        with patch(
-            "api.auth.services.extend_session_ttl", return_value=True
-        ) as mock_extend:
+        with patch("api.auth.services.extend_session_ttl", return_value=True) as mock_extend:
             result = await token(test_db_session, mock_redis, test_user_session.id)
 
             assert result is not None
@@ -406,9 +382,7 @@ class TestAuthService:
 
         token_data = {"sub": user_id, "token": "test_reset_token_123"}
 
-        with patch(
-            "api.auth.services.clear_user_all_sessions", return_value=True
-        ) as mock_clear:
+        with patch("api.auth.services.clear_user_all_sessions", return_value=True) as mock_clear:
             result = await reset_password(
                 test_db_session,
                 mock_redis,
@@ -466,9 +440,7 @@ class TestAuthService:
         assert "User not found" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_validate_password_reset_token_success(
-        self, test_db_session: AsyncSession
-    ):
+    async def test_validate_password_reset_token_success(self, test_db_session: AsyncSession):
         """Test successful password reset token validation"""
         user_id = "test-validate-token-service-user"
         hashed_pwd = await hash_password("TestPassword123!")
@@ -501,9 +473,7 @@ class TestAuthService:
         assert result.is_valid is True
 
     @pytest.mark.asyncio
-    async def test_validate_password_reset_token_invalid(
-        self, test_db_session: AsyncSession
-    ):
+    async def test_validate_password_reset_token_invalid(self, test_db_session: AsyncSession):
         """Test validation of invalid password reset token"""
         token_data = {"sub": "nonexistent_user", "token": "invalid_token"}
 
@@ -527,13 +497,11 @@ class TestAuthService:
         assert "User not found or account disabled" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_validate_password_reset_token_not_required(
-        self, test_db_session: AsyncSession
-    ):
+    async def test_validate_password_reset_token_not_required(self, test_db_session: AsyncSession):
         """Test password reset token validation when password reset not required"""
         user_id = "test-no-reset-validate-user"
         hashed_pwd = await hash_password("TestPassword123!")
-        
+
         no_reset_user = Users(
             id=user_id,
             email="noresetvalidate@example.com",
@@ -563,14 +531,12 @@ class TestAuthService:
         assert result.is_valid is True
 
     @pytest.mark.asyncio
-    async def test_forgot_password_success(
-        self, test_db_session: AsyncSession, test_user: Users
-    ):
+    async def test_forgot_password_success(self, test_db_session: AsyncSession, test_user: Users):
         """Test successful forgot password flow"""
         mock_redis = AsyncMock()
         mock_redis.ttl.return_value = -1  # No cooldown
         mock_redis.setex.return_value = True
-        
+
         mock_mailer = MagicMock(spec=SMTPMailer)
         mock_mailer.enabled = True
         mock_mailer.send_text = MagicMock()
@@ -604,9 +570,7 @@ class TestAuthService:
             )
 
     @pytest.mark.asyncio
-    async def test_forgot_password_account_disabled(
-        self, test_db_session: AsyncSession
-    ):
+    async def test_forgot_password_account_disabled(self, test_db_session: AsyncSession):
         """Test forgot password with disabled account"""
         hashed_pwd = await hash_password("TestPassword123!")
         disabled_user = Users(
@@ -624,7 +588,7 @@ class TestAuthService:
 
         mock_redis = AsyncMock()
         mock_redis.ttl.return_value = -1
-        
+
         mock_mailer = MagicMock(spec=SMTPMailer)
         mock_mailer.enabled = True
 
@@ -644,7 +608,7 @@ class TestAuthService:
         """Test forgot password when cooldown is active"""
         mock_redis = AsyncMock()
         mock_redis.ttl.return_value = 60  # 60 seconds remaining
-        
+
         mock_mailer = MagicMock(spec=SMTPMailer)
         mock_mailer.enabled = True
 
@@ -665,7 +629,7 @@ class TestAuthService:
         """Test forgot password when SMTP is disabled"""
         mock_redis = AsyncMock()
         mock_redis.ttl.return_value = -1
-        
+
         mock_mailer = MagicMock(spec=SMTPMailer)
         mock_mailer.enabled = False
 
@@ -725,9 +689,11 @@ class TestAuthService:
             password="TestPassword123!",
         )
 
-        with patch.object(settings, "REGISTRATION_ENABLE", True), patch.object(
-            settings, "EMAIL_VERIFICATION_ENABLE", True
-        ), patch.object(settings, "SMTP_ENABLE", True):
+        with (
+            patch.object(settings, "REGISTRATION_ENABLE", True),
+            patch.object(settings, "EMAIL_VERIFICATION_ENABLE", True),
+            patch.object(settings, "SMTP_ENABLE", True),
+        ):
             with pytest.raises(EmailVerificationRequiredException):
                 await register(
                     test_db_session,
@@ -756,9 +722,11 @@ class TestAuthService:
             password="TestPassword123!",
         )
 
-        with patch.object(settings, "REGISTRATION_ENABLE", True), patch.object(
-            settings, "EMAIL_VERIFICATION_ENABLE", True
-        ), patch.object(settings, "SMTP_ENABLE", True):
+        with (
+            patch.object(settings, "REGISTRATION_ENABLE", True),
+            patch.object(settings, "EMAIL_VERIFICATION_ENABLE", True),
+            patch.object(settings, "SMTP_ENABLE", True),
+        ):
             with pytest.raises(EmailVerificationRequiredException):
                 await register(
                     test_db_session,
@@ -796,8 +764,9 @@ class TestAuthService:
 
         login_data = UserLogin(email=user.email, password="TestPassword123!")
 
-        with patch.object(settings, "EMAIL_VERIFICATION_ENABLE", True), patch.object(
-            settings, "SMTP_ENABLE", True
+        with (
+            patch.object(settings, "EMAIL_VERIFICATION_ENABLE", True),
+            patch.object(settings, "SMTP_ENABLE", True),
         ):
             with pytest.raises(EmailVerificationRequiredException) as exc_info:
                 await login(
@@ -837,8 +806,9 @@ class TestAuthService:
 
         login_data = UserLogin(email=user.email, password="TestPassword123!")
 
-        with patch.object(settings, "EMAIL_VERIFICATION_ENABLE", True), patch.object(
-            settings, "SMTP_ENABLE", True
+        with (
+            patch.object(settings, "EMAIL_VERIFICATION_ENABLE", True),
+            patch.object(settings, "SMTP_ENABLE", True),
         ):
             with pytest.raises(EmailVerificationRequiredException):
                 await login(
@@ -853,7 +823,9 @@ class TestAuthService:
         mock_mailer.send_text.assert_called()
 
     @pytest.mark.asyncio
-    async def test_logout_server_error(self, test_db_session: AsyncSession, test_user: Users, test_user_session: UserSessions):
+    async def test_logout_server_error(
+        self, test_db_session: AsyncSession, test_user: Users, test_user_session: UserSessions
+    ):
         """Test logout server error"""
         mock_redis = AsyncMock()
         mock_redis.delete.side_effect = Exception("Redis error")
@@ -947,7 +919,9 @@ class TestAuthService:
 
         token_data = {"sub": test_user.id, "token": "test_reset_token"}
 
-        with patch("api.auth.services.clear_user_all_sessions", side_effect=Exception("Redis error")):
+        with patch(
+            "api.auth.services.clear_user_all_sessions", side_effect=Exception("Redis error")
+        ):
             with pytest.raises(ServerException):
                 await reset_password(
                     test_db_session,
@@ -959,14 +933,18 @@ class TestAuthService:
                 )
 
     @pytest.mark.asyncio
-    async def test_validate_password_reset_token_server_exception(self, test_db_session: AsyncSession):
+    async def test_validate_password_reset_token_server_exception(
+        self, test_db_session: AsyncSession
+    ):
         """Test validate password reset token server exception"""
         with patch.object(test_db_session, "execute", side_effect=Exception("DB error")):
             with pytest.raises(ServerException):
                 await validate_password_reset_token(test_db_session, {"sub": "x", "token": "y"})
 
     @pytest.mark.asyncio
-    async def test_forgot_password_server_exception(self, test_db_session: AsyncSession, test_user: Users):
+    async def test_forgot_password_server_exception(
+        self, test_db_session: AsyncSession, test_user: Users
+    ):
         """Test forgot password server exception"""
         mock_redis = AsyncMock()
         mock_redis.ttl.return_value = -1
@@ -982,7 +960,9 @@ class TestAuthEmailVerificationHelpers:
     """Test email verification helper functions"""
 
     @pytest.mark.asyncio
-    async def test_send_registration_verification_email(self, test_db_session: AsyncSession, test_user: Users):
+    async def test_send_registration_verification_email(
+        self, test_db_session: AsyncSession, test_user: Users
+    ):
         """Test sending registration verification email"""
         mock_mailer = MagicMock(spec=SMTPMailer)
         mock_mailer.enabled = True
@@ -994,7 +974,9 @@ class TestAuthEmailVerificationHelpers:
         mock_mailer.send_text.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_request_registration_verification_email(self, test_db_session: AsyncSession, test_user: Users):
+    async def test_request_registration_verification_email(
+        self, test_db_session: AsyncSession, test_user: Users
+    ):
         """Test creating registration verification token record"""
         token_meta = await _request_registration_verification_email(test_db_session, test_user)
 
@@ -1005,10 +987,14 @@ class TestAuthEmailVerificationHelpers:
         assert result.scalar_one_or_none() is not None
 
     @pytest.mark.asyncio
-    async def test_request_email_change_verification_email(self, test_db_session: AsyncSession, test_user: Users):
+    async def test_request_email_change_verification_email(
+        self, test_db_session: AsyncSession, test_user: Users
+    ):
         """Test creating email change verification token record"""
         new_email = "change@example.com"
-        token_meta = await _request_email_change_verification_email(test_db_session, test_user, new_email)
+        token_meta = await _request_email_change_verification_email(
+            test_db_session, test_user, new_email
+        )
 
         assert token_meta["verification_token"]
         result = await test_db_session.execute(
@@ -1267,7 +1253,9 @@ class TestAuthServiceInternals:
                 await _create_user(test_db_session, user_data)
 
     @pytest.mark.asyncio
-    async def test_create_user_session_server_exception(self, test_db_session: AsyncSession, test_user: Users):
+    async def test_create_user_session_server_exception(
+        self, test_db_session: AsyncSession, test_user: Users
+    ):
         """Test _create_user_session server exception"""
         mock_redis = AsyncMock()
         mock_redis.setex.side_effect = Exception("Redis error")
@@ -1448,7 +1436,5 @@ class TestAuthServiceInternals:
         mock_mailer = MagicMock(spec=SMTPMailer)
         mock_mailer.enabled = False
         with patch.object(settings, "SMTP_ENABLE", False):
-            await _send_registration_verification_email(
-                test_db_session, mock_mailer, test_user
-            )
+            await _send_registration_verification_email(test_db_session, mock_mailer, test_user)
         mock_mailer.send_text.assert_not_called()

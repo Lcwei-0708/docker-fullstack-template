@@ -1,11 +1,11 @@
-import * as React from 'react';
-import { useTranslation } from 'react-i18next';
-import { Search, X, Plus, Settings2, CheckSquare, Square, Trash2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useDataGrid } from '@/components/data-grid/data-grid';
-import { DataGridColumnVisibility } from '@/components/data-grid/data-grid-column-visibility';
+import * as React from "react";
+import { useTranslation } from "react-i18next";
+import { Search, X, Plus, Settings2, CheckSquare, Square, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useDataGrid } from "@/components/data-grid/data-grid";
+import { DataGridColumnVisibility } from "@/components/data-grid/data-grid-column-visibility";
 
 // Toolbar component with search, add, delete, and column visibility controls
 function DataGridToolbar({
@@ -25,8 +25,8 @@ function DataGridToolbar({
 }) {
   const { t } = useTranslation();
   const { table } = useDataGrid();
-  const [internalSearchValue, setInternalSearchValue] = React.useState('');
-  const [, forceUpdate] = React.useReducer(x => x + 1, 0);
+  const [internalSearchValue, setInternalSearchValue] = React.useState("");
+  const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
 
   // Get selected rows count
   const rowSelection = table.getState().rowSelection || {};
@@ -48,7 +48,7 @@ function DataGridToolbar({
         forceUpdate();
       }
     }, 50);
-    
+
     return () => clearInterval(checkInterval);
   }, [table, rowSelectionStr]);
 
@@ -75,18 +75,18 @@ function DataGridToolbar({
 
   const handleSearchClear = () => {
     if (isControlled && onSearchChange) {
-      onSearchChange('');
+      onSearchChange("");
       if (onSearch) {
-        onSearch('');
+        onSearch("");
       }
     } else {
-      setInternalSearchValue('');
+      setInternalSearchValue("");
       table.setGlobalFilter(undefined);
     }
   };
 
   const handleSearchKeyDown = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleSearchClick();
     }
@@ -96,9 +96,10 @@ function DataGridToolbar({
     <div
       data-slot="data-grid-toolbar"
       className={cn(
-        'flex flex-wrap items-center justify-between gap-2 p-4 border-b bg-sidebar',
+        "flex flex-wrap items-center justify-between gap-2 p-4 border-b bg-sidebar",
         className
-      )}>
+      )}
+    >
       <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[200px]">
         {showSearch && (
           <div className="flex items-center gap-2 flex-1 min-w-[200px] max-w-xs">
@@ -106,7 +107,10 @@ function DataGridToolbar({
               <Input
                 id="data-grid-search"
                 name="data-grid-search"
-                placeholder={searchPlaceholder || t('components.dataGrid.toolbar.searchPlaceholder', 'Search...')}
+                placeholder={
+                  searchPlaceholder ||
+                  t("components.dataGrid.toolbar.searchPlaceholder", "Search...")
+                }
                 value={searchValue}
                 onChange={handleSearchChange}
                 onKeyDown={handleSearchKeyDown}
@@ -119,16 +123,13 @@ function DataGridToolbar({
                   size="icon"
                   className="absolute right-1 top-1/2 z-10 -translate-y-1/2 h-7 w-7"
                   onClick={handleSearchClear}
-                  aria-label={t('common.actions.reset', 'Reset')}>
+                  aria-label={t("common.actions.reset", "Reset")}
+                >
                   <X className="size-4" />
                 </Button>
               )}
             </div>
-            <Button
-              onClick={handleSearchClick}
-              size="sm"
-              variant="secondary"
-              className="size-9">
+            <Button onClick={handleSearchClick} size="sm" variant="secondary" className="size-9">
               <Search className="size-4" />
             </Button>
           </div>
@@ -140,33 +141,27 @@ function DataGridToolbar({
           const shouldShow = hasSelectedRows && onDeleteSelected;
           return shouldShow ? true : null;
         })() && (
-          <Button
-            onClick={onDeleteSelected}
-            variant="destructive"
-            size="sm">
+          <Button onClick={onDeleteSelected} variant="destructive" size="sm">
             <Trash2 className="size-4" />
-            {t('components.dataGrid.toolbar.deleteSelected', 'Delete selected')}
+            {t("components.dataGrid.toolbar.deleteSelected", "Delete selected")}
           </Button>
         )}
 
         {showAdd && onAdd && (
           <Button onClick={onAdd} size="sm">
             <Plus className="size-4" />
-            {t('common.actions.create', 'Create')}
+            {t("common.actions.create", "Create")}
           </Button>
         )}
 
         {showSelect && onSelectionToggle && (
           <Button
             onClick={onSelectionToggle}
-            variant={enableSelection ? 'default' : 'outline'}
-            size="sm">
-            {enableSelection ? (
-              <CheckSquare className="size-4" />
-            ) : (
-              <Square className="size-4" />
-            )}
-            {t('components.dataGrid.toolbar.toggleSelection', 'Toggle selection')}
+            variant={enableSelection ? "default" : "outline"}
+            size="sm"
+          >
+            {enableSelection ? <CheckSquare className="size-4" /> : <Square className="size-4" />}
+            {t("components.dataGrid.toolbar.toggleSelection", "Toggle selection")}
           </Button>
         )}
 
@@ -176,7 +171,7 @@ function DataGridToolbar({
             trigger={
               <Button variant="outline" size="sm">
                 <Settings2 className="size-4" />
-                {t('components.dataGrid.columnVisibility.toggleColumns', 'Toggle columns')}
+                {t("components.dataGrid.columnVisibility.toggleColumns", "Toggle columns")}
               </Button>
             }
           />
@@ -187,4 +182,3 @@ function DataGridToolbar({
 }
 
 export { DataGridToolbar };
-

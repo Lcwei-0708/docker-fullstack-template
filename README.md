@@ -70,6 +70,8 @@ This project is a ready-to-use fullstack template that leverages Docker Compose 
    ./scripts/setup-pre-commit.sh
    ```
 
+   Hooks auto-fix on commit: backend (Ruff format + lint fix), frontend (Prettier + ESLint fix), then re-stage if files changed.
+
    re-enable hooks:
 
    ```bash

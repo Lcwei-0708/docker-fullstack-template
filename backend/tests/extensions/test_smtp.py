@@ -1,15 +1,17 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 from fastapi import FastAPI
+
 import extensions.smtp
-from utils.custom_exception import SMTPNotConfiguredException
 from extensions.smtp import (
-    SMTPSettings,
     SMTPMailer,
+    SMTPSettings,
+    add_smtp,
     build_smtp_settings,
     get_mailer,
-    add_smtp,
 )
+from utils.custom_exception import SMTPNotConfiguredException
 
 
 class TestSMTPSettings:

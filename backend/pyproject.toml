@@ -78,6 +78,7 @@ precision = 2
 [tool.ruff]
 target-version = "py314"
 line-length = 100
+indent-width = 4
 src = ["."]
 exclude = [
     ".venv",
@@ -86,10 +87,19 @@ exclude = [
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
-ignore = ["B008"]
+ignore = [
+    "B008",  # FastAPI Depends() in default arguments
+    "B904",  # raise ... from err in except (FastAPI handlers)
+    "E712",  # SQLAlchemy columns need == True/False or .is_(), not `not column`
+]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["B"]
+"main.py" = ["E402"]
+"core/config.py" = ["E402"]
+"migrations/env.py" = ["E402"]
+"utils/email_templates.py" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"
+indent-style = "space"

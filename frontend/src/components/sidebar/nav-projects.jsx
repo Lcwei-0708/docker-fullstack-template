@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -17,20 +17,17 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
-export function NavProjects({
-  projects,
-  groupLabel
-}) {
-  const { isMobile, toggleSidebar } = useSidebar()
-  
+export function NavProjects({ projects, groupLabel }) {
+  const { isMobile, toggleSidebar } = useSidebar();
+
   const handleItemClick = React.useCallback(() => {
     if (isMobile) {
-      toggleSidebar()
+      toggleSidebar();
     }
-  }, [isMobile, toggleSidebar])
+  }, [isMobile, toggleSidebar]);
 
   if (!projects || projects.length === 0) {
     return null;
@@ -44,9 +41,7 @@ export function NavProjects({
           <SidebarMenuItem key={item.path || item.title || item.name}>
             <SidebarMenuButton asChild isActive={item.isActive}>
               <Link to={item.path || item.url} onClick={handleItemClick}>
-                {item.iconName && (
-                  <Icon name={item.iconName} isActive={item.isActive} />
-                )}
+                {item.iconName && <Icon name={item.iconName} isActive={item.isActive} />}
                 <span>{item.title || item.name}</span>
               </Link>
             </SidebarMenuButton>
@@ -60,7 +55,8 @@ export function NavProjects({
               <DropdownMenuContent
                 className={cn("w-48 rounded-sm")}
                 side={isMobile ? "bottom" : "right"}
-                align={isMobile ? "end" : "start"}>
+                align={isMobile ? "end" : "start"}
+              >
                 <DropdownMenuItem>
                   <Folder className={cn("text-muted-foreground")} />
                   <span>View Project</span>

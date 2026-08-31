@@ -1,17 +1,17 @@
 from dotenv import load_dotenv
+
 load_dotenv()  # Load .env
 
+import logging.config
 import os
 import re
+
 import yaml
-import logging.config
 from pydantic_settings import BaseSettings
 
 # Docs / health probes — skip logging, rate limit, and tracing.
 # Not an env setting: these paths are part of the app, not deployment.
-SKIP_PATHS: frozenset[str] = frozenset(
-    {"/", "/docs", "/redoc", "/openapi.json", "/healthz"}
-)
+SKIP_PATHS: frozenset[str] = frozenset({"/", "/docs", "/redoc", "/openapi.json", "/healthz"})
 # CORS preflight — skip logging, rate limit, and tracing (URL exclude cannot filter method).
 SKIP_METHODS: frozenset[str] = frozenset({"OPTIONS"})
 
@@ -29,6 +29,7 @@ def otel_excluded_urls(paths: frozenset[str] = SKIP_PATHS) -> str:
         else:
             patterns.append(re.escape(path))
     return ",".join(patterns)
+
 
 class Settings(BaseSettings):
     # Project settings
@@ -82,7 +83,7 @@ class Settings(BaseSettings):
     # Session settings
     SESSION_EXPIRE_MINUTES: int = 10080  # 7 days
     CSRF_TOKEN_EXPIRE_MINUTES: int = 30
-    
+
     # Cookie settings
     COOKIE_SECURE: bool = SSL_ENABLE
     COOKIE_HTTPONLY: bool = True
@@ -130,12 +131,14 @@ class Settings(BaseSettings):
     # When false, users with the system super-admin role are hidden from user list for everyone
     SHOW_SUPER_ADMIN: bool = False
 
+
 # Create a settings instance to be imported elsewhere
 settings = Settings()
 
+
 def setup_logging(yaml_path="logging_config.yaml"):
     os.makedirs("logs", exist_ok=True)
-    with open(yaml_path, "r") as f:
+    with open(yaml_path) as f:
         config = yaml.safe_load(f)
     # Override the root logger or specified logger's level with LOG_LEVEL from environment
     log_level = settings.LOG_LEVEL

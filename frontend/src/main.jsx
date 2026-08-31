@@ -1,15 +1,15 @@
-import './index.css'
-import i18n from './i18n'
-import { StrictMode } from 'react'
-import AppRouter from './router/AppRouter'
-import { createRoot } from 'react-dom/client'
-import { I18nextProvider } from 'react-i18next'
-import { BrowserRouter } from 'react-router-dom'
-import { ThemeProvider } from './contexts/themeContext'
-import { AuthProvider } from './contexts/authContext'
-import { Toaster } from './components/ui/sonner'
+import "./index.css";
+import i18n from "./i18n";
+import { StrictMode } from "react";
+import AppRouter from "./router/AppRouter";
+import { createRoot } from "react-dom/client";
+import { I18nextProvider } from "react-i18next";
+import { BrowserRouter } from "react-router-dom";
+import { ThemeProvider } from "./contexts/themeContext";
+import { AuthProvider } from "./contexts/authContext";
+import { Toaster } from "./components/ui/sonner";
 
-createRoot(document.getElementById('root')).render(
+createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AuthProvider>
       <ThemeProvider>
@@ -22,4 +22,4 @@ createRoot(document.getElementById('root')).render(
       </ThemeProvider>
     </AuthProvider>
   </StrictMode>
-)
+);

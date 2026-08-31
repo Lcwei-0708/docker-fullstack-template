@@ -1,6 +1,10 @@
-import * as React from 'react';
-import { motion } from 'motion/react';
-import { getVariants, useAnimateIconContext, IconWrapper } from '@/components/animate-ui/icons/icon';
+import * as React from "react";
+import { motion } from "motion/react";
+import {
+  getVariants,
+  useAnimateIconContext,
+  IconWrapper,
+} from "@/components/animate-ui/icons/icon";
 
 const SEGMENT_COUNT = 8;
 const DURATION = 1.2;
@@ -22,9 +26,9 @@ const animations = {
           opacity: [1, BASE_OPACITY],
           transition: {
             duration: DURATION,
-            ease: 'linear',
+            ease: "linear",
             repeat: Infinity,
-            repeatType: 'loop',
+            repeatType: "loop",
             delay,
           },
         },
@@ -41,9 +45,9 @@ const animations = {
         rotate: 360,
         transition: {
           duration: 1.5,
-          ease: 'linear',
+          ease: "linear",
           repeat: Infinity,
-          repeatType: 'loop',
+          repeatType: "loop",
         },
       },
     },
@@ -55,14 +59,11 @@ const animations = {
     path5: {},
     path6: {},
     path7: {},
-    path8: {}
-  }
+    path8: {},
+  },
 };
 
-function IconComponent({
-  size,
-  ...props
-}) {
+function IconComponent({ size, ...props }) {
   const { controls } = useAnimateIconContext();
   const variants = getVariants(animations);
 
@@ -80,47 +81,36 @@ function IconComponent({
       variants={variants.group}
       initial="initial"
       animate={controls}
-      {...props}>
-      <motion.path
-        d="M12 2v4"
-        variants={variants.path1}
-        initial="initial"
-        animate={controls} />
+      {...props}
+    >
+      <motion.path d="M12 2v4" variants={variants.path1} initial="initial" animate={controls} />
       <motion.path
         d="m16.2 7.8 2.9-2.9"
         variants={variants.path2}
         initial="initial"
-        animate={controls} />
-      <motion.path
-        d="M18 12h4"
-        variants={variants.path3}
-        initial="initial"
-        animate={controls} />
+        animate={controls}
+      />
+      <motion.path d="M18 12h4" variants={variants.path3} initial="initial" animate={controls} />
       <motion.path
         d="m16.2 16.2 2.9 2.9"
         variants={variants.path4}
         initial="initial"
-        animate={controls} />
-      <motion.path
-        d="M12 18v4"
-        variants={variants.path5}
-        initial="initial"
-        animate={controls} />
+        animate={controls}
+      />
+      <motion.path d="M12 18v4" variants={variants.path5} initial="initial" animate={controls} />
       <motion.path
         d="m4.9 19.1 2.9-2.9"
         variants={variants.path6}
         initial="initial"
-        animate={controls} />
-      <motion.path
-        d="M2 12h4"
-        variants={variants.path7}
-        initial="initial"
-        animate={controls} />
+        animate={controls}
+      />
+      <motion.path d="M2 12h4" variants={variants.path7} initial="initial" animate={controls} />
       <motion.path
         d="m4.9 4.9 2.9 2.9"
         variants={variants.path8}
         initial="initial"
-        animate={controls} />
+        animate={controls}
+      />
     </motion.svg>
   );
 }

@@ -86,9 +86,7 @@ class TestIsAlreadyInitialized:
                 hash_password="hashed",
                 status=True,
             )
-            db.add_all(
-                [role, user, RoleAttributes(id=str(uuid7()), name="view-users")]
-            )
+            db.add_all([role, user, RoleAttributes(id=str(uuid7()), name="view-users")])
             await db.commit()
             db.add(RoleMapper(user_id=user.id, role_id=role.id))
             await db.commit()
@@ -119,8 +117,9 @@ class TestCreateRoleAttributes:
     @pytest.mark.asyncio
     async def test_rolls_back_on_error(self, test_engine):
         factory = _session_factory(test_engine)
-        with patch("core.init_db.AsyncSessionLocal", factory), patch(
-            "core.init_db.get_attributes", side_effect=RuntimeError("boom")
+        with (
+            patch("core.init_db.AsyncSessionLocal", factory),
+            patch("core.init_db.get_attributes", side_effect=RuntimeError("boom")),
         ):
             with pytest.raises(RuntimeError, match="boom"):
                 await create_role_attributes()
@@ -142,9 +141,12 @@ class TestCreateDefaultRoles:
     @pytest.mark.asyncio
     async def test_rolls_back_on_error(self, test_engine):
         factory = _session_factory(test_engine)
-        with patch("core.init_db.AsyncSessionLocal", factory), patch(
-            "sqlalchemy.ext.asyncio.session.AsyncSession.add",
-            side_effect=RuntimeError("boom"),
+        with (
+            patch("core.init_db.AsyncSessionLocal", factory),
+            patch(
+                "sqlalchemy.ext.asyncio.session.AsyncSession.add",
+                side_effect=RuntimeError("boom"),
+            ),
         ):
             with pytest.raises(RuntimeError, match="boom"):
                 await create_default_roles()
@@ -169,14 +171,10 @@ class TestCreateDefaultAdmin:
 
         async with factory() as db:
             user = (
-                await db.execute(
-                    select(Users).where(Users.email == settings.DEFAULT_ADMIN_EMAIL)
-                )
+                await db.execute(select(Users).where(Users.email == settings.DEFAULT_ADMIN_EMAIL))
             ).scalar_one()
             mapping = (
-                await db.execute(
-                    select(RoleMapper).where(RoleMapper.user_id == user.id)
-                )
+                await db.execute(select(RoleMapper).where(RoleMapper.user_id == user.id))
             ).scalar_one()
         assert user.email_verified is True
         assert mapping.role_id is not None
@@ -212,9 +210,7 @@ class TestCreateDefaultAdmin:
             db.add(user)
             await db.commit()
 
-            user_role = (
-                await db.execute(select(Roles).where(Roles.name == "user"))
-            ).scalar_one()
+            user_role = (await db.execute(select(Roles).where(Roles.name == "user"))).scalar_one()
             db.add(RoleMapper(user_id=user.id, role_id=user_role.id))
             await db.commit()
 
@@ -223,9 +219,7 @@ class TestCreateDefaultAdmin:
 
         async with factory() as db:
             user = (
-                await db.execute(
-                    select(Users).where(Users.email == settings.DEFAULT_ADMIN_EMAIL)
-                )
+                await db.execute(select(Users).where(Users.email == settings.DEFAULT_ADMIN_EMAIL))
             ).scalar_one()
             super_role = (
                 await db.execute(
@@ -233,10 +227,10 @@ class TestCreateDefaultAdmin:
                 )
             ).scalar_one()
             mappings = (
-                await db.execute(
-                    select(RoleMapper).where(RoleMapper.user_id == user.id)
-                )
-            ).scalars().all()
+                (await db.execute(select(RoleMapper).where(RoleMapper.user_id == user.id)))
+                .scalars()
+                .all()
+            )
         assert user.first_name == "Existing"
         assert len(mappings) == 1
         assert mappings[0].role_id == super_role.id
@@ -244,8 +238,9 @@ class TestCreateDefaultAdmin:
     @pytest.mark.asyncio
     async def test_rolls_back_on_error(self, test_engine):
         factory = _session_factory(test_engine)
-        with patch("core.init_db.AsyncSessionLocal", factory), patch(
-            "core.init_db.select", side_effect=RuntimeError("boom")
+        with (
+            patch("core.init_db.AsyncSessionLocal", factory),
+            patch("core.init_db.select", side_effect=RuntimeError("boom")),
         ):
             with pytest.raises(RuntimeError, match="boom"):
                 await create_default_admin()
@@ -269,12 +264,15 @@ class TestInitDatabase:
         lock_result = MagicMock()
         lock_result.scalar.return_value = 0
         session.execute.return_value = lock_result
-        with patch(
-            "core.init_db.AsyncSessionLocal",
-            return_value=_LockSessionCM(session),
-        ), patch(
-            "core.init_db.is_already_initialized", new_callable=AsyncMock
-        ) as mock_initialized:
+        with (
+            patch(
+                "core.init_db.AsyncSessionLocal",
+                return_value=_LockSessionCM(session),
+            ),
+            patch(
+                "core.init_db.is_already_initialized", new_callable=AsyncMock
+            ) as mock_initialized,
+        ):
             await init_database()
         mock_initialized.assert_not_called()
 
@@ -284,16 +282,18 @@ class TestInitDatabase:
         lock_result = MagicMock()
         lock_result.scalar.return_value = 1
         session.execute.return_value = lock_result
-        with patch(
-            "core.init_db.AsyncSessionLocal",
-            return_value=_LockSessionCM(session),
-        ), patch(
-            "core.init_db.is_already_initialized",
-            new_callable=AsyncMock,
-            return_value=True,
-        ), patch(
-            "core.init_db.create_role_attributes", new_callable=AsyncMock
-        ) as mock_attrs:
+        with (
+            patch(
+                "core.init_db.AsyncSessionLocal",
+                return_value=_LockSessionCM(session),
+            ),
+            patch(
+                "core.init_db.is_already_initialized",
+                new_callable=AsyncMock,
+                return_value=True,
+            ),
+            patch("core.init_db.create_role_attributes", new_callable=AsyncMock) as mock_attrs,
+        ):
             await init_database()
         mock_attrs.assert_not_called()
         assert session.execute.await_count >= 2
@@ -305,20 +305,20 @@ class TestInitDatabase:
         lock_result = MagicMock()
         lock_result.scalar.return_value = 1
         session.execute.return_value = lock_result
-        with patch(
-            "core.init_db.AsyncSessionLocal",
-            return_value=_LockSessionCM(session),
-        ), patch(
-            "core.init_db.is_already_initialized",
-            new_callable=AsyncMock,
-            return_value=False,
-        ), patch(
-            "core.init_db.create_role_attributes", new_callable=AsyncMock
-        ) as mock_attrs, patch(
-            "core.init_db.create_default_roles", new_callable=AsyncMock
-        ) as mock_roles, patch(
-            "core.init_db.create_default_admin", new_callable=AsyncMock
-        ) as mock_admin:
+        with (
+            patch(
+                "core.init_db.AsyncSessionLocal",
+                return_value=_LockSessionCM(session),
+            ),
+            patch(
+                "core.init_db.is_already_initialized",
+                new_callable=AsyncMock,
+                return_value=False,
+            ),
+            patch("core.init_db.create_role_attributes", new_callable=AsyncMock) as mock_attrs,
+            patch("core.init_db.create_default_roles", new_callable=AsyncMock) as mock_roles,
+            patch("core.init_db.create_default_admin", new_callable=AsyncMock) as mock_admin,
+        ):
             await init_database()
         mock_attrs.assert_awaited_once()
         mock_roles.assert_awaited_once()
@@ -330,17 +330,21 @@ class TestInitDatabase:
         lock_result = MagicMock()
         lock_result.scalar.return_value = 1
         session.execute.return_value = lock_result
-        with patch(
-            "core.init_db.AsyncSessionLocal",
-            return_value=_LockSessionCM(session),
-        ), patch(
-            "core.init_db.is_already_initialized",
-            new_callable=AsyncMock,
-            return_value=False,
-        ), patch(
-            "core.init_db.create_role_attributes",
-            new_callable=AsyncMock,
-            side_effect=RuntimeError("seed failed"),
+        with (
+            patch(
+                "core.init_db.AsyncSessionLocal",
+                return_value=_LockSessionCM(session),
+            ),
+            patch(
+                "core.init_db.is_already_initialized",
+                new_callable=AsyncMock,
+                return_value=False,
+            ),
+            patch(
+                "core.init_db.create_role_attributes",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("seed failed"),
+            ),
         ):
             with pytest.raises(RuntimeError, match="seed failed"):
                 await init_database()

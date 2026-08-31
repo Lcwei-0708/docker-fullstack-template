@@ -12,11 +12,7 @@ import { UserFormDialog } from "./user-form-dialog";
 import { DeleteUserDialog } from "./delete-user-dialog";
 import { ResetPasswordDialog } from "./reset-password-dialog";
 import { useUsersTableColumns } from "./users-table-columns";
-import {
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+import { getCoreRowModel, getPaginationRowModel, useReactTable } from "@tanstack/react-table";
 
 // Users table component with CRUD operations
 export function UsersTable() {
@@ -27,7 +23,7 @@ export function UsersTable() {
 
   // Control when component state is allowed to write back to URL params
   const allowUrlSyncRef = React.useRef(false);
-  
+
   const effectiveCurrentUserId = React.useMemo(() => {
     return currentUserId || currentUser?.id;
   }, [currentUserId, currentUser]);
@@ -43,7 +39,7 @@ export function UsersTable() {
 
   // Query parameters state
   const [queryParams, setQueryParams] = React.useState({
-    keyword: '',
+    keyword: "",
     status: null,
     role: null,
     sort_by: null,
@@ -51,76 +47,78 @@ export function UsersTable() {
   });
 
   // Parse URL search params to query params
-  const parseUrlParams = React.useCallback((paramsToParse = null) => {
-    const params = paramsToParse || searchParams;
-    const result = {
-      keyword: params.get('keyword') || '',
-      status: params.get('status') || null,
-      role: params.get('role') || null,
-      sort_by: params.get('sort_by') || null,
-      desc: params.get('desc') === 'true',
-      page: parseInt(params.get('page') || '1', 10),
-      per_page: parseInt(params.get('per_page') || '10', 10),
-    };
+  const parseUrlParams = React.useCallback(
+    (paramsToParse = null) => {
+      const params = paramsToParse || searchParams;
+      const result = {
+        keyword: params.get("keyword") || "",
+        status: params.get("status") || null,
+        role: params.get("role") || null,
+        sort_by: params.get("sort_by") || null,
+        desc: params.get("desc") === "true",
+        page: parseInt(params.get("page") || "1", 10),
+        per_page: parseInt(params.get("per_page") || "10", 10),
+      };
 
-    // Parse status and role as arrays if they contain commas
-    if (result.status) {
-      result.status = result.status.includes(',')
-        ? result.status.split(',').filter(Boolean)
-        : result.status;
-    }
-    if (result.role) {
-      result.role = result.role.includes(',')
-        ? result.role.split(',').filter(Boolean)
-        : result.role;
-    }
+      // Parse status and role as arrays if they contain commas
+      if (result.status) {
+        result.status = result.status.includes(",")
+          ? result.status.split(",").filter(Boolean)
+          : result.status;
+      }
+      if (result.role) {
+        result.role = result.role.includes(",")
+          ? result.role.split(",").filter(Boolean)
+          : result.role;
+      }
 
-    return result;
-  }, [searchParams]);
+      return result;
+    },
+    [searchParams]
+  );
 
   // Update URL search params from query params and pagination
-  const updateUrlParams = React.useCallback((params, paginationState) => {
-    const newSearchParams = new URLSearchParams();
+  const updateUrlParams = React.useCallback(
+    (params, paginationState) => {
+      const newSearchParams = new URLSearchParams();
 
-    if (params.keyword && params.keyword.trim()) {
-      newSearchParams.set('keyword', params.keyword.trim());
-    }
+      if (params.keyword && params.keyword.trim()) {
+        newSearchParams.set("keyword", params.keyword.trim());
+      }
 
-    if (params.status !== null && params.status !== undefined && params.status !== '') {
-      const statusValue = Array.isArray(params.status)
-        ? params.status.join(',')
-        : params.status;
-      newSearchParams.set('status', statusValue);
-    }
+      if (params.status !== null && params.status !== undefined && params.status !== "") {
+        const statusValue = Array.isArray(params.status) ? params.status.join(",") : params.status;
+        newSearchParams.set("status", statusValue);
+      }
 
-    if (params.role !== null && params.role !== undefined && params.role !== '') {
-      const roleValue = Array.isArray(params.role)
-        ? params.role.join(',')
-        : params.role;
-      newSearchParams.set('role', roleValue);
-    }
+      if (params.role !== null && params.role !== undefined && params.role !== "") {
+        const roleValue = Array.isArray(params.role) ? params.role.join(",") : params.role;
+        newSearchParams.set("role", roleValue);
+      }
 
-    if (params.sort_by) {
-      newSearchParams.set('sort_by', params.sort_by);
-      newSearchParams.set('desc', params.desc ? 'true' : 'false');
-    }
+      if (params.sort_by) {
+        newSearchParams.set("sort_by", params.sort_by);
+        newSearchParams.set("desc", params.desc ? "true" : "false");
+      }
 
-    if (paginationState.page && paginationState.page > 1) {
-      newSearchParams.set('page', paginationState.page.toString());
-    }
+      if (paginationState.page && paginationState.page > 1) {
+        newSearchParams.set("page", paginationState.page.toString());
+      }
 
-    if (paginationState.per_page && paginationState.per_page !== 10) {
-      newSearchParams.set('per_page', paginationState.per_page.toString());
-    }
+      if (paginationState.per_page && paginationState.per_page !== 10) {
+        newSearchParams.set("per_page", paginationState.per_page.toString());
+      }
 
-    // Only update URL if params changed
-    const currentParams = searchParams.toString();
-    const newParams = newSearchParams.toString();
+      // Only update URL if params changed
+      const currentParams = searchParams.toString();
+      const newParams = newSearchParams.toString();
 
-    if (currentParams !== newParams) {
-      setSearchParams(newSearchParams, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
+      if (currentParams !== newParams) {
+        setSearchParams(newSearchParams, { replace: true });
+      }
+    },
+    [searchParams, setSearchParams]
+  );
 
   // Selection mode state
   const [enableSelection, setEnableSelection] = React.useState(false);
@@ -151,16 +149,14 @@ export function UsersTable() {
 
     rolesFetchingRef.current = true;
     const response = await rolesService.getAllRoles({ returnStatus: true });
-    
+
     if (response.status === "success" && response.data) {
-      const rolesList = Array.isArray(response.data)
-        ? response.data
-        : (response.data.roles || []);
+      const rolesList = Array.isArray(response.data) ? response.data : response.data.roles || [];
       setRoles(rolesList);
       setActorLevel(Number(response.data?.actor_level ?? 0));
       rolesFetchedRef.current = true;
     }
-    
+
     rolesFetchingRef.current = false;
   }, []);
 
@@ -203,7 +199,7 @@ export function UsersTable() {
     const {
       page = 1,
       per_page = 10,
-      keyword = '',
+      keyword = "",
       status = null,
       role = null,
       sort_by = null,
@@ -219,13 +215,13 @@ export function UsersTable() {
       apiParams.keyword = keyword.trim();
     }
 
-    if (status !== null && status !== undefined && status !== '') {
-      const statusValue = Array.isArray(status) ? status.join(',') : status;
+    if (status !== null && status !== undefined && status !== "") {
+      const statusValue = Array.isArray(status) ? status.join(",") : status;
       apiParams.status = statusValue;
     }
 
-    if (role !== null && role !== undefined && role !== '') {
-      const roleValue = Array.isArray(role) ? role.join(',') : role;
+    if (role !== null && role !== undefined && role !== "") {
+      const roleValue = Array.isArray(role) ? role.join(",") : role;
       apiParams.role = roleValue;
     }
 
@@ -280,35 +276,40 @@ export function UsersTable() {
   }, []);
 
   // Confirm and execute user deletion
-  const handleDeleteConfirm = React.useCallback(async (user) => {
-    if (!user || !user.id) return;
+  const handleDeleteConfirm = React.useCallback(
+    async (user) => {
+      if (!user || !user.id) return;
 
-    setIsDeleting(true);
-    const response = await usersService.deleteUsers([user.id], { returnStatus: true });
+      setIsDeleting(true);
+      const response = await usersService.deleteUsers([user.id], { returnStatus: true });
 
-    if (response.status === "success") {
-      setIsDeleteDialogOpen(false);
-      setSelectedUser(null);
-      fetchUsers({
-        page: pagination.page,
-        per_page: pagination.per_page,
-        keyword: queryParams.keyword || '',
-        status: queryParams.status,
-        role: queryParams.role,
-        sort_by: queryParams.sort_by,
-        desc: queryParams.desc,
-      });
-    }
+      if (response.status === "success") {
+        setIsDeleteDialogOpen(false);
+        setSelectedUser(null);
+        fetchUsers({
+          page: pagination.page,
+          per_page: pagination.per_page,
+          keyword: queryParams.keyword || "",
+          status: queryParams.status,
+          role: queryParams.role,
+          sort_by: queryParams.sort_by,
+          desc: queryParams.desc,
+        });
+      }
 
-    setIsDeleting(false);
-  }, [pagination, queryParams, fetchUsers]);
+      setIsDeleting(false);
+    },
+    [pagination, queryParams, fetchUsers]
+  );
 
   // Confirm and execute password reset
   const handleResetPasswordConfirm = React.useCallback(async (user, newPassword) => {
     if (!user || !user.id || !newPassword) return;
 
     setIsResettingPassword(true);
-    const response = await usersService.resetUserPassword(user.id, newPassword, { returnStatus: true });
+    const response = await usersService.resetUserPassword(user.id, newPassword, {
+      returnStatus: true,
+    });
 
     if (response.status === "success") {
       setIsResetPasswordDialogOpen(false);
@@ -319,38 +320,41 @@ export function UsersTable() {
   }, []);
 
   // Handle form submission (create or update user)
-  const handleFormSubmit = React.useCallback(async (formValues) => {
-    setIsSubmitting(true);
+  const handleFormSubmit = React.useCallback(
+    async (formValues) => {
+      setIsSubmitting(true);
 
-    const userData = { ...formValues };
+      const userData = { ...formValues };
 
-    if (selectedUser) {
-      delete userData.password;
-      if (selectedUser.role === "super-admin" || isCurrentUser(selectedUser)) {
-        delete userData.role;
+      if (selectedUser) {
+        delete userData.password;
+        if (selectedUser.role === "super-admin" || isCurrentUser(selectedUser)) {
+          delete userData.role;
+        }
       }
-    }
 
-    const response = selectedUser
-      ? await usersService.updateUser(selectedUser.id, userData, { returnStatus: true })
-      : await usersService.createUser(userData, { returnStatus: true });
+      const response = selectedUser
+        ? await usersService.updateUser(selectedUser.id, userData, { returnStatus: true })
+        : await usersService.createUser(userData, { returnStatus: true });
 
-    if (response.status === "success") {
-      setIsUserFormDialogOpen(false);
-      setSelectedUser(null);
-      fetchUsers({
-        page: pagination.page,
-        per_page: pagination.per_page,
-        keyword: queryParams.keyword || '',
-        status: queryParams.status,
-        role: queryParams.role,
-        sort_by: queryParams.sort_by,
-        desc: queryParams.desc,
-      });
-    }
+      if (response.status === "success") {
+        setIsUserFormDialogOpen(false);
+        setSelectedUser(null);
+        fetchUsers({
+          page: pagination.page,
+          per_page: pagination.per_page,
+          keyword: queryParams.keyword || "",
+          status: queryParams.status,
+          role: queryParams.role,
+          sort_by: queryParams.sort_by,
+          desc: queryParams.desc,
+        });
+      }
 
-    setIsSubmitting(false);
-  }, [selectedUser, pagination, queryParams, fetchUsers, isCurrentUser]);
+      setIsSubmitting(false);
+    },
+    [selectedUser, pagination, queryParams, fetchUsers, isCurrentUser]
+  );
 
   // Toggle row selection mode (only if user has manager-users permission)
   const handleSelectionToggle = React.useCallback(() => {
@@ -400,17 +404,20 @@ export function UsersTable() {
       },
       columnPinning: {
         left: [],
-        right: ['actions'],
+        right: ["actions"],
       },
     },
     state: {
       rowSelection: enableSelection ? rowSelection : {},
     },
-    onRowSelectionChange: React.useCallback((updater) => {
-      if (enableSelection) {
-        setRowSelection(updater);
-      }
-    }, [enableSelection]),
+    onRowSelectionChange: React.useCallback(
+      (updater) => {
+        if (enableSelection) {
+          setRowSelection(updater);
+        }
+      },
+      [enableSelection]
+    ),
     // Avoid clamping pageIndex when total pages are not known yet
     pageCount: pagination.total_pages > 0 ? pagination.total_pages : -1,
     manualPagination: true,
@@ -418,7 +425,7 @@ export function UsersTable() {
     manualFiltering: true,
     enableRowSelection: enableSelection,
     getRowId: (row) => row.id,
-    columnResizeMode: 'onChange',
+    columnResizeMode: "onChange",
     enableColumnResizing: true,
     enableColumnPinning: true,
   });
@@ -434,52 +441,55 @@ export function UsersTable() {
   }, [table]);
 
   // Confirm and execute deletion of selected users
-  const handleDeleteSelectedConfirm = React.useCallback(async (filteredIds = null) => {
-    const rowSelectionState = table.getState().rowSelection || {};
-    let selectedUserIds = Object.keys(rowSelectionState).filter(
-      (key) => rowSelectionState[key] === true
-    );
+  const handleDeleteSelectedConfirm = React.useCallback(
+    async (filteredIds = null) => {
+      const rowSelectionState = table.getState().rowSelection || {};
+      let selectedUserIds = Object.keys(rowSelectionState).filter(
+        (key) => rowSelectionState[key] === true
+      );
 
-    // If filteredIds is provided (from dialog when current user is included), use it
-    if (filteredIds && Array.isArray(filteredIds)) {
-      selectedUserIds = filteredIds;
-    } else if (effectiveCurrentUserId) {
-      // Otherwise, filter out current user ID if it exists
-      const currentUserIdStr = String(effectiveCurrentUserId).trim();
-      selectedUserIds = selectedUserIds.filter(id => {
-        const idStr = String(id).trim();
-        return idStr !== currentUserIdStr;
-      });
-    }
+      // If filteredIds is provided (from dialog when current user is included), use it
+      if (filteredIds && Array.isArray(filteredIds)) {
+        selectedUserIds = filteredIds;
+      } else if (effectiveCurrentUserId) {
+        // Otherwise, filter out current user ID if it exists
+        const currentUserIdStr = String(effectiveCurrentUserId).trim();
+        selectedUserIds = selectedUserIds.filter((id) => {
+          const idStr = String(id).trim();
+          return idStr !== currentUserIdStr;
+        });
+      }
 
-    if (!selectedUserIds || selectedUserIds.length === 0) {
-      setIsDeleteSelectedDialogOpen(false);
-      return;
-    }
+      if (!selectedUserIds || selectedUserIds.length === 0) {
+        setIsDeleteSelectedDialogOpen(false);
+        return;
+      }
 
-    setIsDeleting(true);
-    const response = await usersService.deleteUsers(selectedUserIds, { returnStatus: true });
+      setIsDeleting(true);
+      const response = await usersService.deleteUsers(selectedUserIds, { returnStatus: true });
 
-    if (response.status === "success") {
-      setIsDeleteSelectedDialogOpen(false);
-      setRowSelection({});
-      table.resetRowSelection();
-      fetchUsers({
-        page: pagination.page,
-        per_page: pagination.per_page,
-        keyword: queryParams.keyword || '',
-        status: queryParams.status,
-        role: queryParams.role,
-        sort_by: queryParams.sort_by,
-        desc: queryParams.desc,
-      });
-    }
+      if (response.status === "success") {
+        setIsDeleteSelectedDialogOpen(false);
+        setRowSelection({});
+        table.resetRowSelection();
+        fetchUsers({
+          page: pagination.page,
+          per_page: pagination.per_page,
+          keyword: queryParams.keyword || "",
+          status: queryParams.status,
+          role: queryParams.role,
+          sort_by: queryParams.sort_by,
+          desc: queryParams.desc,
+        });
+      }
 
-    setIsDeleting(false);
-  }, [table, pagination, queryParams, fetchUsers, effectiveCurrentUserId]);
+      setIsDeleting(false);
+    },
+    [table, pagination, queryParams, fetchUsers, effectiveCurrentUserId]
+  );
 
   const isAdjustingPinningRef = React.useRef(false);
-  const prevRightPinnedRef = React.useRef('');
+  const prevRightPinnedRef = React.useRef("");
 
   // Clear selection when disabling selection mode
   React.useEffect(() => {
@@ -505,28 +515,28 @@ export function UsersTable() {
     const newPinning = { ...currentPinning };
 
     if (enableSelection) {
-      if (!leftPinned.includes('select') || leftPinned[0] !== 'select') {
-        const otherLeftPinned = leftPinned.filter(id => id !== 'select');
-        newPinning.left = ['select', ...otherLeftPinned];
+      if (!leftPinned.includes("select") || leftPinned[0] !== "select") {
+        const otherLeftPinned = leftPinned.filter((id) => id !== "select");
+        newPinning.left = ["select", ...otherLeftPinned];
         needsUpdate = true;
       }
     } else {
-      if (leftPinned.includes('select')) {
-        newPinning.left = leftPinned.filter(id => id !== 'select');
+      if (leftPinned.includes("select")) {
+        newPinning.left = leftPinned.filter((id) => id !== "select");
         needsUpdate = true;
       }
     }
 
     // Ensure actions column is always the rightmost pinned column
-    const otherRightPinned = rightPinned.filter(id => id !== 'actions');
-    if (rightPinned.length === 0 || rightPinned[rightPinned.length - 1] !== 'actions') {
-      newPinning.right = [...otherRightPinned, 'actions'];
+    const otherRightPinned = rightPinned.filter((id) => id !== "actions");
+    if (rightPinned.length === 0 || rightPinned[rightPinned.length - 1] !== "actions") {
+      newPinning.right = [...otherRightPinned, "actions"];
       needsUpdate = true;
     }
 
     if (needsUpdate) {
       isAdjustingPinningRef.current = true;
-      prevRightPinnedRef.current = newPinning.right?.join(',') || '';
+      prevRightPinnedRef.current = newPinning.right?.join(",") || "";
 
       table.setColumnPinning(newPinning);
       requestAnimationFrame(() => {
@@ -534,7 +544,7 @@ export function UsersTable() {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enableSelection, table.getState().columnPinning.right?.join(',')]);
+  }, [enableSelection, table.getState().columnPinning.right?.join(",")]);
 
   const prevTablePageRef = React.useRef(pagination.page);
   const prevTablePageSizeRef = React.useRef(pagination.per_page);
@@ -552,8 +562,13 @@ export function UsersTable() {
     if (urlParamsInitializedRef.current) return;
 
     const urlParams = parseUrlParams();
-    const hasUrlParams = urlParams.keyword || urlParams.status || urlParams.role ||
-      urlParams.sort_by || urlParams.page > 1 || urlParams.per_page !== 10;
+    const hasUrlParams =
+      urlParams.keyword ||
+      urlParams.status ||
+      urlParams.role ||
+      urlParams.sort_by ||
+      urlParams.page > 1 ||
+      urlParams.per_page !== 10;
 
     if (hasUrlParams) {
       isUpdatingUrlRef.current = true;
@@ -568,7 +583,7 @@ export function UsersTable() {
       }));
 
       setQueryParams({
-        keyword: urlParams.keyword || '',
+        keyword: urlParams.keyword || "",
         status: urlParams.status,
         role: urlParams.role,
         sort_by: urlParams.sort_by,
@@ -625,53 +640,56 @@ export function UsersTable() {
   }, []);
 
   // Execute search and fetch users
-  const handleSearch = React.useCallback((keyword) => {
-    allowUrlSyncRef.current = true;
-    if (!keyword || !keyword.trim()) {
-      skipNextUrlUpdateRef.current = false;
-    }
-    if (table.getState().pagination.pageIndex !== 0) {
-      table.setPageIndex(0);
-    }
+  const handleSearch = React.useCallback(
+    (keyword) => {
+      allowUrlSyncRef.current = true;
+      if (!keyword || !keyword.trim()) {
+        skipNextUrlUpdateRef.current = false;
+      }
+      if (table.getState().pagination.pageIndex !== 0) {
+        table.setPageIndex(0);
+      }
 
-    setQueryParams((prev) => ({ ...prev, keyword }));
+      setQueryParams((prev) => ({ ...prev, keyword }));
 
-    const tableState = table.getState();
-    const tablePage = 1;
-    const tablePageSize = tableState.pagination.pageSize;
-    const sorting = tableState.sorting;
-    const columnFilters = tableState.columnFilters;
+      const tableState = table.getState();
+      const tablePage = 1;
+      const tablePageSize = tableState.pagination.pageSize;
+      const sorting = tableState.sorting;
+      const columnFilters = tableState.columnFilters;
 
-    let sort_by = null;
-    let desc = false;
-    if (sorting && sorting.length > 0) {
-      const sort = sorting[0];
-      sort_by = sort.id;
-      desc = sort.desc || false;
-    }
+      let sort_by = null;
+      let desc = false;
+      if (sorting && sorting.length > 0) {
+        const sort = sorting[0];
+        sort_by = sort.id;
+        desc = sort.desc || false;
+      }
 
-    let status = null;
-    const statusFilter = columnFilters.find((f) => f.id === 'status');
-    if (statusFilter && statusFilter.value) {
-      status = Array.isArray(statusFilter.value) ? statusFilter.value : [statusFilter.value];
-    }
+      let status = null;
+      const statusFilter = columnFilters.find((f) => f.id === "status");
+      if (statusFilter && statusFilter.value) {
+        status = Array.isArray(statusFilter.value) ? statusFilter.value : [statusFilter.value];
+      }
 
-    let role = null;
-    const roleFilter = columnFilters.find((f) => f.id === 'role');
-    if (roleFilter && roleFilter.value) {
-      role = Array.isArray(roleFilter.value) ? roleFilter.value : [roleFilter.value];
-    }
+      let role = null;
+      const roleFilter = columnFilters.find((f) => f.id === "role");
+      if (roleFilter && roleFilter.value) {
+        role = Array.isArray(roleFilter.value) ? roleFilter.value : [roleFilter.value];
+      }
 
-    fetchUsers({
-      page: tablePage,
-      per_page: tablePageSize,
-      keyword: keyword || '',
-      status,
-      role,
-      sort_by,
-      desc,
-    });
-  }, [table, fetchUsers]);
+      fetchUsers({
+        page: tablePage,
+        per_page: tablePageSize,
+        keyword: keyword || "",
+        status,
+        role,
+        sort_by,
+        desc,
+      });
+    },
+    [table, fetchUsers]
+  );
 
   // Handle pagination, sorting, and filtering changes
   const tableState = table.getState();
@@ -699,13 +717,13 @@ export function UsersTable() {
     }
 
     let status = null;
-    const statusFilter = columnFilters.find((f) => f.id === 'status');
+    const statusFilter = columnFilters.find((f) => f.id === "status");
     if (statusFilter && statusFilter.value) {
       status = Array.isArray(statusFilter.value) ? statusFilter.value : [statusFilter.value];
     }
 
     let role = null;
-    const roleFilter = columnFilters.find((f) => f.id === 'role');
+    const roleFilter = columnFilters.find((f) => f.id === "role");
     if (roleFilter && roleFilter.value) {
       role = Array.isArray(roleFilter.value) ? roleFilter.value : [roleFilter.value];
     }
@@ -722,12 +740,17 @@ export function UsersTable() {
 
       // Use URL params if available, otherwise use table state
       const urlParams = parseUrlParams();
-      const hasUrlParams = urlParams.keyword || urlParams.status || urlParams.role ||
-        urlParams.sort_by || urlParams.page > 1 || urlParams.per_page !== 10;
+      const hasUrlParams =
+        urlParams.keyword ||
+        urlParams.status ||
+        urlParams.role ||
+        urlParams.sort_by ||
+        urlParams.page > 1 ||
+        urlParams.per_page !== 10;
 
       const initialPage = hasUrlParams ? urlParams.page : tablePage;
       const initialPerPage = hasUrlParams ? urlParams.per_page : tablePageSize;
-      const initialKeyword = hasUrlParams ? urlParams.keyword : (queryParams.keyword || '');
+      const initialKeyword = hasUrlParams ? urlParams.keyword : queryParams.keyword || "";
       const initialStatus = hasUrlParams ? urlParams.status : status;
       const initialRole = hasUrlParams ? urlParams.role : role;
       const initialSortBy = hasUrlParams ? urlParams.sort_by : sort_by;
@@ -753,12 +776,14 @@ export function UsersTable() {
         }
         const newFilters = [];
         if (urlParams.status) {
-          const statusValue = Array.isArray(urlParams.status) ? urlParams.status : [urlParams.status];
-          newFilters.push({ id: 'status', value: statusValue });
+          const statusValue = Array.isArray(urlParams.status)
+            ? urlParams.status
+            : [urlParams.status];
+          newFilters.push({ id: "status", value: statusValue });
         }
         if (urlParams.role) {
           const roleValue = Array.isArray(urlParams.role) ? urlParams.role : [urlParams.role];
-          newFilters.push({ id: 'role', value: roleValue });
+          newFilters.push({ id: "role", value: roleValue });
         }
         if (newFilters.length > 0) {
           initialFilters = newFilters;
@@ -797,12 +822,14 @@ export function UsersTable() {
         // Set column filters if URL has filter params
         const newFilters = [];
         if (urlParams.status) {
-          const statusValue = Array.isArray(urlParams.status) ? urlParams.status : [urlParams.status];
-          newFilters.push({ id: 'status', value: statusValue });
+          const statusValue = Array.isArray(urlParams.status)
+            ? urlParams.status
+            : [urlParams.status];
+          newFilters.push({ id: "status", value: statusValue });
         }
         if (urlParams.role) {
           const roleValue = Array.isArray(urlParams.role) ? urlParams.role : [urlParams.role];
-          newFilters.push({ id: 'role', value: roleValue });
+          newFilters.push({ id: "role", value: roleValue });
         }
         if (newFilters.length > 0) {
           table.setColumnFilters(newFilters);
@@ -840,7 +867,7 @@ export function UsersTable() {
       fetchUsers({
         page: targetPage,
         per_page: tablePageSize,
-        keyword: queryParams.keyword || '',
+        keyword: queryParams.keyword || "",
         status,
         role,
         sort_by,
@@ -896,14 +923,18 @@ export function UsersTable() {
           columnsPinnable: true,
           columnsMovable: false,
           columnsDraggable: false,
-          rowsDraggable: false
-        }}>
+          rowsDraggable: false,
+        }}
+      >
         <DataGridContainer border={true}>
           <DataGridToolbar
             onAdd={canManageUsers ? handleAdd : undefined}
             showAdd={canManageUsers}
             showSelect={canManageUsers}
-            searchPlaceholder={t("components.dataGrid.toolbar.searchPlaceholder", "Search users...")}
+            searchPlaceholder={t(
+              "components.dataGrid.toolbar.searchPlaceholder",
+              "Search users..."
+            )}
             onSearchChange={handleSearchChange}
             onSearch={handleSearch}
             searchValue={queryParams.keyword}
@@ -946,9 +977,11 @@ export function UsersTable() {
       <DeleteUserDialog
         open={isDeleteSelectedDialogOpen}
         onOpenChange={setIsDeleteSelectedDialogOpen}
-        count={Object.keys(table.getState().rowSelection || {}).filter(
-          (key) => table.getState().rowSelection[key] === true
-        ).length}
+        count={
+          Object.keys(table.getState().rowSelection || {}).filter(
+            (key) => table.getState().rowSelection[key] === true
+          ).length
+        }
         selectedUserIds={Object.keys(table.getState().rowSelection || {}).filter(
           (key) => table.getState().rowSelection[key] === true
         )}

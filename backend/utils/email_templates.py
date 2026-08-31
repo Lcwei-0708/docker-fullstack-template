@@ -1,25 +1,21 @@
-from typing import Dict, Any, Optional
+from typing import Any
+
 
 class EmailTemplate:
     """Email template with subject, plain text body, and optional HTML body"""
-    
-    def __init__(
-        self, 
-        subject: str, 
-        body: str, 
-        html_body: Optional[str] = None
-    ):
+
+    def __init__(self, subject: str, body: str, html_body: str | None = None):
         self.subject = subject
         self.body = body
         self.html_body = html_body
-    
-    def render(self, **kwargs: Any) -> Dict[str, str]:
+
+    def render(self, **kwargs: Any) -> dict[str, str]:
         """
         Render template with variables.
-        
+
         Args:
             **kwargs: Variables to substitute in template
-            
+
         Returns:
             Dict with 'subject', 'body', and optionally 'html_body' keys
         """
@@ -27,10 +23,10 @@ class EmailTemplate:
             "subject": self.subject.format(**kwargs),
             "body": self.body.format(**kwargs),
         }
-        
+
         if self.html_body:
             result["html_body"] = self.html_body.format(**kwargs)
-        
+
         return result
 
 
@@ -48,28 +44,28 @@ PASSWORD_RESET_TEMPLATE = EmailTemplate(
         "<!DOCTYPE html>"
         "<html>"
         "<head>"
-            "<meta charset='utf-8'>"
-            "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
+        "<meta charset='utf-8'>"
+        "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
         "</head>"
-        "<body style='margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif; background-color: #ffffff;'>"
-            "<div style='max-width: 80dvw; margin: 0 auto;'>"
-                "<h3 style='margin: 0 0 16px; color: #212529; line-height: 1.6;  font-weight: 500;'>Hi {user_name},</h3>"
-                "<p style='margin: 0 0 20px; color: #212529; font-size: 16px; line-height: 1.6;'>"
-                    "You requested a password reset for your <strong>{app_name}</strong> account. <br>Click the button below to set a new password. This link will expire in <strong>30 minutes</strong>."
-                "</p>"
-                "<p style='margin:0 0 28px; user-select: none;'>"
-                    "<a href='{reset_url}' "
-                        "style='display: inline-block; background-color: #212529; "
-                        "color: #ffffff; text-decoration: none; padding: 10px 16px; border-radius: 12px; "
-                        "font-size: 16px; font-weight: 500;'"
-                    ">"
-                        "Reset Password"
-                    "</a>"
-                "</p>"
-                "<p style='width: fit-content; margin: 0; padding: 10px 18px; border-radius: 12px; border: 1px solid #e9ecef; background-color: #f8f9fa; color: #495057; font-size: 14px; line-height: 1.6;'>"
-                    "If you did not request this password reset, you can safely ignore this email. Your account remains secure."
-                "</p>"
-            "</div>"
+        '<body style=\'margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #ffffff;\'>'
+        "<div style='max-width: 80dvw; margin: 0 auto;'>"
+        "<h3 style='margin: 0 0 16px; color: #212529; line-height: 1.6;  font-weight: 500;'>Hi {user_name},</h3>"
+        "<p style='margin: 0 0 20px; color: #212529; font-size: 16px; line-height: 1.6;'>"
+        "You requested a password reset for your <strong>{app_name}</strong> account. <br>Click the button below to set a new password. This link will expire in <strong>30 minutes</strong>."
+        "</p>"
+        "<p style='margin:0 0 28px; user-select: none;'>"
+        "<a href='{reset_url}' "
+        "style='display: inline-block; background-color: #212529; "
+        "color: #ffffff; text-decoration: none; padding: 10px 16px; border-radius: 12px; "
+        "font-size: 16px; font-weight: 500;'"
+        ">"
+        "Reset Password"
+        "</a>"
+        "</p>"
+        "<p style='width: fit-content; margin: 0; padding: 10px 18px; border-radius: 12px; border: 1px solid #e9ecef; background-color: #f8f9fa; color: #495057; font-size: 14px; line-height: 1.6;'>"
+        "If you did not request this password reset, you can safely ignore this email. Your account remains secure."
+        "</p>"
+        "</div>"
         "</body>"
         "</html>"
     ),
@@ -89,28 +85,28 @@ EMAIL_VERIFICATION_TEMPLATE = EmailTemplate(
         "<!DOCTYPE html>"
         "<html>"
         "<head>"
-            "<meta charset='utf-8'>"
-            "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
+        "<meta charset='utf-8'>"
+        "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
         "</head>"
-        "<body style='margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif; background-color: #ffffff;'>"
-            "<div style='max-width: 80dvw; margin: 0 auto;'>"
-                "<h3 style='margin: 0 0 16px; color: #212529; line-height: 1.6; font-weight: 500;'>Hi {user_name},</h3>"
-                "<p style='margin: 0 0 20px; color: #212529; font-size: 16px; line-height: 1.6;'>"
-                    "Please verify your email address for your <strong>{app_name}</strong> account. <br>Please click the button below to verify your email address. This link will expire in <strong>{expire_minutes} minutes</strong>."
-                "</p>"
-                "<p style='margin:0 0 28px; user-select: none;'>"
-                    "<a href='{verification_url}' "
-                        "style='display: inline-block; background-color: #212529; "
-                        "color: #ffffff; text-decoration: none; padding: 10px 16px; border-radius: 12px; "
-                        "font-size: 16px; font-weight: 500;'"
-                    ">"
-                        "Verify Email"
-                    "</a>"
-                "</p>"
-                "<p style='width: fit-content; margin: 0; padding: 10px 18px; border-radius: 12px; border: 1px solid #e9ecef; background-color: #f8f9fa; color: #495057; font-size: 14px; line-height: 1.6;'>"
-                    "If you did not request this email, you can safely ignore it."
-                "</p>"
-            "</div>"
+        '<body style=\'margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #ffffff;\'>'
+        "<div style='max-width: 80dvw; margin: 0 auto;'>"
+        "<h3 style='margin: 0 0 16px; color: #212529; line-height: 1.6; font-weight: 500;'>Hi {user_name},</h3>"
+        "<p style='margin: 0 0 20px; color: #212529; font-size: 16px; line-height: 1.6;'>"
+        "Please verify your email address for your <strong>{app_name}</strong> account. <br>Please click the button below to verify your email address. This link will expire in <strong>{expire_minutes} minutes</strong>."
+        "</p>"
+        "<p style='margin:0 0 28px; user-select: none;'>"
+        "<a href='{verification_url}' "
+        "style='display: inline-block; background-color: #212529; "
+        "color: #ffffff; text-decoration: none; padding: 10px 16px; border-radius: 12px; "
+        "font-size: 16px; font-weight: 500;'"
+        ">"
+        "Verify Email"
+        "</a>"
+        "</p>"
+        "<p style='width: fit-content; margin: 0; padding: 10px 18px; border-radius: 12px; border: 1px solid #e9ecef; background-color: #f8f9fa; color: #495057; font-size: 14px; line-height: 1.6;'>"
+        "If you did not request this email, you can safely ignore it."
+        "</p>"
+        "</div>"
         "</body>"
         "</html>"
     ),

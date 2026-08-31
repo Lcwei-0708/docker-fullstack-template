@@ -1,5 +1,6 @@
 import logging
 from urllib.parse import urljoin
+
 from fastapi import FastAPI
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
@@ -10,6 +11,7 @@ from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import ReadableSpan, Span, SpanProcessor, TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
 from core.config import SKIP_METHODS, otel_excluded_urls, settings
 from core.database import async_engine, engine
 
@@ -72,9 +74,7 @@ def _build_resource() -> Resource:
         {
             "service.name": settings.PROJECT_NAME,
             "service.version": settings.PROJECT_VERSION,
-            "deployment.environment": (
-                "development" if settings.DEBUG_MODE else "production"
-            ),
+            "deployment.environment": ("development" if settings.DEBUG_MODE else "production"),
         }
     )
 
@@ -91,20 +91,14 @@ def setup_telemetry(app: FastAPI) -> None:
 
     resource = _build_resource()
     provider = TracerProvider(resource=resource)
-    exporter = OTLPSpanExporter(
-        endpoint=_traces_endpoint(settings.OTEL_EXPORTER_OTLP_ENDPOINT)
-    )
+    exporter = OTLPSpanExporter(endpoint=_traces_endpoint(settings.OTEL_EXPORTER_OTLP_ENDPOINT))
     provider.add_span_processor(
-        SkipSpanProcessor(
-            BatchSpanProcessor(exporter, schedule_delay_millis=1000)
-        )
+        SkipSpanProcessor(BatchSpanProcessor(exporter, schedule_delay_millis=1000))
     )
     trace.set_tracer_provider(provider)
 
     FastAPIInstrumentor.instrument_app(app, excluded_urls=EXCLUDED_URLS)
-    SQLAlchemyInstrumentor().instrument(
-        engines=[async_engine.sync_engine, engine]
-    )
+    SQLAlchemyInstrumentor().instrument(engines=[async_engine.sync_engine, engine])
     RedisInstrumentor().instrument()
     logger.info("OpenTelemetry tracing enabled")
 

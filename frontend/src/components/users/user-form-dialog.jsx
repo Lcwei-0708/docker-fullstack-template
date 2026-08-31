@@ -1,12 +1,12 @@
-import * as React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useTranslation } from 'react-i18next';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Form,
   FormControl,
@@ -14,14 +14,14 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -29,9 +29,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 
-const SUPER_ADMIN_ROLE = 'super-admin';
+const SUPER_ADMIN_ROLE = "super-admin";
 
 // User form dialog component for creating and editing users
 export function UserFormDialog({
@@ -60,23 +60,35 @@ export function UserFormDialog({
     const baseSchema = {
       first_name: z
         .string()
-        .min(1, t('pages.profile.profile.fields.firstName.validation.required', 'First name is required')),
+        .min(
+          1,
+          t("pages.profile.profile.fields.firstName.validation.required", "First name is required")
+        ),
       last_name: z
         .string()
-        .min(1, t('pages.profile.profile.fields.lastName.validation.required', 'Last name is required')),
+        .min(
+          1,
+          t("pages.profile.profile.fields.lastName.validation.required", "Last name is required")
+        ),
       email: z
         .string()
-        .min(1, t('pages.profile.profile.fields.email.validation.required', 'Email is required'))
+        .min(1, t("pages.profile.profile.fields.email.validation.required", "Email is required"))
         .transform((val) => val.trim().toLowerCase())
-        .refine((val) => {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          return emailRegex.test(val);
-        }, {
-          message: t('pages.profile.profile.fields.email.validation.invalid', 'Invalid email format'),
-        }),
+        .refine(
+          (val) => {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(val);
+          },
+          {
+            message: t(
+              "pages.profile.profile.fields.email.validation.invalid",
+              "Invalid email format"
+            ),
+          }
+        ),
       phone: z
         .string()
-        .min(1, t('pages.profile.profile.fields.phone.validation.required', 'Phone is required')),
+        .min(1, t("pages.profile.profile.fields.phone.validation.required", "Phone is required")),
       role: z.string().optional().nullable(),
       status: z.boolean().default(true),
     };
@@ -85,23 +97,43 @@ export function UserFormDialog({
     if (!isEditMode) {
       baseSchema.password = z
         .string()
-        .min(1, t('pages.auth.register.fields.password.validation.required', 'Password is required'))
-        .min(6, t('pages.auth.register.fields.password.validation.minLength', 'Password must be at least 6 characters'));
+        .min(
+          1,
+          t("pages.auth.register.fields.password.validation.required", "Password is required")
+        )
+        .min(
+          6,
+          t(
+            "pages.auth.register.fields.password.validation.minLength",
+            "Password must be at least 6 characters"
+          )
+        );
     }
 
     return z.object(baseSchema);
   }, [t, isEditMode]);
 
   // Set default form values
-  const defaultValues = React.useMemo(() => ({
-    first_name: user?.first_name || '',
-    last_name: user?.last_name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    password: '',
-    role: user?.role || null,
-    status: user?.status !== undefined ? user.status : true,
-  }), [user?.id, user?.first_name, user?.last_name, user?.email, user?.phone, user?.role, user?.status]);
+  const defaultValues = React.useMemo(
+    () => ({
+      first_name: user?.first_name || "",
+      last_name: user?.last_name || "",
+      email: user?.email || "",
+      phone: user?.phone || "",
+      password: "",
+      role: user?.role || null,
+      status: user?.status !== undefined ? user.status : true,
+    }),
+    [
+      user?.id,
+      user?.first_name,
+      user?.last_name,
+      user?.email,
+      user?.phone,
+      user?.role,
+      user?.status,
+    ]
+  );
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -112,38 +144,41 @@ export function UserFormDialog({
   React.useEffect(() => {
     const resetValues = user
       ? {
-          first_name: user.first_name || '',
-          last_name: user.last_name || '',
-          email: user.email || '',
-          phone: user.phone || '',
-          password: '',
+          first_name: user.first_name || "",
+          last_name: user.last_name || "",
+          email: user.email || "",
+          phone: user.phone || "",
+          password: "",
           role: user.role || null,
           status: user.status !== undefined ? user.status : true,
         }
       : {
-          first_name: '',
-          last_name: '',
-          email: '',
-          phone: '',
-          password: '',
+          first_name: "",
+          last_name: "",
+          email: "",
+          phone: "",
+          password: "",
           role: null,
           status: true,
         };
-    
+
     form.reset(resetValues, { keepDefaultValues: false });
   }, [user?.id, form]);
 
   // Handle form submission
-  const handleSubmit = React.useCallback((formValues) => {
-    if (!onSubmit) return;
+  const handleSubmit = React.useCallback(
+    (formValues) => {
+      if (!onSubmit) return;
 
-    const payload = { ...formValues };
-    // Super-admin / self role cannot be changed via this form
-    if (isRoleLocked) {
-      delete payload.role;
-    }
-    onSubmit(payload);
-  }, [onSubmit, isRoleLocked]);
+      const payload = { ...formValues };
+      // Super-admin / self role cannot be changed via this form
+      if (isRoleLocked) {
+        delete payload.role;
+      }
+      onSubmit(payload);
+    },
+    [onSubmit, isRoleLocked]
+  );
 
   // Handle form cancellation
   const handleCancel = React.useCallback(() => {
@@ -158,17 +193,20 @@ export function UserFormDialog({
         <DialogHeader>
           <DialogTitle>
             {isEditMode
-              ? t('pages.usersManagement.dialog.editTitle', 'Edit User')
-              : t('pages.usersManagement.dialog.createTitle', 'Create User')}
+              ? t("pages.usersManagement.dialog.editTitle", "Edit User")
+              : t("pages.usersManagement.dialog.createTitle", "Create User")}
           </DialogTitle>
           <DialogDescription>
             {isEditMode
-              ? t('pages.usersManagement.dialog.editDescription', 'Update user information')
-              : t('pages.usersManagement.dialog.createDescription', 'Create a new user account')}
+              ? t("pages.usersManagement.dialog.editDescription", "Update user information")
+              : t("pages.usersManagement.dialog.createDescription", "Create a new user account")}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5 md:space-y-4 text-sm">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-5 md:space-y-4 text-sm"
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-4 items-start">
               <FormField
                 control={form.control}
@@ -178,11 +216,11 @@ export function UserFormDialog({
                     <FormLabel
                       htmlFor="first_name"
                       className={cn(
-                        'flex items-center gap-1',
-                        form.formState.errors.first_name && 'text-destructive'
+                        "flex items-center gap-1",
+                        form.formState.errors.first_name && "text-destructive"
                       )}
                     >
-                      {t('pages.profile.profile.fields.firstName.label', 'First Name')}
+                      {t("pages.profile.profile.fields.firstName.label", "First Name")}
                       <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
@@ -195,7 +233,7 @@ export function UserFormDialog({
                         disabled={isSubmitting}
                         className={cn(
                           form.formState.errors.first_name &&
-                            'ring-2 ring-destructive focus-visible:ring-destructive'
+                            "ring-2 ring-destructive focus-visible:ring-destructive"
                         )}
                       />
                     </FormControl>
@@ -211,11 +249,11 @@ export function UserFormDialog({
                     <FormLabel
                       htmlFor="last_name"
                       className={cn(
-                        'flex items-center gap-1',
-                        form.formState.errors.last_name && 'text-destructive'
+                        "flex items-center gap-1",
+                        form.formState.errors.last_name && "text-destructive"
                       )}
                     >
-                      {t('pages.profile.profile.fields.lastName.label', 'Last Name')}
+                      {t("pages.profile.profile.fields.lastName.label", "Last Name")}
                       <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
@@ -228,7 +266,7 @@ export function UserFormDialog({
                         disabled={isSubmitting}
                         className={cn(
                           form.formState.errors.last_name &&
-                            'ring-2 ring-destructive focus-visible:ring-destructive'
+                            "ring-2 ring-destructive focus-visible:ring-destructive"
                         )}
                       />
                     </FormControl>
@@ -246,11 +284,11 @@ export function UserFormDialog({
                     <FormLabel
                       htmlFor="email"
                       className={cn(
-                        'flex items-center gap-1',
-                        form.formState.errors.email && 'text-destructive'
+                        "flex items-center gap-1",
+                        form.formState.errors.email && "text-destructive"
                       )}
                     >
-                      {t('pages.auth.login.fields.email.label', 'Email')}
+                      {t("pages.auth.login.fields.email.label", "Email")}
                       <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
@@ -263,7 +301,7 @@ export function UserFormDialog({
                         disabled={isSubmitting}
                         className={cn(
                           form.formState.errors.email &&
-                            'ring-2 ring-destructive focus-visible:ring-destructive'
+                            "ring-2 ring-destructive focus-visible:ring-destructive"
                         )}
                       />
                     </FormControl>
@@ -279,11 +317,11 @@ export function UserFormDialog({
                     <FormLabel
                       htmlFor="phone"
                       className={cn(
-                        'flex items-center gap-1',
-                        form.formState.errors.phone && 'text-destructive'
+                        "flex items-center gap-1",
+                        form.formState.errors.phone && "text-destructive"
                       )}
                     >
-                      {t('pages.profile.profile.fields.phone.label', 'Phone')}
+                      {t("pages.profile.profile.fields.phone.label", "Phone")}
                       <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
@@ -296,7 +334,7 @@ export function UserFormDialog({
                         disabled={isSubmitting}
                         className={cn(
                           form.formState.errors.phone &&
-                            'ring-2 ring-destructive focus-visible:ring-destructive'
+                            "ring-2 ring-destructive focus-visible:ring-destructive"
                         )}
                       />
                     </FormControl>
@@ -314,11 +352,11 @@ export function UserFormDialog({
                     <FormLabel
                       htmlFor="password"
                       className={cn(
-                        'flex items-center gap-1',
-                        form.formState.errors.password && 'text-destructive'
+                        "flex items-center gap-1",
+                        form.formState.errors.password && "text-destructive"
                       )}
                     >
-                      {t('pages.auth.register.fields.password.label', 'Password')}
+                      {t("pages.auth.register.fields.password.label", "Password")}
                       <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
@@ -332,7 +370,7 @@ export function UserFormDialog({
                         disabled={isSubmitting}
                         className={cn(
                           form.formState.errors.password &&
-                            'ring-2 ring-destructive focus-visible:ring-destructive'
+                            "ring-2 ring-destructive focus-visible:ring-destructive"
                         )}
                       />
                     </FormControl>
@@ -350,32 +388,37 @@ export function UserFormDialog({
                     <FormLabel
                       htmlFor="role"
                       className={cn(
-                        'flex items-center gap-1',
-                        form.formState.errors.role && 'text-destructive'
+                        "flex items-center gap-1",
+                        form.formState.errors.role && "text-destructive"
                       )}
                     >
-                      {t('pages.usersManagement.fields.role.label', 'Role')}
+                      {t("pages.usersManagement.fields.role.label", "Role")}
                     </FormLabel>
                     <FormControl>
                       <Select
                         name="role"
-                        value={field.value ? field.value : '__none__'}
-                        onValueChange={(value) => field.onChange(value === '__none__' ? null : value)}
+                        value={field.value ? field.value : "__none__"}
+                        onValueChange={(value) =>
+                          field.onChange(value === "__none__" ? null : value)
+                        }
                         disabled={isSubmitting || isRoleLocked}
                       >
                         <SelectTrigger
                           id="role"
                           className={cn(
                             form.formState.errors.role &&
-                              'ring-2 ring-destructive focus-visible:ring-destructive'
+                              "ring-2 ring-destructive focus-visible:ring-destructive"
                           )}
                         >
-                          <SelectValue placeholder={t('common.actions.select', 'Select...')} />
+                          <SelectValue placeholder={t("common.actions.select", "Select...")} />
                         </SelectTrigger>
                         <SelectContent>
                           {isSuperAdmin && (
                             <SelectItem value={SUPER_ADMIN_ROLE}>
-                              {t('pages.usersManagement.fields.role.values.superAdmin', 'super admin')}
+                              {t(
+                                "pages.usersManagement.fields.role.values.superAdmin",
+                                "super admin"
+                              )}
                             </SelectItem>
                           )}
                           {isSelf &&
@@ -383,31 +426,25 @@ export function UserFormDialog({
                             field.value &&
                             !assignableRoles.some(
                               (role) => (role.name || role) === field.value
-                            ) && (
-                              <SelectItem value={field.value}>
-                                {field.value}
-                              </SelectItem>
-                            )}
+                            ) && <SelectItem value={field.value}>{field.value}</SelectItem>}
                           <SelectItem value="__none__">
-                            {t('common.actions.none', 'None')}
+                            {t("common.actions.none", "None")}
                           </SelectItem>
-                          {assignableRoles.length > 0 ? (
-                            assignableRoles.map((role) => {
-                              const roleName = role.name || role;
-                              const roleValue = role.name || role;
-                              return (
-                                <SelectItem key={roleValue} value={roleValue}>
-                                  {roleName}
+                          {assignableRoles.length > 0
+                            ? assignableRoles.map((role) => {
+                                const roleName = role.name || role;
+                                const roleValue = role.name || role;
+                                return (
+                                  <SelectItem key={roleValue} value={roleValue}>
+                                    {roleName}
+                                  </SelectItem>
+                                );
+                              })
+                            : !isRoleLocked && (
+                                <SelectItem value="__loading__" disabled>
+                                  {t("common.status.loading", "Loading...")}
                                 </SelectItem>
-                              );
-                            })
-                          ) : (
-                            !isRoleLocked && (
-                              <SelectItem value="__loading__" disabled>
-                                {t('common.status.loading', 'Loading...')}
-                              </SelectItem>
-                            )
-                          )}
+                              )}
                         </SelectContent>
                       </Select>
                     </FormControl>
@@ -423,35 +460,35 @@ export function UserFormDialog({
                     <FormLabel
                       htmlFor="status"
                       className={cn(
-                        'flex items-center gap-1',
-                        form.formState.errors.status && 'text-destructive'
+                        "flex items-center gap-1",
+                        form.formState.errors.status && "text-destructive"
                       )}
                     >
-                      {t('pages.profile.fields.status.label', 'Status')}
+                      {t("pages.profile.fields.status.label", "Status")}
                       <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Select
                         name="status"
-                        value={field.value ? 'true' : 'false'}
-                        onValueChange={(value) => field.onChange(value === 'true')}
+                        value={field.value ? "true" : "false"}
+                        onValueChange={(value) => field.onChange(value === "true")}
                         disabled={isSubmitting}
                       >
                         <SelectTrigger
                           id="status"
                           className={cn(
                             form.formState.errors.status &&
-                              'ring-2 ring-destructive focus-visible:ring-destructive'
+                              "ring-2 ring-destructive focus-visible:ring-destructive"
                           )}
                         >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="true">
-                            {t('pages.profile.fields.status.values.active', 'Active')}
+                            {t("pages.profile.fields.status.values.active", "Active")}
                           </SelectItem>
                           <SelectItem value="false">
-                            {t('pages.profile.fields.status.values.inactive', 'Inactive')}
+                            {t("pages.profile.fields.status.values.inactive", "Inactive")}
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -469,21 +506,17 @@ export function UserFormDialog({
                 disabled={isSubmitting}
                 className="text-sm"
               >
-                {t('common.actions.cancel', 'Cancel')}
+                {t("common.actions.cancel", "Cancel")}
               </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="text-sm"
-              >
+              <Button type="submit" disabled={isSubmitting} className="text-sm">
                 {isSubmitting ? (
                   <span className="inline-flex items-center justify-center gap-2">
                     <Spinner className="size-4" />
                   </span>
+                ) : isEditMode ? (
+                  t("common.actions.save", "Save")
                 ) : (
-                  isEditMode
-                    ? t('common.actions.save', 'Save')
-                    : t('common.actions.create', 'Create')
+                  t("common.actions.create", "Create")
                 )}
               </Button>
             </DialogFooter>

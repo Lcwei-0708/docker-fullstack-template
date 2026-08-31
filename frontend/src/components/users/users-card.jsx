@@ -85,7 +85,7 @@ export function UserCard({
   // Handle long press to enter selection mode
   const handlePointerDown = () => {
     if (!canManageUsers || isSelectionMode) return;
-    
+
     isLongPressRef.current = false;
     longPressTimerRef.current = setTimeout(() => {
       isLongPressRef.current = true;
@@ -110,7 +110,7 @@ export function UserCard({
 
   const handleCardClick = (e) => {
     // Prevent opening drawer when clicking on action button
-    if (e.target.closest('[data-action-button]')) {
+    if (e.target.closest("[data-action-button]")) {
       return;
     }
 
@@ -131,19 +131,18 @@ export function UserCard({
 
   const handleActionClick = (action) => {
     setIsActionsDrawerOpen(false);
-    if (action === 'edit') {
+    if (action === "edit") {
       onEdit?.(user);
-    } else if (action === 'resetPassword') {
+    } else if (action === "resetPassword") {
       onResetPassword?.(user);
-    } else if (action === 'delete') {
+    } else if (action === "delete") {
       onDelete?.(user);
     }
   };
 
-
   return (
     <>
-      <Card 
+      <Card
         className={cn(
           "shadow-none border-y-0 border-x-5 border-transparent rounded-none py-2 cursor-pointer bg-background hover:bg-accent select-none",
           isSelectionMode && isSelected && "bg-primary/10 border-l-primary"
@@ -180,7 +179,7 @@ export function UserCard({
                 <span className="truncate">{user.email || "-"}</span>
               </div>
             </div>
-            
+
             {/* Right side: Action button or Selection check */}
             {canManageUsers && (canEdit || canDelete || isSelectionMode) && (
               <div className="flex items-center shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -203,7 +202,7 @@ export function UserCard({
                       <div className="size-5 rounded-2xs border-2 border-muted-foreground" />
                     )}
                     <span className="sr-only">
-                      {isSelected 
+                      {isSelected
                         ? t("common.actions.deselect", "Deselect")
                         : t("common.actions.select", "Select")}
                     </span>
@@ -219,9 +218,7 @@ export function UserCard({
                     }}
                   >
                     <MoreHorizontal className="size-5" />
-                    <span className="sr-only">
-                      {t("common.actions.openMenu", "Open menu")}
-                    </span>
+                    <span className="sr-only">{t("common.actions.openMenu", "Open menu")}</span>
                   </Button>
                 )}
               </div>
@@ -233,11 +230,8 @@ export function UserCard({
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle className="text-xl font-semibold">
-              {fullName}
-            </DrawerTitle>
-            <DrawerDescription>
-            </DrawerDescription>
+            <DrawerTitle className="text-xl font-semibold">{fullName}</DrawerTitle>
+            <DrawerDescription></DrawerDescription>
           </DrawerHeader>
           <div className="px-6 pb-8">
             <div className="space-y-4">
@@ -319,11 +313,8 @@ export function UserCard({
       <Drawer open={isActionsDrawerOpen} onOpenChange={setIsActionsDrawerOpen}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle className="text-xl font-semibold">
-              {fullName}
-            </DrawerTitle>
-            <DrawerDescription>
-            </DrawerDescription>
+            <DrawerTitle className="text-xl font-semibold">{fullName}</DrawerTitle>
+            <DrawerDescription></DrawerDescription>
           </DrawerHeader>
           <div className="px-6 pb-10 pt-2">
             <div className="space-y-6">
@@ -334,17 +325,15 @@ export function UserCard({
                     <Button
                       variant="default"
                       className="w-full justify-between gap-3 h-auto py-4 px-4 rounded-none bg-input text-card-foreground hover:bg-accent"
-                      onClick={() => handleActionClick('edit')}
+                      onClick={() => handleActionClick("edit")}
                     >
-                      <span className="flex-1 text-left">
-                        {t("common.actions.edit", "Edit")}
-                      </span>
+                      <span className="flex-1 text-left">{t("common.actions.edit", "Edit")}</span>
                       <Edit className="size-5 shrink-0" />
                     </Button>
                     <Button
                       variant="default"
                       className="w-full justify-between gap-3 h-auto py-4 px-4 rounded-none bg-input text-card-foreground hover:bg-accent"
-                      onClick={() => handleActionClick('resetPassword')}
+                      onClick={() => handleActionClick("resetPassword")}
                     >
                       <span className="flex-1 text-left">
                         {t("common.actions.resetPassword", "Reset Password")}
@@ -362,7 +351,7 @@ export function UserCard({
                     <Button
                       variant="destructive"
                       className="w-full justify-between gap-3 h-auto py-4 px-4 bg-destructive/15 text-destructive hover:bg-accent"
-                      onClick={() => handleActionClick('delete')}
+                      onClick={() => handleActionClick("delete")}
                     >
                       <span className="flex-1 text-left">
                         {t("common.actions.delete", "Delete")}

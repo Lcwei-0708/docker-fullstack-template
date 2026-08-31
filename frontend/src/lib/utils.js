@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import { twMerge } from "tailwind-merge"
+import { twMerge } from "tailwind-merge";
 import ENV from "@/config/env.config";
 
 // Merge class names with Tailwind Merge

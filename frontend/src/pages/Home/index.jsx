@@ -61,37 +61,25 @@ function Home() {
             src={nginxLogo}
             alt="Nginx"
             title="Nginx"
-            className={cn(
-              logoClass,
-              "hover:drop-shadow-[0_8px_32px_rgba(1,150,57,0.85)]"
-            )}
+            className={cn(logoClass, "hover:drop-shadow-[0_8px_32px_rgba(1,150,57,0.85)]")}
           />
           <img
             src={reactLogo}
             alt="React"
             title="React"
-            className={cn(
-              logoClass,
-              "hover:drop-shadow-[0_8px_32px_rgba(97,218,251,0.95)]"
-            )}
+            className={cn(logoClass, "hover:drop-shadow-[0_8px_32px_rgba(97,218,251,0.95)]")}
           />
           <img
             src={fastapiLogo}
             alt="FastAPI"
             title="FastAPI"
-            className={cn(
-              logoClass,
-              "hover:drop-shadow-[0_12px_32px_rgba(0,150,136,0.85)]"
-            )}
+            className={cn(logoClass, "hover:drop-shadow-[0_12px_32px_rgba(0,150,136,0.85)]")}
           />
           <img
             src={mariadbLogo}
             alt="MariaDB"
             title="MariaDB"
-            className={cn(
-              logoClass,
-              "hover:drop-shadow-[0_12px_32px_rgba(221,114,0,1)]"
-            )}
+            className={cn(logoClass, "hover:drop-shadow-[0_12px_32px_rgba(221,114,0,1)]")}
           />
         </div>
       </div>

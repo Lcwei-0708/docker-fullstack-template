@@ -1,17 +1,17 @@
-import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { Edit, Lock, AlertTriangle } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/useAuth';
-import { useIsMobile } from '@/hooks/useMobile';
-import { Spinner } from '@/components/ui/spinner';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ProfileInfo } from '@/components/profile/profile-info';
-import { UpdateProfileForm } from '@/components/profile/update-profile-form';
-import { ChangePasswordForm } from '@/components/profile/change-password-form';
+import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { Edit, Lock, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/useMobile";
+import { Spinner } from "@/components/ui/spinner";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ProfileInfo } from "@/components/profile/profile-info";
+import { UpdateProfileForm } from "@/components/profile/update-profile-form";
+import { ChangePasswordForm } from "@/components/profile/change-password-form";
 
 export function Profile() {
   const { t } = useTranslation();
@@ -21,21 +21,27 @@ export function Profile() {
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isEditingSecurity, setIsEditingSecurity] = useState(false);
-  const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
-  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
+  const [, setIsSubmittingProfile] = useState(false);
+  const [, setIsSubmittingPassword] = useState(false);
 
-  const handleProfileUpdate = useCallback(async (updatedUser) => {
-    setIsEditingProfile(false);
-    await loadProfile();
-  }, [t, loadProfile]);
+  const handleProfileUpdate = useCallback(
+    async (_updatedUser) => {
+      setIsEditingProfile(false);
+      await loadProfile();
+    },
+    [t, loadProfile]
+  );
 
-  const handleEmailVerificationRequired = useCallback(({ email }) => {
-    setIsEditingProfile(false);
-    navigate('/auth/verify-email', {
-      state: { email },
-      replace: false,
-    });
-  }, [navigate]);
+  const handleEmailVerificationRequired = useCallback(
+    ({ email }) => {
+      setIsEditingProfile(false);
+      navigate("/auth/verify-email", {
+        state: { email },
+        replace: false,
+      });
+    },
+    [navigate]
+  );
 
   const handlePasswordChange = useCallback(async () => {
     setIsEditingSecurity(false);
@@ -73,16 +79,16 @@ export function Profile() {
   }
 
   return (
-    <div className={cn('p-5', isMobile && 'py-1 px-3')}>
+    <div className={cn("p-5", isMobile && "py-1 px-3")}>
       {isMobile ? (
         // Mobile: Tabs layout
         <Tabs defaultValue="profile" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-1">
             <TabsTrigger value="profile" className="gap-2 text-base">
-              {t('pages.profile.profile.title')}
+              {t("pages.profile.profile.title")}
             </TabsTrigger>
             <TabsTrigger value="security" className="gap-2 text-base">
-              {t('pages.profile.security.title')}
+              {t("pages.profile.security.title")}
             </TabsTrigger>
           </TabsList>
 
@@ -91,10 +97,10 @@ export function Profile() {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-lg font-semibold text-foreground">
-                    {t('pages.profile.profile.title')}
+                    {t("pages.profile.profile.title")}
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    {t('pages.profile.profile.description')}
+                    {t("pages.profile.profile.description")}
                   </p>
                 </div>
                 {!isEditingProfile && (
@@ -127,10 +133,10 @@ export function Profile() {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-lg font-semibold text-foreground">
-                    {t('pages.profile.security.title')}
+                    {t("pages.profile.security.title")}
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    {t('pages.profile.security.description')}
+                    {t("pages.profile.security.description")}
                   </p>
                 </div>
                 {!isEditingSecurity && (
@@ -148,16 +154,16 @@ export function Profile() {
                 <div className="space-y-4 text-sm">
                   <div className="p-4 border border-border rounded-lg bg-background">
                     <h3 className="font-medium flex items-center gap-2 mb-3 text-base text-foreground">
-                      {t('pages.profile.security.securityTips.title')}
+                      {t("pages.profile.security.securityTips.title")}
                     </h3>
                     <ul className="space-y-3">
                       <li className="flex items-start gap-2 text-sm text-foreground">
                         <AlertTriangle className="text-warning mt-0.5 size-4 shrink-0" />
-                        {t('pages.profile.security.securityTips.tips.regularChange')}
+                        {t("pages.profile.security.securityTips.tips.regularChange")}
                       </li>
                       <li className="flex items-start gap-2 text-sm text-foreground">
                         <AlertTriangle className="text-warning mt-0.5 size-4 shrink-0" />
-                        {t('pages.profile.security.securityTips.tips.uniquePassword')}
+                        {t("pages.profile.security.securityTips.tips.uniquePassword")}
                       </li>
                     </ul>
                   </div>
@@ -180,10 +186,10 @@ export function Profile() {
             <div className="flex justify-between items-start mb-1 md:mb-2">
               <div>
                 <h3 className="text-lg font-semibold text-foreground">
-                  {t('pages.profile.profile.title')}
+                  {t("pages.profile.profile.title")}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {t('pages.profile.profile.description')}
+                  {t("pages.profile.profile.description")}
                 </p>
               </div>
               {!isEditingProfile && (
@@ -193,7 +199,7 @@ export function Profile() {
                   className="flex items-center gap-1.5 md:gap-2 text-sm"
                 >
                   <Edit className="size-4" />
-                  {t('pages.profile.actions.edit')}
+                  {t("pages.profile.actions.edit")}
                 </Button>
               )}
             </div>
@@ -216,10 +222,10 @@ export function Profile() {
             <div className="flex justify-between items-start mb-1 md:mb-2">
               <div>
                 <h3 className="text-lg font-semibold text-foreground">
-                  {t('pages.profile.security.title')}
+                  {t("pages.profile.security.title")}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {t('pages.profile.security.description')}
+                  {t("pages.profile.security.description")}
                 </p>
               </div>
               {!isEditingSecurity && (
@@ -229,7 +235,7 @@ export function Profile() {
                   className="flex items-center gap-1.5 md:gap-2 text-sm"
                 >
                   <Lock className="size-4" />
-                  {t('pages.profile.actions.changePassword')}
+                  {t("pages.profile.actions.changePassword")}
                 </Button>
               )}
             </div>
@@ -238,16 +244,16 @@ export function Profile() {
               <div className="space-y-4 md:space-y-6 text-sm">
                 <div className="p-4 border border-border rounded-lg bg-background">
                   <h3 className="font-medium flex items-center gap-2 mb-3 md:mb-4 text-base text-foreground">
-                    {t('pages.profile.security.securityTips.title')}
+                    {t("pages.profile.security.securityTips.title")}
                   </h3>
                   <ul className="space-y-3">
                     <li className="flex items-start gap-2 text-sm text-foreground">
                       <AlertTriangle className="text-warning mt-0.5 size-4 shrink-0" />
-                      {t('pages.profile.security.securityTips.tips.regularChange')}
+                      {t("pages.profile.security.securityTips.tips.regularChange")}
                     </li>
                     <li className="flex items-start gap-2 text-sm text-foreground">
                       <AlertTriangle className="text-warning mt-0.5 size-4 shrink-0" />
-                      {t('pages.profile.security.securityTips.tips.uniquePassword')}
+                      {t("pages.profile.security.securityTips.tips.uniquePassword")}
                     </li>
                   </ul>
                 </div>

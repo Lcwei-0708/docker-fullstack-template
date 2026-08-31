@@ -1,15 +1,12 @@
-import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import sys
 
-import models
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
-
 from alembic import context
+from sqlalchemy import pool
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -25,6 +22,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from core.database import Base
+
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
@@ -34,13 +32,16 @@ target_metadata = Base.metadata
 
 from core.config import settings
 
+
 def include_object(object, name, type_, reflected, compare_to):
     """
-    Filter out APScheduler related tables to avoid Alembic automatically generating migrations to delete these tables
+    Filter out APScheduler related tables to avoid Alembic automatically generating
+    migrations to delete these tables
     """
     if type_ == "table" and name == "apscheduler_jobs":
         return False
     return True
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -75,10 +76,11 @@ def run_migrations_online() -> None:
 
     """
     from sqlalchemy import create_engine
+
     connectable = create_engine(settings.DATABASE_URL, poolclass=pool.NullPool)
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, 
+            connection=connection,
             target_metadata=target_metadata,
             include_object=include_object,
         )

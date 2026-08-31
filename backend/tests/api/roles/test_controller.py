@@ -1,19 +1,21 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
 from httpx import AsyncClient
+
 from api.roles.schema import (
-    RoleResponse,
-    RolesListResponse,
-    RoleAttributesGroupedResponse,
-    RoleAttributeMappingBatchResponse,
     AttributeMappingResult,
     PermissionCheckResponse,
+    RoleAttributeMappingBatchResponse,
+    RoleAttributesGroupedResponse,
+    RoleResponse,
+    RolesListResponse,
 )
 from utils.custom_exception import (
+    AuthorizationException,
     ConflictException,
     NotFoundException,
     ServerException,
-    AuthorizationException,
 )
 
 
@@ -21,9 +23,7 @@ class TestGetRolesAPI:
     """Test GET /api/roles endpoint"""
 
     @pytest.mark.asyncio
-    async def test_get_roles_success(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_get_roles_success(self, client: AsyncClient, users_auth_headers: dict):
         """Test successful roles retrieval with valid authentication"""
         with patch("api.roles.controller.get_all_roles") as mock_get_roles:
             mock_roles = RolesListResponse(
@@ -55,9 +55,7 @@ class TestGetRolesAPI:
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_get_roles_server_error(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_get_roles_server_error(self, client: AsyncClient, users_auth_headers: dict):
         """Test roles retrieval with server error"""
         with patch(
             "api.roles.controller.get_all_roles",
@@ -74,9 +72,7 @@ class TestCreateRoleAPI:
     """Test POST /api/roles endpoint"""
 
     @pytest.mark.asyncio
-    async def test_create_role_success(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_create_role_success(self, client: AsyncClient, users_auth_headers: dict):
         """Test successful role creation"""
         role_data = {
             "name": "manager",
@@ -106,9 +102,7 @@ class TestCreateRoleAPI:
             assert data["data"]["name"] == "manager"
 
     @pytest.mark.asyncio
-    async def test_create_role_conflict(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_create_role_conflict(self, client: AsyncClient, users_auth_headers: dict):
         """Test role creation with name conflict"""
         role_data = {"name": "admin", "description": "Admin role", "level": 10}
 
@@ -157,15 +151,11 @@ class TestCreateRoleAPI:
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_create_role_server_error(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_create_role_server_error(self, client: AsyncClient, users_auth_headers: dict):
         """Test role creation with server error"""
         role_data = {"name": "test-role", "level": 10}
 
-        with patch(
-            "api.roles.controller.create_role", side_effect=Exception("Database error")
-        ):
+        with patch("api.roles.controller.create_role", side_effect=Exception("Database error")):
             response = await client.post(
                 "/api/roles",
                 json=role_data,
@@ -178,16 +168,16 @@ class TestUpdateRoleAPI:
     """Test PUT /api/roles/{role_id} endpoint"""
 
     @pytest.mark.asyncio
-    async def test_update_role_success(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_update_role_success(self, client: AsyncClient, users_auth_headers: dict):
         """Test successful role update"""
         role_id = "role-123"
         role_data = {"name": "updated_manager", "description": "Updated manager role", "level": 10}
 
         with patch("api.roles.controller.update_role") as mock_update_role:
             mock_role = RoleResponse(
-                id=role_id, name="updated_manager", description="Updated manager role",
+                id=role_id,
+                name="updated_manager",
+                description="Updated manager role",
                 level=10,
             )
             mock_update_role.return_value = mock_role
@@ -205,9 +195,7 @@ class TestUpdateRoleAPI:
             assert data["data"]["name"] == "updated_manager"
 
     @pytest.mark.asyncio
-    async def test_update_role_not_found(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_update_role_not_found(self, client: AsyncClient, users_auth_headers: dict):
         """Test role update with non-existent role"""
         role_id = "non-existent-role"
         role_data = {"name": "updated_role", "level": 10}
@@ -251,9 +239,7 @@ class TestUpdateRoleAPI:
             assert data["message"] == "Cannot modify the system super-admin role"
 
     @pytest.mark.asyncio
-    async def test_update_role_conflict(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_update_role_conflict(self, client: AsyncClient, users_auth_headers: dict):
         """Test role update with name conflict"""
         role_id = "role-123"
         role_data = {"name": "existing-role", "level": 10}
@@ -281,9 +267,7 @@ class TestUpdateRoleAPI:
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_update_role_server_error(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_update_role_server_error(self, client: AsyncClient, users_auth_headers: dict):
         """Test role update with server error"""
         role_id = "role-123"
         role_data = {"name": "updated_role", "level": 10}
@@ -304,9 +288,7 @@ class TestDeleteRoleAPI:
     """Test DELETE /api/roles/{role_id} endpoint"""
 
     @pytest.mark.asyncio
-    async def test_delete_role_success(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_delete_role_success(self, client: AsyncClient, users_auth_headers: dict):
         """Test successful role deletion"""
         role_id = "role-123"
 
@@ -324,9 +306,7 @@ class TestDeleteRoleAPI:
             assert data["message"] == "Role deleted successfully"
 
     @pytest.mark.asyncio
-    async def test_delete_role_not_found(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_delete_role_not_found(self, client: AsyncClient, users_auth_headers: dict):
         """Test role deletion with non-existent role"""
         role_id = "non-existent-role"
 
@@ -366,9 +346,7 @@ class TestDeleteRoleAPI:
             assert data["message"] == "Cannot modify the system super-admin role"
 
     @pytest.mark.asyncio
-    async def test_delete_role_conflict(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_delete_role_conflict(self, client: AsyncClient, users_auth_headers: dict):
         """Test role deletion when role is assigned to users"""
         role_id = "role-123"
 
@@ -395,15 +373,11 @@ class TestDeleteRoleAPI:
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_delete_role_server_error(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_delete_role_server_error(self, client: AsyncClient, users_auth_headers: dict):
         """Test role deletion with server error"""
         role_id = "role-123"
 
-        with patch(
-            "api.roles.controller.delete_role", side_effect=Exception("Database error")
-        ):
+        with patch("api.roles.controller.delete_role", side_effect=Exception("Database error")):
             response = await client.delete(
                 f"/api/roles/{role_id}",
                 headers={"Authorization": users_auth_headers["Authorization"]},
@@ -421,9 +395,7 @@ class TestGetRoleAttributeMappingAPI:
         """Test successful role attributes mapping retrieval"""
         role_id = "role-123"
 
-        with patch(
-            "api.roles.controller.get_role_attribute_mapping"
-        ) as mock_get_mapping:
+        with patch("api.roles.controller.get_role_attribute_mapping") as mock_get_mapping:
             mock_mapping = RoleAttributesGroupedResponse(
                 groups=[
                     {
@@ -453,7 +425,12 @@ class TestGetRoleAttributeMappingAPI:
             assert data["message"] == "Successfully retrieved role attributes mapping"
             assert "data" in data
             assert "groups" in data["data"]
-            groups = {g["group"]: {cat: {a["name"]: a for a in attrs} for cat, attrs in g["categories"].items()} for g in data["data"]["groups"]}
+            groups = {
+                g["group"]: {
+                    cat: {a["name"]: a for a in attrs} for cat, attrs in g["categories"].items()
+                }
+                for g in data["data"]["groups"]
+            }
             assert groups["user-role-management"]["user"]["attr-1"]["value"] is True
             assert groups["user-role-management"]["user"]["attr-2"]["value"] is False
             assert groups["user-role-management"]["role"]["attr-3"]["value"] is True
@@ -465,9 +442,7 @@ class TestGetRoleAttributeMappingAPI:
         """Test role attributes mapping retrieval with non-existent role"""
         role_id = "non-existent-role"
 
-        with patch(
-            "api.roles.controller.get_role_attribute_mapping"
-        ) as mock_get_mapping:
+        with patch("api.roles.controller.get_role_attribute_mapping") as mock_get_mapping:
             mock_get_mapping.side_effect = NotFoundException("Role not found")
 
             response = await client.get(
@@ -487,9 +462,7 @@ class TestGetRoleAttributeMappingAPI:
         """Test reading attributes of system super-admin role returns 403"""
         role_id = "role-super"
 
-        with patch(
-            "api.roles.controller.get_role_attribute_mapping"
-        ) as mock_get_mapping:
+        with patch("api.roles.controller.get_role_attribute_mapping") as mock_get_mapping:
             mock_get_mapping.side_effect = AuthorizationException(
                 "Cannot modify the system super-admin role"
             )
@@ -540,9 +513,7 @@ class TestUpdateRoleAttributeMappingAPI:
         role_id = "role-123"
         attributes_data = {"attributes": {"attr-1": True, "attr-2": False}}
 
-        with patch(
-            "api.roles.controller.update_role_attribute_mapping"
-        ) as mock_update_mapping:
+        with patch("api.roles.controller.update_role_attribute_mapping") as mock_update_mapping:
             mock_batch_result = RoleAttributeMappingBatchResponse(
                 results=[
                     AttributeMappingResult(
@@ -583,9 +554,7 @@ class TestUpdateRoleAttributeMappingAPI:
         role_id = "role-123"
         attributes_data = {"attributes": {"attr-1": True, "invalid-attr": False}}
 
-        with patch(
-            "api.roles.controller.update_role_attribute_mapping"
-        ) as mock_update_mapping:
+        with patch("api.roles.controller.update_role_attribute_mapping") as mock_update_mapping:
             mock_batch_result = RoleAttributeMappingBatchResponse(
                 results=[
                     AttributeMappingResult(
@@ -624,13 +593,9 @@ class TestUpdateRoleAttributeMappingAPI:
     ):
         """Test role attributes mapping update with all failures"""
         role_id = "role-123"
-        attributes_data = {
-            "attributes": {"invalid-attr-1": True, "invalid-attr-2": False}
-        }
+        attributes_data = {"attributes": {"invalid-attr-1": True, "invalid-attr-2": False}}
 
-        with patch(
-            "api.roles.controller.update_role_attribute_mapping"
-        ) as mock_update_mapping:
+        with patch("api.roles.controller.update_role_attribute_mapping") as mock_update_mapping:
             mock_batch_result = RoleAttributeMappingBatchResponse(
                 results=[
                     AttributeMappingResult(
@@ -671,9 +636,7 @@ class TestUpdateRoleAttributeMappingAPI:
         role_id = "non-existent-role"
         attributes_data = {"attributes": {"attr-1": True}}
 
-        with patch(
-            "api.roles.controller.update_role_attribute_mapping"
-        ) as mock_update_mapping:
+        with patch("api.roles.controller.update_role_attribute_mapping") as mock_update_mapping:
             mock_update_mapping.side_effect = NotFoundException("Role not found")
 
             response = await client.put(
@@ -695,9 +658,7 @@ class TestUpdateRoleAttributeMappingAPI:
         role_id = "role-super"
         attributes_data = {"attributes": {"view-users": True}}
 
-        with patch(
-            "api.roles.controller.update_role_attribute_mapping"
-        ) as mock_update_mapping:
+        with patch("api.roles.controller.update_role_attribute_mapping") as mock_update_mapping:
             mock_update_mapping.side_effect = AuthorizationException(
                 "Cannot modify the system super-admin role"
             )
@@ -714,15 +675,11 @@ class TestUpdateRoleAttributeMappingAPI:
             assert data["message"] == "Cannot modify the system super-admin role"
 
     @pytest.mark.asyncio
-    async def test_update_role_attribute_mapping_unauthorized(
-        self, client: AsyncClient
-    ):
+    async def test_update_role_attribute_mapping_unauthorized(self, client: AsyncClient):
         """Test role attributes mapping update without authentication"""
         role_id = "role-123"
         attributes_data = {"attributes": {"attr-1": True}}
-        response = await client.put(
-            f"/api/roles/{role_id}/attributes", json=attributes_data
-        )
+        response = await client.put(f"/api/roles/{role_id}/attributes", json=attributes_data)
         assert response.status_code == 401
 
     @pytest.mark.asyncio
@@ -753,9 +710,7 @@ class TestGetUserPermissionsAPI:
         self, client: AsyncClient, users_auth_headers: dict
     ):
         """Test successful user permissions retrieval"""
-        with patch(
-            "api.roles.controller.check_user_permissions"
-        ) as mock_check_permissions:
+        with patch("api.roles.controller.check_user_permissions") as mock_check_permissions:
             mock_result = PermissionCheckResponse(
                 permissions={
                     "view-users": True,

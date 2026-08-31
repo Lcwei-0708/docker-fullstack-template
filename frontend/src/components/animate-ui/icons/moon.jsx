@@ -1,6 +1,10 @@
-import * as React from 'react';
-import { motion } from 'motion/react';
-import { getVariants, useAnimateIconContext, IconWrapper } from '@/components/animate-ui/icons/icon';
+import * as React from "react";
+import { motion } from "motion/react";
+import {
+  getVariants,
+  useAnimateIconContext,
+  IconWrapper,
+} from "@/components/animate-ui/icons/icon";
 
 const animations = {
   default: {
@@ -9,7 +13,7 @@ const animations = {
         rotate: 0,
         transition: {
           duration: 0.5,
-          ease: 'easeInOut',
+          ease: "easeInOut",
         },
       },
       animate: {
@@ -17,10 +21,10 @@ const animations = {
         transition: {
           duration: 1.2,
           times: [0, 0.25, 0.75, 1],
-          ease: ['easeInOut', 'easeInOut', 'easeInOut'],
+          ease: ["easeInOut", "easeInOut", "easeInOut"],
         },
       },
-    }
+    },
   },
 
   balancing: {
@@ -29,24 +33,21 @@ const animations = {
         rotate: 0,
         transition: {
           duration: 0.5,
-          ease: 'easeInOut',
+          ease: "easeInOut",
         },
       },
       animate: {
         rotate: [0, -30, 25, -15, 10, -5, 0],
         transition: {
           duration: 1.2,
-          ease: 'easeInOut',
+          ease: "easeInOut",
         },
       },
-    }
-  }
+    },
+  },
 };
 
-function IconComponent({
-  size,
-  ...props
-}) {
+function IconComponent({ size, ...props }) {
   const { controls } = useAnimateIconContext();
   const variants = getVariants(animations);
 
@@ -63,12 +64,14 @@ function IconComponent({
       strokeLinejoin="round"
       initial="initial"
       animate={controls}
-      {...props}>
+      {...props}
+    >
       <motion.path
         d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"
         variants={variants.path}
         initial="initial"
-        animate={controls} />
+        animate={controls}
+      />
     </motion.svg>
   );
 }

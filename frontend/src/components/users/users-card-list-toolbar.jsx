@@ -11,17 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   ActionBar,
   ActionBarSelection,
@@ -38,8 +30,18 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { Search, Filter, ArrowUpDown, ArrowDownNarrowWide, ArrowUpWideNarrow, Check, CirclePlus, Trash2, CheckCheck, X } from "lucide-react";
-
+import {
+  Search,
+  Filter,
+  ArrowUpDown,
+  ArrowDownNarrowWide,
+  ArrowUpWideNarrow,
+  Check,
+  CirclePlus,
+  Trash2,
+  CheckCheck,
+  X,
+} from "lucide-react";
 
 // Filter field popover component
 function FilterFieldPopover({
@@ -69,7 +71,10 @@ function FilterFieldPopover({
               <>
                 <Separator orientation="vertical" className="mx-0 hidden h-5 sm:block" />
                 {selectedValues.length > 2 ? (
-                  <Badge variant="outline" className="max-w-full rounded-sm border-primary/50 bg-primary/15 px-2 font-semibold text-primary">
+                  <Badge
+                    variant="outline"
+                    className="max-w-full rounded-sm border-primary/50 bg-primary/15 px-2 font-semibold text-primary"
+                  >
                     {selectedValues.length} {t("common.selected", "selected")}
                   </Badge>
                 ) : (
@@ -91,7 +96,7 @@ function FilterFieldPopover({
                           role="button"
                           tabIndex={0}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
+                            if (e.key === "Enter" || e.key === " ") {
                               e.stopPropagation();
                               e.preventDefault();
                               onRemoveValue(value);
@@ -116,8 +121,8 @@ function FilterFieldPopover({
             <CommandEmpty>{t("common.noResults", "No results found")}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => {
-                const optionValue = typeof option === 'string' ? option : option.value;
-                const optionLabel = typeof option === 'string' ? option : option.label;
+                const optionValue = typeof option === "string" ? option : option.value;
+                const optionLabel = typeof option === "string" ? option : option.label;
                 const isSelected = selectedValues.includes(optionValue);
                 return (
                   <CommandItem
@@ -133,9 +138,7 @@ function FilterFieldPopover({
                     >
                       <Check className={cn("h-4 w-4", isSelected && "text-primary-foreground")} />
                     </div>
-                    <span className={cn(isSelected && "text-foreground")}>
-                      {optionLabel}
-                    </span>
+                    <span className={cn(isSelected && "text-foreground")}>{optionLabel}</span>
                   </CommandItem>
                 );
               })}
@@ -188,7 +191,7 @@ export function UsersCardListToolbar({
   const { t } = useTranslation();
   const [showFilterDialog, setShowFilterDialog] = React.useState(false);
   const [showSortPopover, setShowSortPopover] = React.useState(false);
-  const [localKeyword, setLocalKeyword] = React.useState(keyword || '');
+  const [localKeyword, setLocalKeyword] = React.useState(keyword || "");
   const [localStatus, setLocalStatus] = React.useState(() => {
     if (!status) return [];
     return Array.isArray(status) ? status : [status];
@@ -202,7 +205,7 @@ export function UsersCardListToolbar({
 
   // Sync local keyword with props
   React.useEffect(() => {
-    setLocalKeyword(keyword || '');
+    setLocalKeyword(keyword || "");
   }, [keyword]);
 
   React.useEffect(() => {
@@ -218,18 +221,17 @@ export function UsersCardListToolbar({
     }
   }, [showFilterDialog, status, role]);
 
-
   const handleSearch = () => {
     onSearch(localKeyword.trim());
   };
 
   const handleClear = () => {
-    setLocalKeyword('');
+    setLocalKeyword("");
     onClear();
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSearch();
     }
   };
@@ -337,9 +339,7 @@ export function UsersCardListToolbar({
   };
 
   const getSortDirectionLabel = () => {
-    return desc
-      ? t("common.descending", "Descending")
-      : t("common.ascending", "Ascending");
+    return desc ? t("common.descending", "Descending") : t("common.ascending", "Ascending");
   };
 
   const getTooltipText = () => {
@@ -359,8 +359,9 @@ export function UsersCardListToolbar({
     { value: "created_at", label: t("pages.usersManagement.fields.createdAt.label", "Created At") },
   ];
 
-  const hasActiveFilter = (status && (Array.isArray(status) ? status.length > 0 : status !== null)) || 
-                          (role && (Array.isArray(role) ? role.length > 0 : role !== null));
+  const hasActiveFilter =
+    (status && (Array.isArray(status) ? status.length > 0 : status !== null)) ||
+    (role && (Array.isArray(role) ? role.length > 0 : role !== null));
   const hasActiveSort = sortBy;
 
   return (
@@ -390,12 +391,7 @@ export function UsersCardListToolbar({
             </Button>
           )}
         </div>
-        <Button
-          variant="secondary"
-          size="icon"
-          onClick={handleSearch}
-          className="shrink-0 size-12"
-        >
+        <Button variant="secondary" size="icon" onClick={handleSearch} className="shrink-0 size-12">
           <Search className="size-6" />
           <span className="sr-only">{t("common.actions.search", "Search")}</span>
         </Button>
@@ -412,11 +408,7 @@ export function UsersCardListToolbar({
           <Tooltip>
             <TooltipTrigger asChild>
               <PopoverTrigger asChild>
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="shrink-0 size-12"
-                >
+                <Button variant="secondary" size="icon" className="shrink-0 size-12">
                   {hasActiveSort ? (
                     desc ? (
                       <ArrowDownNarrowWide className="size-6" />
@@ -501,8 +493,8 @@ export function UsersCardListToolbar({
 
       {/* Action Bar for selection */}
       {isSelectionMode && (
-        <ActionBar 
-          open={true} 
+        <ActionBar
+          open={true}
           onOpenChange={(open) => {
             if (!open) {
               onSelectionModeToggle?.();
@@ -511,7 +503,9 @@ export function UsersCardListToolbar({
           className="w-auto max-w-xs"
         >
           <ActionBarSelection>
-            <span className="text-sm font-medium whitespace-nowrap">{selectedCount} {t("common.selected", "selected")}</span>
+            <span className="text-sm font-medium whitespace-nowrap">
+              {selectedCount} {t("common.selected", "selected")}
+            </span>
           </ActionBarSelection>
           <ActionBarGroup>
             {selectedCount < totalCount ? (
@@ -617,29 +611,18 @@ export function UsersCardListToolbar({
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={handleFilterClear}
-              disabled={!hasActiveFilter}
-            >
+            <Button variant="outline" onClick={handleFilterClear} disabled={!hasActiveFilter}>
               {t("common.actions.clear", "Clear")}
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowFilterDialog(false)}
-            >
+            <Button variant="outline" onClick={() => setShowFilterDialog(false)}>
               {t("common.actions.cancel", "Cancel")}
             </Button>
-            <Button
-              variant="default"
-              onClick={handleFilterApply}
-            >
+            <Button variant="default" onClick={handleFilterApply}>
               {t("common.actions.apply", "Apply")}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
-
     </>
   );
 }

@@ -92,12 +92,8 @@ class TestGetUserAttributes:
             [
                 RoleMapper(user_id=test_user.id, role_id=role_true.id),
                 RoleMapper(user_id=test_user.id, role_id=role_false.id),
-                RoleAttributesMapper(
-                    role_id=role_true.id, attributes_id=attr.id, value=True
-                ),
-                RoleAttributesMapper(
-                    role_id=role_false.id, attributes_id=attr.id, value=False
-                ),
+                RoleAttributesMapper(role_id=role_true.id, attributes_id=attr.id, value=True),
+                RoleAttributesMapper(role_id=role_false.id, attributes_id=attr.id, value=False),
             ]
         )
         await test_db_session.commit()
@@ -124,9 +120,7 @@ class TestRequirePermission:
         assert exc.value.status_code == 500
 
     @pytest.mark.asyncio
-    async def test_super_admin_bypasses(
-        self, test_db_session: AsyncSession, test_user: Users
-    ):
+    async def test_super_admin_bypasses(self, test_db_session: AsyncSession, test_user: Users):
         role = Roles(
             id=str(uuid7()),
             name=settings.DEFAULT_SUPER_ADMIN_ROLE,
@@ -155,9 +149,7 @@ class TestRequirePermission:
         test_db_session.add_all(
             [
                 RoleMapper(user_id=test_user.id, role_id=role.id),
-                RoleAttributesMapper(
-                    role_id=role.id, attributes_id=attr.id, value=True
-                ),
+                RoleAttributesMapper(role_id=role.id, attributes_id=attr.id, value=True),
             ]
         )
         await test_db_session.commit()
@@ -170,9 +162,7 @@ class TestRequirePermission:
         assert result == "ok"
 
     @pytest.mark.asyncio
-    async def test_denies_without_permission(
-        self, test_db_session: AsyncSession, test_user: Users
-    ):
+    async def test_denies_without_permission(self, test_db_session: AsyncSession, test_user: Users):
         @require_permission(["view-users"])
         async def protected(*, token, db):
             return "ok"

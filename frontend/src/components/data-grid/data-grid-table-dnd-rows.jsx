@@ -1,6 +1,6 @@
-import { useId } from 'react';
-import { Button } from '@/components/ui/button';
-import { useDataGrid } from '@/components/data-grid/data-grid';
+import { useId } from "react";
+import { Button } from "@/components/ui/button";
+import { useDataGrid } from "@/components/data-grid/data-grid";
 import {
   DataGridTableBase,
   DataGridTableBody,
@@ -14,7 +14,7 @@ import {
   DataGridTableHeadRowCell,
   DataGridTableHeadRowCellResize,
   DataGridTableRowSpacer,
-} from '@/components/data-grid/data-grid-table';
+} from "@/components/data-grid/data-grid-table";
 import {
   closestCenter,
   DndContext,
@@ -23,16 +23,14 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
-} from '@dnd-kit/core';
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { flexRender } from '@tanstack/react-table';
-import { GripHorizontal } from 'lucide-react';
+} from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { flexRender } from "@tanstack/react-table";
+import { GripHorizontal } from "lucide-react";
 
-function DataGridTableDndRowHandle({
-  rowId
-}) {
+function DataGridTableDndRowHandle({ rowId }) {
   const { attributes, listeners } = useSortable({
     id: rowId,
   });
@@ -44,11 +42,7 @@ function DataGridTableDndRowHandle({
   );
 }
 
-function DataGridTableDndRow(
-  {
-    row
-  }
-) {
+function DataGridTableDndRow({ row }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.id,
   });
@@ -58,7 +52,7 @@ function DataGridTableDndRow(
     transition: transition,
     opacity: isDragging ? 0.8 : 1,
     zIndex: isDragging ? 1 : 0,
-    position: 'relative',
+    position: "relative",
   };
   return (
     <DataGridTableBodyRow row={row} dndRef={setNodeRef} dndStyle={style} key={row.id}>
@@ -73,12 +67,7 @@ function DataGridTableDndRow(
   );
 }
 
-function DataGridTableDndRows(
-  {
-    handleDragEnd,
-    dataIds
-  }
-) {
+function DataGridTableDndRows({ handleDragEnd, dataIds }) {
   const { table, isLoading, props } = useDataGrid();
   const pagination = table.getState().pagination;
 
@@ -94,7 +83,8 @@ function DataGridTableDndRows(
       collisionDetection={closestCenter}
       modifiers={[restrictToVerticalAxis]}
       onDragEnd={handleDragEnd}
-      sensors={sensors}>
+      sensors={sensors}
+    >
       <div className="relative">
         <DataGridTableBase>
           <DataGridTableHead>
@@ -106,7 +96,9 @@ function DataGridTableDndRows(
 
                     return (
                       <DataGridTableHeadRowCell header={header} key={index}>
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
                         {props.tableLayout?.columnsResizable && column.getCanResize() && (
                           <DataGridTableHeadRowCellResize header={header} />
                         )}
@@ -118,10 +110,12 @@ function DataGridTableDndRows(
             })}
           </DataGridTableHead>
 
-          {(props.tableLayout?.stripped || !props.tableLayout?.rowBorder) && <DataGridTableRowSpacer />}
+          {(props.tableLayout?.stripped || !props.tableLayout?.rowBorder) && (
+            <DataGridTableRowSpacer />
+          )}
 
           <DataGridTableBody>
-            {props.loadingMode === 'skeleton' && isLoading && pagination?.pageSize ? (
+            {props.loadingMode === "skeleton" && isLoading && pagination?.pageSize ? (
               Array.from({ length: pagination.pageSize }).map((_, rowIndex) => (
                 <DataGridTableBodyRowSkeleton key={rowIndex}>
                   {table.getVisibleFlatColumns().map((column, colIndex) => {
@@ -150,4 +144,3 @@ function DataGridTableDndRows(
 }
 
 export { DataGridTableDndRowHandle, DataGridTableDndRows };
-

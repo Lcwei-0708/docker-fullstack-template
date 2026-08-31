@@ -1,6 +1,6 @@
-import * as React from 'react';
-import { createContext, useContext } from 'react';
-import { cn } from '@/lib/utils';
+import * as React from "react";
+import { createContext, useContext } from "react";
+import { cn } from "@/lib/utils";
 
 const DataGridContext = createContext(undefined);
 
@@ -8,19 +8,13 @@ const DataGridContext = createContext(undefined);
 function useDataGrid() {
   const context = useContext(DataGridContext);
   if (!context) {
-    throw new Error('useDataGrid must be used within a DataGridProvider');
+    throw new Error("useDataGrid must be used within a DataGridProvider");
   }
   return context;
 }
 
 // Context provider for DataGrid state
-function DataGridProvider(
-  {
-    children,
-    table,
-    ...props
-  }
-) {
+function DataGridProvider({ children, table, ...props }) {
   const [hasVerticalScrollbar, setHasVerticalScrollbar] = React.useState(false);
   const [delayedLoading, setDelayedLoading] = React.useState(false);
   const rawIsLoading = props.isLoading || false;
@@ -58,22 +52,17 @@ function DataGridProvider(
         rawIsLoading,
         hasVerticalScrollbar,
         setHasVerticalScrollbar,
-      }}>
+      }}
+    >
       {children}
     </DataGridContext.Provider>
   );
 }
 
 // Main DataGrid component with default props
-function DataGrid(
-  {
-    children,
-    table,
-    ...props
-  }
-) {
+function DataGrid({ children, table, ...props }) {
   const defaultProps = {
-    loadingMode: 'skeleton',
+    loadingMode: "skeleton",
     loadingDelayMs: 0,
     tableLayout: {
       dense: false,
@@ -84,7 +73,7 @@ function DataGrid(
       headerSticky: false,
       headerBackground: true,
       headerBorder: true,
-      width: 'fixed',
+      width: "fixed",
       columnsVisibility: false,
       columnsResizable: false,
       columnsPinnable: false,
@@ -93,14 +82,14 @@ function DataGrid(
       rowsDraggable: false,
     },
     tableClassNames: {
-      base: '',
-      header: '',
-      headerRow: '',
-      headerSticky: 'sticky top-0 z-10 bg-background/90 backdrop-blur-xs',
-      body: '',
-      bodyRow: '',
-      footer: '',
-      edgeCell: '',
+      base: "",
+      header: "",
+      headerRow: "",
+      headerSticky: "sticky top-0 z-10 bg-background/90 backdrop-blur-xs",
+      body: "",
+      bodyRow: "",
+      footer: "",
+      edgeCell: "",
     },
   };
 
@@ -129,19 +118,19 @@ function DataGrid(
 }
 
 // Container wrapper for DataGrid with border styling
-function DataGridContainer({
-  children,
-  className,
-  border = true
-}) {
+function DataGridContainer({ children, className, border = true }) {
   return (
     <div
       data-slot="data-grid"
-      className={cn('grid w-full', border && 'border border-border rounded-xl overflow-hidden shadow-2xs', className)}>
+      className={cn(
+        "grid w-full",
+        border && "border border-border rounded-xl overflow-hidden shadow-2xs",
+        className
+      )}
+    >
       {children}
     </div>
   );
 }
 
 export { useDataGrid, DataGridProvider, DataGrid, DataGridContainer };
-

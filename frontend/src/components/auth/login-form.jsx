@@ -1,12 +1,12 @@
-import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from 'react'
-import ENV from '@/config/env.config'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { useNavigate, Link, useLocation } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
-import { cn, debugWarn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from "react";
+import ENV from "@/config/env.config";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { cn, debugWarn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -14,318 +14,371 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { useAuth } from '@/hooks/useAuth'
-import { debugError } from '@/lib/utils'
-import { Spinner } from '@/components/ui/spinner'
-import { useIsMobile } from '@/hooks/useMobile'
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/useAuth";
+import { debugError } from "@/lib/utils";
+import { Spinner } from "@/components/ui/spinner";
+import { useIsMobile } from "@/hooks/useMobile";
 
 const LoginButton = React.memo(({ onSubmit, t, className, isSubmitting }) => {
   return (
-    <Button 
-      className={cn("w-full min-h-[40px]", className)} 
-      type="button" 
+    <Button
+      className={cn("w-full min-h-[40px]", className)}
+      type="button"
       onClick={onSubmit}
       disabled={isSubmitting}
     >
       <span className="inline-flex items-center justify-center gap-2 min-w-[120px]">
-        {isSubmitting ? <Spinner className="size-4" /> : t('pages.auth.login.actions.submit', { defaultValue: 'Sign in' })}
+        {isSubmitting ? (
+          <Spinner className="size-4" />
+        ) : (
+          t("pages.auth.login.actions.submit", { defaultValue: "Sign in" })
+        )}
       </span>
     </Button>
-  )
-})
+  );
+});
 
-LoginButton.displayName = 'LoginButton'
+LoginButton.displayName = "LoginButton";
 
-const emailPersistRef = { current: '' }
-const formInstanceRef = { current: null }
+const emailPersistRef = { current: "" };
+const formInstanceRef = { current: null };
 
-export const LoginForm = ({ className, redirectTo = '/', ...props }) => {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { t } = useTranslation()
-  const authContext = useAuth()
-  const isMobile = useIsMobile()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  
-  const login = useMemo(() => authContext.login, [authContext.login])
-  const clearError = useMemo(() => authContext.clearError, [authContext.clearError])
-  
-  const handleLogin = useCallback(async (credentials) => {
-    clearError()
-    return await login(credentials)
-  }, [login, clearError])
-  
-  const emailRef = useRef(emailPersistRef.current)
-  const emailInputRef = useRef(null)
+export const LoginForm = ({ className, redirectTo = "/", ...props }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { t } = useTranslation();
+  const authContext = useAuth();
+  const isMobile = useIsMobile();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const login = useMemo(() => authContext.login, [authContext.login]);
+  const clearError = useMemo(() => authContext.clearError, [authContext.clearError]);
+
+  const handleLogin = useCallback(
+    async (credentials) => {
+      clearError();
+      return await login(credentials);
+    },
+    [login, clearError]
+  );
+
+  const emailRef = useRef(emailPersistRef.current);
+  const emailInputRef = useRef(null);
   const [emailValue, setEmailValue] = useState(() => {
-    const storedEmail = emailPersistRef.current
+    const storedEmail = emailPersistRef.current;
     if (storedEmail) {
-      emailRef.current = storedEmail
+      emailRef.current = storedEmail;
     }
-    return storedEmail || ''
-  })
-  
-  const handleLoginRef = useRef(handleLogin)
+    return storedEmail || "";
+  });
+
+  const handleLoginRef = useRef(handleLogin);
   useEffect(() => {
-    handleLoginRef.current = handleLogin
-  }, [handleLogin])
+    handleLoginRef.current = handleLogin;
+  }, [handleLogin]);
 
   const formSchema = useMemo(() => {
     return z.object({
       email: z
         .string()
-        .min(1, t('pages.auth.login.fields.email.validation.required', { defaultValue: 'Please enter your email' }))
-        .refine((val) => {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-          return emailRegex.test(val)
-        }, {
-          message: t('pages.auth.login.fields.email.validation.invalid', { defaultValue: 'Please enter a valid email format' }),
-        }),
+        .min(
+          1,
+          t("pages.auth.login.fields.email.validation.required", {
+            defaultValue: "Please enter your email",
+          })
+        )
+        .refine(
+          (val) => {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(val);
+          },
+          {
+            message: t("pages.auth.login.fields.email.validation.invalid", {
+              defaultValue: "Please enter a valid email format",
+            }),
+          }
+        ),
       password: z
         .string()
-        .min(1, t('pages.auth.login.fields.password.validation.required', { defaultValue: 'Please enter your password' }))
-        .min(6, t('pages.auth.login.fields.password.validation.minLength', { defaultValue: 'Password must be at least 6 characters' })),
-    })
-  }, [t])
+        .min(
+          1,
+          t("pages.auth.login.fields.password.validation.required", {
+            defaultValue: "Please enter your password",
+          })
+        )
+        .min(
+          6,
+          t("pages.auth.login.fields.password.validation.minLength", {
+            defaultValue: "Password must be at least 6 characters",
+          })
+        ),
+    });
+  }, [t]);
 
-  const stableDefaultValues = useMemo(() => ({
-    email: emailPersistRef.current || '',
-    password: '',
-  }), [])
+  const stableDefaultValues = useMemo(
+    () => ({
+      email: emailPersistRef.current || "",
+      password: "",
+    }),
+    []
+  );
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: stableDefaultValues,
-  })
+  });
 
   useEffect(() => {
     try {
-      form.clearErrors()
-      const newResolver = zodResolver(formSchema)
-      
-      if (form._options && typeof form._options === 'object' && 'resolver' in form._options) {
-        form._options.resolver = newResolver
+      form.clearErrors();
+      const newResolver = zodResolver(formSchema);
+
+      if (form._options && typeof form._options === "object" && "resolver" in form._options) {
+        form._options.resolver = newResolver;
       }
-      
-      if ('_resolver' in form && form._resolver !== undefined) {
-        form._resolver = newResolver
+
+      if ("_resolver" in form && form._resolver !== undefined) {
+        form._resolver = newResolver;
       }
-      
+
       if (form.formState.isSubmitted) {
         setTimeout(() => {
-          form.trigger()
-        }, 0)
+          form.trigger();
+        }, 0);
       }
     } catch (error) {
-      debugWarn('Failed to update form resolver:', error)
-      form.clearErrors()
+      debugWarn("Failed to update form resolver:", error);
+      form.clearErrors();
       if (form.formState.isSubmitted) {
         setTimeout(() => {
-          form.trigger()
-        }, 0)
+          form.trigger();
+        }, 0);
       }
     }
-  }, [formSchema, form])
+  }, [formSchema, form]);
 
   useEffect(() => {
     if (!formInstanceRef.current) {
-      formInstanceRef.current = form
+      formInstanceRef.current = form;
     }
-  }, [form])
+  }, [form]);
 
-  const formMethodsRef = useRef(form)
+  const formMethodsRef = useRef(form);
   useEffect(() => {
-    formMethodsRef.current = form
-  }, [form])
-  
+    formMethodsRef.current = form;
+  }, [form]);
+
   useEffect(() => {
     if (emailPersistRef.current) {
-      const currentEmail = form.getValues('email')
+      const currentEmail = form.getValues("email");
       if (currentEmail !== emailPersistRef.current) {
-        form.setValue('email', emailPersistRef.current, { shouldValidate: false, shouldDirty: false, shouldTouch: false })
+        form.setValue("email", emailPersistRef.current, {
+          shouldValidate: false,
+          shouldDirty: false,
+          shouldTouch: false,
+        });
       }
     }
-  }, [form])
+  }, [form]);
 
   useLayoutEffect(() => {
-    const storedEmail = emailPersistRef.current
+    const storedEmail = emailPersistRef.current;
     if (storedEmail) {
       if (emailRef.current !== storedEmail || emailValue !== storedEmail) {
-        emailRef.current = storedEmail
-        setEmailValue(storedEmail)
+        emailRef.current = storedEmail;
+        setEmailValue(storedEmail);
         if (formMethodsRef.current) {
-          formMethodsRef.current.setValue('email', storedEmail, { shouldValidate: false, shouldDirty: false, shouldTouch: false })
+          formMethodsRef.current.setValue("email", storedEmail, {
+            shouldValidate: false,
+            shouldDirty: false,
+            shouldTouch: false,
+          });
         }
       }
     }
-  }, [emailValue])
+  }, [emailValue]);
 
   useEffect(() => {
     const subscription = form.watch((value, { name, type }) => {
-      if (name === 'email' && value.email !== undefined && type === 'change') {
-        const currentEmail = value.email
+      if (name === "email" && value.email !== undefined && type === "change") {
+        const currentEmail = value.email;
         if (currentEmail !== emailRef.current && (currentEmail || !emailPersistRef.current)) {
-          emailRef.current = currentEmail
-          emailPersistRef.current = currentEmail
-          setEmailValue(currentEmail)
+          emailRef.current = currentEmail;
+          emailPersistRef.current = currentEmail;
+          setEmailValue(currentEmail);
         }
       }
-    })
+    });
     return () => {
-      subscription.unsubscribe()
-    }
-  }, [form])
+      subscription.unsubscribe();
+    };
+  }, [form]);
 
-  const navigateRef = useRef(navigate)
-  const tRef = useRef(t)
-  const redirectToRef = useRef(redirectTo)
-  
+  const navigateRef = useRef(navigate);
+  const tRef = useRef(t);
+  const redirectToRef = useRef(redirectTo);
+
   useEffect(() => {
-    navigateRef.current = navigate
-    tRef.current = t
-    redirectToRef.current = redirectTo
-  }, [navigate, t, redirectTo])
-  
-  const setEmailValueRef = useRef(setEmailValue)
+    navigateRef.current = navigate;
+    tRef.current = t;
+    redirectToRef.current = redirectTo;
+  }, [navigate, t, redirectTo]);
+
+  const setEmailValueRef = useRef(setEmailValue);
   useEffect(() => {
-    setEmailValueRef.current = setEmailValue
-  }, [setEmailValue])
-  
+    setEmailValueRef.current = setEmailValue;
+  }, [setEmailValue]);
+
   const handleSubmit = useCallback(async (formValues) => {
-    const currentEmail = formValues.email || emailRef.current || emailPersistRef.current
-    
-    emailRef.current = currentEmail
-    emailPersistRef.current = currentEmail
-    
+    const currentEmail = formValues.email || emailRef.current || emailPersistRef.current;
+
+    emailRef.current = currentEmail;
+    emailPersistRef.current = currentEmail;
+
     const data = {
       email: currentEmail,
       password: formValues.password,
-    }
-    
-    setIsSubmitting(true)
-    
+    };
+
+    setIsSubmitting(true);
+
     try {
-      const result = await handleLoginRef.current(data)
-      
+      const result = await handleLoginRef.current(data);
+
       if (result.success) {
-        emailRef.current = ''
-        emailPersistRef.current = ''
-        setEmailValueRef.current('')
-        formMethodsRef.current.reset({ email: '', password: '' }, { keepValues: false })
+        emailRef.current = "";
+        emailPersistRef.current = "";
+        setEmailValueRef.current("");
+        formMethodsRef.current.reset({ email: "", password: "" }, { keepValues: false });
         setTimeout(() => {
-          navigateRef.current(redirectToRef.current, { replace: true })
-        }, 0)
+          navigateRef.current(redirectToRef.current, { replace: true });
+        }, 0);
       } else if (result.requiresPasswordReset && result.resetToken) {
         // Redirect to reset password page with token
-        emailRef.current = ''
-        emailPersistRef.current = ''
-        setEmailValueRef.current('')
-        formMethodsRef.current.reset({ email: '', password: '' }, { keepValues: false })
+        emailRef.current = "";
+        emailPersistRef.current = "";
+        setEmailValueRef.current("");
+        formMethodsRef.current.reset({ email: "", password: "" }, { keepValues: false });
         setTimeout(() => {
-          navigateRef.current(`/auth/reset-password?token=${encodeURIComponent(result.resetToken)}`, { replace: true })
-        }, 0)
+          navigateRef.current(
+            `/auth/reset-password?token=${encodeURIComponent(result.resetToken)}`,
+            { replace: true }
+          );
+        }, 0);
       } else if (result.requiresEmailVerification) {
         // Email verification required - redirect to verification page with email
-        const emailToKeep = formValues.email || emailRef.current || emailPersistRef.current
-        
-        emailRef.current = emailToKeep
-        emailPersistRef.current = emailToKeep
-        
-        formMethodsRef.current.reset({ email: emailToKeep, password: '' }, { keepValues: false })
-        
-        setEmailValueRef.current(emailToKeep)
-        
-        setIsSubmitting(false)
-        
+        const emailToKeep = formValues.email || emailRef.current || emailPersistRef.current;
+
+        emailRef.current = emailToKeep;
+        emailPersistRef.current = emailToKeep;
+
+        formMethodsRef.current.reset({ email: emailToKeep, password: "" }, { keepValues: false });
+
+        setEmailValueRef.current(emailToKeep);
+
+        setIsSubmitting(false);
+
         // Redirect to verification page with email in state
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            navigateRef.current('/auth/verify-email', { 
+            navigateRef.current("/auth/verify-email", {
               replace: true,
-              state: { email: emailToKeep }
+              state: { email: emailToKeep },
             });
           });
         });
       } else {
-        const emailToKeep = formValues.email || emailRef.current || emailPersistRef.current
-        
-        emailRef.current = emailToKeep
-        emailPersistRef.current = emailToKeep
-        
-        formMethodsRef.current.setValue('password', '', { shouldValidate: false, shouldDirty: false, shouldTouch: false })
-        
-        setEmailValueRef.current(prev => prev !== emailToKeep ? emailToKeep : prev)
-        
-        setIsSubmitting(false)
+        const emailToKeep = formValues.email || emailRef.current || emailPersistRef.current;
+
+        emailRef.current = emailToKeep;
+        emailPersistRef.current = emailToKeep;
+
+        formMethodsRef.current.setValue("password", "", {
+          shouldValidate: false,
+          shouldDirty: false,
+          shouldTouch: false,
+        });
+
+        setEmailValueRef.current((prev) => (prev !== emailToKeep ? emailToKeep : prev));
+
+        setIsSubmitting(false);
       }
     } catch (error) {
-      debugError('Login error:', error)
-      const emailToKeep = formValues.email || emailRef.current || emailPersistRef.current
-      
-      emailRef.current = emailToKeep
-      emailPersistRef.current = emailToKeep
-      
-      formMethodsRef.current.setValue('password', '', { shouldValidate: false, shouldDirty: false, shouldTouch: false })
-      
-      setEmailValueRef.current(prev => prev !== emailToKeep ? emailToKeep : prev)
-      
-      setIsSubmitting(false)
-    }
-  }, [])
+      debugError("Login error:", error);
+      const emailToKeep = formValues.email || emailRef.current || emailPersistRef.current;
 
-  const onSubmitHandler = useCallback((e) => {
-    e?.preventDefault?.()
-    formMethodsRef.current.handleSubmit(handleSubmit)()
-  }, [handleSubmit])
+      emailRef.current = emailToKeep;
+      emailPersistRef.current = emailToKeep;
 
-  const handleKeyDown = useCallback((e) => {
-    if (e.key === 'Enter' && !isSubmitting) {
-      e.preventDefault()
-      onSubmitHandler(e)
+      formMethodsRef.current.setValue("password", "", {
+        shouldValidate: false,
+        shouldDirty: false,
+        shouldTouch: false,
+      });
+
+      setEmailValueRef.current((prev) => (prev !== emailToKeep ? emailToKeep : prev));
+
+      setIsSubmitting(false);
     }
-  }, [onSubmitHandler, isSubmitting])
+  }, []);
+
+  const onSubmitHandler = useCallback(
+    (e) => {
+      e?.preventDefault?.();
+      formMethodsRef.current.handleSubmit(handleSubmit)();
+    },
+    [handleSubmit]
+  );
+
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (e.key === "Enter" && !isSubmitting) {
+        e.preventDefault();
+        onSubmitHandler(e);
+      }
+    },
+    [onSubmitHandler, isSubmitting]
+  );
 
   useEffect(() => {
     if (!isMobile && emailInputRef.current) {
-      emailInputRef.current.focus()
+      emailInputRef.current.focus();
     }
-  }, [isMobile])
+  }, [isMobile]);
 
   return (
     <Form {...form}>
-      <form
-        className={cn('space-y-6', className)}
-        onKeyDown={handleKeyDown}
-        {...props}
-      >
+      <form className={cn("space-y-6", className)} onKeyDown={handleKeyDown} {...props}>
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('pages.auth.login.fields.email.label', { defaultValue: 'Email' })}</FormLabel>
+              <FormLabel>
+                {t("pages.auth.login.fields.email.label", { defaultValue: "Email" })}
+              </FormLabel>
               <FormControl>
-                <Input 
+                <Input
                   type="email"
-                  placeholder="" 
+                  placeholder=""
                   {...field}
-                  value={emailValue || field.value || ''}
+                  value={emailValue || field.value || ""}
                   onChange={(e) => {
-                    const newValue = e.target.value
-                    emailRef.current = newValue
-                    emailPersistRef.current = newValue
-                    setEmailValue(newValue)
-                    field.onChange(e)
+                    const newValue = e.target.value;
+                    emailRef.current = newValue;
+                    emailPersistRef.current = newValue;
+                    setEmailValue(newValue);
+                    field.onChange(e);
                   }}
                   onBlur={field.onBlur}
                   name={field.name}
                   ref={(e) => {
-                    emailInputRef.current = e
-                    field.ref(e)
+                    emailInputRef.current = e;
+                    field.ref(e);
                   }}
-                  disabled={isSubmitting} 
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
@@ -338,54 +391,60 @@ export const LoginForm = ({ className, redirectTo = '/', ...props }) => {
           render={({ field }) => (
             <FormItem>
               <div className="flex items-center justify-between">
-                <FormLabel>{t('pages.auth.login.fields.password.label', { defaultValue: 'Password' })}</FormLabel>
+                <FormLabel>
+                  {t("pages.auth.login.fields.password.label", { defaultValue: "Password" })}
+                </FormLabel>
                 {ENV.SMTP_ENABLE && (
-                  <Link 
-                    to="/auth/forgot-password" 
+                  <Link
+                    to="/auth/forgot-password"
                     className="text-sm leading-none text-primary hover:underline !bg-transparent vertical-align: bottom;"
                     state={location.state}
                     tabIndex={-1}
                   >
-                    {t('pages.auth.login.links.forgotPassword', { defaultValue: 'Forgot password?' })}
+                    {t("pages.auth.login.links.forgotPassword", {
+                      defaultValue: "Forgot password?",
+                    })}
                   </Link>
                 )}
               </div>
               <FormControl>
-                <Input 
+                <Input
                   type="password"
                   showPasswordToggle={true}
-                  placeholder="" 
-                  {...field} 
-                  disabled={isSubmitting} 
+                  placeholder=""
+                  {...field}
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        
-        <LoginButton 
-          onSubmit={onSubmitHandler} 
-          t={t} 
-          className={cn('mt-4')}
+
+        <LoginButton
+          onSubmit={onSubmitHandler}
+          t={t}
+          className={cn("mt-4")}
           isSubmitting={isSubmitting}
         />
-        
+
         {ENV.REGISTRATION_ENABLE && (
           <div className="text-center text-sm flex items-center justify-center gap-2">
-            <span className="text-muted-foreground">{t('pages.auth.login.links.newUser', { defaultValue: 'New user? ' })}</span>
-            <Link 
-              to="/auth/register" 
+            <span className="text-muted-foreground">
+              {t("pages.auth.login.links.newUser", { defaultValue: "New user? " })}
+            </span>
+            <Link
+              to="/auth/register"
               className="font-medium text-primary hover:underline"
               state={location.state}
             >
-              {t('pages.auth.login.links.register', { defaultValue: 'Sign up' })}
+              {t("pages.auth.login.links.register", { defaultValue: "Sign up" })}
             </Link>
           </div>
         )}
       </form>
     </Form>
-  )
-}
+  );
+};
 
-export default LoginForm
+export default LoginForm;

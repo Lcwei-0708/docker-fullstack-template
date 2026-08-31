@@ -1,16 +1,17 @@
 import pytest
 from pydantic import ValidationError
+
 from api.roles.schema import (
-    RoleResponse,
-    RolesListResponse,
-    RoleCreate,
-    RoleUpdate,
-    RoleAttributesMapping,
-    RoleAttributesGroupedResponse,
     AttributeMappingResult,
-    RoleAttributeMappingBatchResponse,
     PermissionCheckRequest,
     PermissionCheckResponse,
+    RoleAttributeMappingBatchResponse,
+    RoleAttributesGroupedResponse,
+    RoleAttributesMapping,
+    RoleCreate,
+    RoleResponse,
+    RolesListResponse,
+    RoleUpdate,
 )
 
 

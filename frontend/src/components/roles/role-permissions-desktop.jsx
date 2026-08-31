@@ -1,15 +1,15 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { useTranslation } from "react-i18next"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Spinner } from "@/components/ui/spinner"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Scroller } from "@/components/ui/scroller"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Shield, CheckCircle2, Circle, ChevronRight } from "lucide-react"
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Spinner } from "@/components/ui/spinner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Scroller } from "@/components/ui/scroller";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Shield, CheckCircle2, Circle, ChevronRight } from "lucide-react";
 
 const toCamelKey = (input) => {
   if (!input || typeof input !== "string") return "";
@@ -37,7 +37,8 @@ const normalizeGroupsForDisplay = (groups, attributesFlat = {}) => {
           .filter((a) => a?.name)
           .map((a) => ({
             name: a.name,
-            value: typeof attributesFlat?.[a.name] === "boolean" ? attributesFlat[a.name] : !!a.value,
+            value:
+              typeof attributesFlat?.[a.name] === "boolean" ? attributesFlat[a.name] : !!a.value,
           }));
 
         return { name: categoryName, attributes: attrs };
@@ -176,7 +177,8 @@ export function RolePermissionsDesktop({
   const handleSelectAllGroup = React.useCallback(
     (groupObj) => {
       const allAttrNames = getGroupAttributeNames(groupObj);
-      const allSelected = allAttrNames.length > 0 && allAttrNames.every((name) => !!attributes?.[name]);
+      const allSelected =
+        allAttrNames.length > 0 && allAttrNames.every((name) => !!attributes?.[name]);
       allAttrNames.forEach((name) => {
         if (allSelected) {
           if (attributes?.[name]) onAttributeToggle?.(name);
@@ -209,7 +211,9 @@ export function RolePermissionsDesktop({
 
   const baseXPaddingPx = 20;
   const scrollerPaddingRightPx = Math.max(0, baseXPaddingPx - scrollbarWidth - 2);
-  const roleTitle = selectedRole?.name || t("pages.rolesManagement.selectRoleFromLeft", "Select a role from the left");
+  const roleTitle =
+    selectedRole?.name ||
+    t("pages.rolesManagement.selectRoleFromLeft", "Select a role from the left");
 
   return (
     <>
@@ -218,7 +222,9 @@ export function RolePermissionsDesktop({
           <CardTitle className="text-base font-semibold leading-none tracking-tight flex items-center gap-2 min-w-0">
             <span className="truncate">
               {selectedRole
-                ? t("pages.rolesManagement.rolePermissionsFor", "Permissions for {{role}}", { role: roleTitle })
+                ? t("pages.rolesManagement.rolePermissionsFor", "Permissions for {{role}}", {
+                    role: roleTitle,
+                  })
                 : t("pages.rolesManagement.selectRoleFromLeft", "Select a role from the left")}
             </span>
             {selectedRole?.level != null && (
@@ -232,11 +238,7 @@ export function RolePermissionsDesktop({
           </CardTitle>
           {hasChanges && canManageRoles && (
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                disabled={isSubmitting}
-                onClick={onResetAttributes}
-              >
+              <Button variant="ghost" disabled={isSubmitting} onClick={onResetAttributes}>
                 {t("common.actions.cancel", "Cancel")}
               </Button>
               <Button
@@ -267,7 +269,13 @@ export function RolePermissionsDesktop({
                     {showEmptyState ? (
                       <div className="flex flex-col items-center justify-center py-12 text-center">
                         <Shield className="size-12 text-muted-foreground mb-4" />
-                        <p className="text-muted-foreground"> {t("pages.rolesManagement.dialog.noAttributes", "No available permissions")} </p>
+                        <p className="text-muted-foreground">
+                          {" "}
+                          {t(
+                            "pages.rolesManagement.dialog.noAttributes",
+                            "No available permissions"
+                          )}{" "}
+                        </p>
                       </div>
                     ) : (
                       <>
@@ -276,7 +284,10 @@ export function RolePermissionsDesktop({
                             organizedGroups.map((g) => {
                               const groupAttrNames = getGroupAttributeNames(g);
                               const groupTotal = groupAttrNames.length;
-                              const groupSelectedCount = groupAttrNames.reduce((acc, name) => acc + (attributes?.[name] ? 1 : 0), 0);
+                              const groupSelectedCount = groupAttrNames.reduce(
+                                (acc, name) => acc + (attributes?.[name] ? 1 : 0),
+                                0
+                              );
                               const groupCheckedState =
                                 groupTotal > 0 && groupSelectedCount === groupTotal
                                   ? true
@@ -291,21 +302,33 @@ export function RolePermissionsDesktop({
                                   key={g.group}
                                   open={isOpen}
                                   onOpenChange={(nextOpen) => {
-                                    setOpenGroups((prev) => ({ ...(prev || {}), [g.group]: nextOpen }));
+                                    setOpenGroups((prev) => ({
+                                      ...(prev || {}),
+                                      [g.group]: nextOpen,
+                                    }));
                                   }}
                                   className="border rounded-lg overflow-hidden bg-card"
                                 >
                                   <CollapsibleTrigger asChild>
                                     <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-muted/30 data-[state=open]:border-b cursor-pointer select-none">
                                       <div className="flex items-center gap-2">
-                                        <h4 className="text-sm font-semibold text-foreground truncate">{getGroupLabel(g.group)}</h4>
-                                        <ChevronRight className={cn("size-4 transition-transform", isOpen && "rotate-90")} />
+                                        <h4 className="text-sm font-semibold text-foreground truncate">
+                                          {getGroupLabel(g.group)}
+                                        </h4>
+                                        <ChevronRight
+                                          className={cn(
+                                            "size-4 transition-transform",
+                                            isOpen && "rotate-90"
+                                          )}
+                                        />
                                       </div>
                                       {groupTotal > 0 && (
                                         <label
                                           className={cn(
                                             "flex items-center gap-2 rounded-sm px-2 py-1.5 select-none",
-                                            canManageRoles && !isSubmitting && !showSkeletonView ? "cursor-pointer hover:bg-accent" : "cursor-default"
+                                            canManageRoles && !isSubmitting && !showSkeletonView
+                                              ? "cursor-pointer hover:bg-accent"
+                                              : "cursor-default"
                                           )}
                                           htmlFor={groupCheckboxId}
                                           onClick={(e) => e.stopPropagation()}
@@ -319,8 +342,14 @@ export function RolePermissionsDesktop({
                                                 <>
                                                   <span className="sr-only">
                                                     {groupAllSelected
-                                                      ? t("pages.rolesManagement.actions.deselectAll", "Deselect all")
-                                                      : t("pages.rolesManagement.actions.selectAll", "Select all")}
+                                                      ? t(
+                                                          "pages.rolesManagement.actions.deselectAll",
+                                                          "Deselect all"
+                                                        )
+                                                      : t(
+                                                          "pages.rolesManagement.actions.selectAll",
+                                                          "Select all"
+                                                        )}
                                                   </span>
                                                   <Checkbox
                                                     id={groupCheckboxId}
@@ -329,8 +358,14 @@ export function RolePermissionsDesktop({
                                                     disabled={isSubmitting}
                                                     aria-label={
                                                       groupAllSelected
-                                                        ? t("pages.rolesManagement.actions.deselectAll", "Deselect all")
-                                                        : t("pages.rolesManagement.actions.selectAll", "Select all")
+                                                        ? t(
+                                                            "pages.rolesManagement.actions.deselectAll",
+                                                            "Deselect all"
+                                                          )
+                                                        : t(
+                                                            "pages.rolesManagement.actions.selectAll",
+                                                            "Select all"
+                                                          )
                                                     }
                                                     onCheckedChange={() => handleSelectAllGroup(g)}
                                                   />
@@ -350,36 +385,49 @@ export function RolePermissionsDesktop({
                                     <div className="divide-y divide-border bg-popover">
                                       {g.categories.map((cat) => {
                                         return (
-                                          <div key={cat.name} className="flex items-center justify-between gap-4 px-4 py-4">
+                                          <div
+                                            key={cat.name}
+                                            className="flex items-center justify-between gap-4 px-4 py-4"
+                                          >
                                             <div className="text-sm font-semibold text-foreground truncate">
                                               {getCategoryLabel(cat.name)}
                                             </div>
                                             <div className="flex flex-wrap items-center justify-end gap-2">
-                                            {cat.attributes.map((attr, idx) => {
-                                              const isEnabled = !!attributes?.[attr.name];
-                                              return showSkeletonView ? (
-                                                <Skeleton key={`${attr.name}-${idx}`} className="h-9 w-28 rounded-md" />
-                                              ) : (
-                                                <Button
-                                                  key={attr.name}
-                                                  variant="outline"
-                                                  onClick={() => onAttributeToggle?.(attr.name)}
-                                                  disabled={!canManageRoles || isSubmitting}
-                                                  aria-pressed={isEnabled}
-                                                  className={cn(
-                                                    "inline-flex items-center justify-center gap-2 rounded-md px-3 h-9 text-sm font-normal",
-                                                    "border",
-                                                    isEnabled
-                                                      ? "bg-primary/10 border-primary/50 text-primary hover:text-primary hover:border-primary/75 hover:bg-primary/15 disabled:opacity-100"
-                                                      : "bg-background border-border text-muted-foreground disabled:opacity-70",
-                                                    (!canManageRoles || isSubmitting) && "pointer-events-none"
-                                                  )}
-                                                >
-                                                  {isEnabled ? <CheckCircle2 className="size-4" /> : <Circle className="size-4 text-muted-foreground/50" />}
-                                                  <span className="truncate">{getAttributeLabel(attr.name)}</span>
-                                                </Button>
-                                              );
-                                            })}
+                                              {cat.attributes.map((attr, idx) => {
+                                                const isEnabled = !!attributes?.[attr.name];
+                                                return showSkeletonView ? (
+                                                  <Skeleton
+                                                    key={`${attr.name}-${idx}`}
+                                                    className="h-9 w-28 rounded-md"
+                                                  />
+                                                ) : (
+                                                  <Button
+                                                    key={attr.name}
+                                                    variant="outline"
+                                                    onClick={() => onAttributeToggle?.(attr.name)}
+                                                    disabled={!canManageRoles || isSubmitting}
+                                                    aria-pressed={isEnabled}
+                                                    className={cn(
+                                                      "inline-flex items-center justify-center gap-2 rounded-md px-3 h-9 text-sm font-normal",
+                                                      "border",
+                                                      isEnabled
+                                                        ? "bg-primary/10 border-primary/50 text-primary hover:text-primary hover:border-primary/75 hover:bg-primary/15 disabled:opacity-100"
+                                                        : "bg-background border-border text-muted-foreground disabled:opacity-70",
+                                                      (!canManageRoles || isSubmitting) &&
+                                                        "pointer-events-none"
+                                                    )}
+                                                  >
+                                                    {isEnabled ? (
+                                                      <CheckCircle2 className="size-4" />
+                                                    ) : (
+                                                      <Circle className="size-4 text-muted-foreground/50" />
+                                                    )}
+                                                    <span className="truncate">
+                                                      {getAttributeLabel(attr.name)}
+                                                    </span>
+                                                  </Button>
+                                                );
+                                              })}
                                             </div>
                                           </div>
                                         );
@@ -392,25 +440,42 @@ export function RolePermissionsDesktop({
 
                           {/* Legacy UI fallback */}
                           {organizedGroups.length === 0 &&
-                            legacyAttributes.length > 0 && (() => {
-                              const allSelected = legacyAttributes.every((a) => !!attributes?.[a.name]);
+                            legacyAttributes.length > 0 &&
+                            (() => {
+                              const allSelected = legacyAttributes.every(
+                                (a) => !!attributes?.[a.name]
+                              );
                               const total = legacyAttributes.length;
-                              const selectedCount = legacyAttributes.reduce((acc, a) => acc + (attributes?.[a.name] ? 1 : 0), 0);
+                              const selectedCount = legacyAttributes.reduce(
+                                (acc, a) => acc + (attributes?.[a.name] ? 1 : 0),
+                                0
+                              );
                               const checkedState =
-                                total > 0 && selectedCount === total ? true : total > 0 && selectedCount > 0 ? "indeterminate" : false;
+                                total > 0 && selectedCount === total
+                                  ? true
+                                  : total > 0 && selectedCount > 0
+                                    ? "indeterminate"
+                                    : false;
                               const legacyCheckboxId = `role-perms-${selectedRole?.id ?? "new"}-legacy`;
                               return (
-                                <div key="legacy-attributes" className="border rounded-lg overflow-hidden bg-card">
+                                <div
+                                  key="legacy-attributes"
+                                  className="border rounded-lg overflow-hidden bg-card"
+                                >
                                   <div className="flex items-center justify-between p-4 bg-muted/50 border-b">
                                     <div className="flex items-center gap-3">
                                       <Shield className="size-5 text-primary" />
-                                      <h4 className="text-lg font-semibold text-primary">{t("pages.rolesManagement.categories.other", "Other")}</h4>
+                                      <h4 className="text-lg font-semibold text-primary">
+                                        {t("pages.rolesManagement.categories.other", "Other")}
+                                      </h4>
                                     </div>
                                     {total > 0 && (
                                       <label
                                         className={cn(
                                           "flex items-center gap-2 rounded-md px-1 py-1 select-none",
-                                          canManageRoles && !isSubmitting ? "cursor-pointer hover:bg-accent/40" : "cursor-default"
+                                          canManageRoles && !isSubmitting
+                                            ? "cursor-pointer hover:bg-accent/40"
+                                            : "cursor-default"
                                         )}
                                         htmlFor={legacyCheckboxId}
                                       >
@@ -418,8 +483,14 @@ export function RolePermissionsDesktop({
                                           <>
                                             <span className="sr-only">
                                               {allSelected
-                                                ? t("pages.rolesManagement.actions.deselectAll", "Deselect all")
-                                                : t("pages.rolesManagement.actions.selectAll", "Select all")}
+                                                ? t(
+                                                    "pages.rolesManagement.actions.deselectAll",
+                                                    "Deselect all"
+                                                  )
+                                                : t(
+                                                    "pages.rolesManagement.actions.selectAll",
+                                                    "Select all"
+                                                  )}
                                             </span>
                                             <Checkbox
                                               id={legacyCheckboxId}
@@ -428,8 +499,14 @@ export function RolePermissionsDesktop({
                                               disabled={isSubmitting}
                                               aria-label={
                                                 allSelected
-                                                  ? t("pages.rolesManagement.actions.deselectAll", "Deselect all")
-                                                  : t("pages.rolesManagement.actions.selectAll", "Select all")
+                                                  ? t(
+                                                      "pages.rolesManagement.actions.deselectAll",
+                                                      "Deselect all"
+                                                    )
+                                                  : t(
+                                                      "pages.rolesManagement.actions.selectAll",
+                                                      "Select all"
+                                                    )
                                               }
                                               onCheckedChange={handleSelectAllLegacy}
                                             />
@@ -459,11 +536,18 @@ export function RolePermissionsDesktop({
                                               isEnabled
                                                 ? "bg-primary/10 border-primary/50 text-primary hover:text-primary hover:border-primary/50 hover:bg-primary/10 disabled:opacity-100"
                                                 : "bg-background border-border text-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-70",
-                                              (!canManageRoles || isSubmitting) && "pointer-events-none opacity-60"
+                                              (!canManageRoles || isSubmitting) &&
+                                                "pointer-events-none opacity-60"
                                             )}
                                           >
-                                            {isEnabled ? <CheckCircle2 className="size-4" /> : <Circle className="size-4 text-muted-foreground" />}
-                                            <span className="truncate">{getAttributeLabel(attr.name)}</span>
+                                            {isEnabled ? (
+                                              <CheckCircle2 className="size-4" />
+                                            ) : (
+                                              <Circle className="size-4 text-muted-foreground" />
+                                            )}
+                                            <span className="truncate">
+                                              {getAttributeLabel(attr.name)}
+                                            </span>
                                           </Button>
                                         );
                                       })}
@@ -473,7 +557,6 @@ export function RolePermissionsDesktop({
                               );
                             })()}
                         </div>
-
                       </>
                     )}
                   </div>
@@ -487,7 +570,13 @@ export function RolePermissionsDesktop({
               <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center">
                   <Shield className="size-16 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground"> {t("pages.rolesManagement.selectRoleFromLeft", "Select a role from the left")} </p>
+                  <p className="text-muted-foreground">
+                    {" "}
+                    {t(
+                      "pages.rolesManagement.selectRoleFromLeft",
+                      "Select a role from the left"
+                    )}{" "}
+                  </p>
                 </div>
               </div>
             )}

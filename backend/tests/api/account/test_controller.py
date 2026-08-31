@@ -1,7 +1,9 @@
+from unittest.mock import patch
+
 import pytest
 from httpx import AsyncClient
+
 from models.users import Users
-from unittest.mock import patch
 
 
 class TestGetUserProfileAPI:
@@ -87,9 +89,7 @@ class TestGetUserProfileAPI:
         malformed_headers = ["InvalidFormat", "Bearer", "Basic token123", "Bearer ", ""]
 
         for header in malformed_headers:
-            response = await client.get(
-                "/api/account/profile", headers={"Authorization": header}
-            )
+            response = await client.get("/api/account/profile", headers={"Authorization": header})
             assert response.status_code == 401
 
 
@@ -331,7 +331,9 @@ class TestChangePasswordAPI:
         # data field is excluded when None due to response_model_exclude_unset=True
 
     @pytest.mark.asyncio
-    async def test_change_password_success_response(self, client: AsyncClient, account_auth_headers: dict):
+    async def test_change_password_success_response(
+        self, client: AsyncClient, account_auth_headers: dict
+    ):
         """Test change password returns success response when service succeeds"""
         password_data = {
             "current_password": "AccountTestPassword123!",
@@ -408,9 +410,7 @@ class TestChangePasswordAPI:
         self, client: AsyncClient, account_test_user: Users, account_auth_headers: dict
     ):
         """Test password change with missing required fields"""
-        password_data = {
-            "current_password": "AccountTestPassword123!"
-        }  # Missing new_password
+        password_data = {"current_password": "AccountTestPassword123!"}  # Missing new_password
 
         response = await client.put(
             "/api/account/password",
@@ -626,9 +626,7 @@ class TestControllerEdgeCases:
     """Test controller layer edge cases and error scenarios"""
 
     @pytest.mark.asyncio
-    async def test_large_payload_handling(
-        self, client: AsyncClient, account_auth_headers: dict
-    ):
+    async def test_large_payload_handling(self, client: AsyncClient, account_auth_headers: dict):
         """Test handling of large payloads"""
         # Test with very long strings
         large_data = {
@@ -647,9 +645,7 @@ class TestControllerEdgeCases:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_unicode_handling(
-        self, client: AsyncClient, account_auth_headers: dict
-    ):
+    async def test_unicode_handling(self, client: AsyncClient, account_auth_headers: dict):
         """Test handling of unicode characters"""
         unicode_data = {
             "first_name": "測試",
@@ -686,9 +682,7 @@ class TestControllerEdgeCases:
         assert data["data"]["phone"] == "+1 (555) 123-4567"
 
     @pytest.mark.asyncio
-    async def test_malformed_json_handling(
-        self, client: AsyncClient, account_auth_headers: dict
-    ):
+    async def test_malformed_json_handling(self, client: AsyncClient, account_auth_headers: dict):
         """Test handling of various malformed JSON scenarios"""
         malformed_cases = [
             '{"first_name": "Test", "last_name":}',  # Missing value

@@ -1,23 +1,27 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from models.users import Users
-from core.security import verify_password
-from unittest.mock import AsyncMock, patch, MagicMock
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from api.account.schema import UserUpdate, PasswordChange
-from utils.custom_exception import AuthenticationException, ServerException, SMTPNotConfiguredException
-from api.account.services import get_user_by_id, update_user_profile, change_password
-from extensions.smtp import SMTPMailer
+
+from api.account.schema import PasswordChange, UserUpdate
+from api.account.services import change_password, get_user_by_id, update_user_profile
 from core.config import settings
+from core.security import verify_password
+from extensions.smtp import SMTPMailer
+from models.users import Users
+from utils.custom_exception import (
+    AuthenticationException,
+    ServerException,
+    SMTPNotConfiguredException,
+)
 
 
 class TestGetUserById:
     """Test get_user_by_id service function"""
 
     @pytest.mark.asyncio
-    async def test_get_user_by_id_success(
-        self, test_db_session: AsyncSession, test_user: Users
-    ):
+    async def test_get_user_by_id_success(self, test_db_session: AsyncSession, test_user: Users):
         """Test successful user retrieval by ID"""
         user = await get_user_by_id(test_db_session, test_user.id)
 
@@ -92,16 +96,12 @@ class TestUpdateUserProfile:
         assert email_change_requested is False
 
     @pytest.mark.asyncio
-    async def test_update_user_profile_user_not_found(
-        self, test_db_session: AsyncSession
-    ):
+    async def test_update_user_profile_user_not_found(self, test_db_session: AsyncSession):
         """Test profile update with non-existent user ID"""
         update_data = UserUpdate(first_name="Test")
         non_existent_id = "non-existent-id-123"
 
-        updated_user = await update_user_profile(
-            test_db_session, non_existent_id, update_data
-        )
+        updated_user = await update_user_profile(test_db_session, non_existent_id, update_data)
 
         assert updated_user is None
 
@@ -153,9 +153,7 @@ class TestUpdateUserProfile:
         update_data = UserUpdate(first_name="Test")
 
         # Mock commit to raise an exception
-        with patch.object(
-            test_db_session, "commit", side_effect=SQLAlchemyError("Commit error")
-        ):
+        with patch.object(test_db_session, "commit", side_effect=SQLAlchemyError("Commit error")):
             with pytest.raises(SQLAlchemyError):
                 await update_user_profile(test_db_session, test_user.id, update_data)
 
@@ -243,9 +241,7 @@ class TestChangePassword:
     """Test change_password service function"""
 
     @pytest.mark.asyncio
-    async def test_change_password_success(
-        self, test_db_session: AsyncSession, test_user: Users
-    ):
+    async def test_change_password_success(self, test_db_session: AsyncSession, test_user: Users):
         """Test successful password change"""
         password_data = PasswordChange(
             current_password="TestPassword123!",
@@ -255,9 +251,7 @@ class TestChangePassword:
 
         mock_redis = AsyncMock()
 
-        success = await change_password(
-            test_db_session, test_user.id, password_data, mock_redis
-        )
+        success = await change_password(test_db_session, test_user.id, password_data, mock_redis)
 
         assert success is True
 
@@ -312,12 +306,8 @@ class TestChangePassword:
 
         mock_redis = AsyncMock()
 
-        with pytest.raises(
-            AuthenticationException, match="Current password is incorrect"
-        ):
-            await change_password(
-                test_db_session, test_user.id, password_data, mock_redis
-            )
+        with pytest.raises(AuthenticationException, match="Current password is incorrect"):
+            await change_password(test_db_session, test_user.id, password_data, mock_redis)
 
     @pytest.mark.asyncio
     async def test_change_password_user_not_found(self, test_db_session: AsyncSession):
@@ -331,9 +321,7 @@ class TestChangePassword:
         mock_redis = AsyncMock()
         non_existent_id = "non-existent-id-123"
 
-        success = await change_password(
-            test_db_session, non_existent_id, password_data, mock_redis
-        )
+        success = await change_password(test_db_session, non_existent_id, password_data, mock_redis)
 
         assert success is False
 
@@ -351,13 +339,9 @@ class TestChangePassword:
         mock_redis = AsyncMock()
 
         # Mock commit to raise an exception
-        with patch.object(
-            test_db_session, "commit", side_effect=SQLAlchemyError("Commit error")
-        ):
+        with patch.object(test_db_session, "commit", side_effect=SQLAlchemyError("Commit error")):
             with pytest.raises(ServerException, match="Failed to change password"):
-                await change_password(
-                    test_db_session, test_user.id, password_data, mock_redis
-                )
+                await change_password(test_db_session, test_user.id, password_data, mock_redis)
 
     @pytest.mark.asyncio
     async def test_change_password_authentication_exception_propagation(
@@ -374,9 +358,7 @@ class TestChangePassword:
 
         # Should raise AuthenticationException, not ServerException
         with pytest.raises(AuthenticationException):
-            await change_password(
-                test_db_session, test_user.id, password_data, mock_redis
-            )
+            await change_password(test_db_session, test_user.id, password_data, mock_redis)
 
 
 class TestServiceIntegration:
@@ -406,9 +388,7 @@ class TestServiceIntegration:
         )
 
         mock_redis = AsyncMock()
-        success = await change_password(
-            test_db_session, test_user.id, password_data, mock_redis
-        )
+        success = await change_password(test_db_session, test_user.id, password_data, mock_redis)
 
         assert success is True
 
@@ -492,9 +472,7 @@ class TestServiceErrorHandling:
             logout_other_devices=True,  # This should be ignored if redis_client is None
         )
 
-        success = await change_password(
-            test_db_session, test_user.id, password_data, None
-        )
+        success = await change_password(test_db_session, test_user.id, password_data, None)
 
         assert success is True
         await test_db_session.refresh(test_user)
@@ -517,9 +495,7 @@ class TestServiceErrorHandling:
 
             # Test update_user_profile
             update_data = UserUpdate(first_name="Test")
-            updated_user = await update_user_profile(
-                test_db_session, invalid_id, update_data
-            )
+            updated_user = await update_user_profile(test_db_session, invalid_id, update_data)
             assert updated_user is None
 
             # Test change_password
@@ -529,7 +505,5 @@ class TestServiceErrorHandling:
                 logout_other_devices=False,
             )
             mock_redis = AsyncMock()
-            success = await change_password(
-                test_db_session, invalid_id, password_data, mock_redis
-            )
+            success = await change_password(test_db_session, invalid_id, password_data, mock_redis)
             assert success is False

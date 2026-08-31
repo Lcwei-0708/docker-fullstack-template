@@ -1,11 +1,11 @@
-import apiService from './api.service';
-import i18n from '@/i18n';
+import apiService from "./api.service";
+import i18n from "@/i18n";
 
-const ROLES_BASE = '/roles';
+const ROLES_BASE = "/roles";
 
 const resolveForbiddenMessage = (error, { ownRoleKey, ownRoleDefault, levelKey, levelDefault }) => {
-  const backendMessage = error?.response?.data?.message || '';
-  if (backendMessage.toLowerCase().includes('own role')) {
+  const backendMessage = error?.response?.data?.message || "";
+  if (backendMessage.toLowerCase().includes("own role")) {
     return i18n.t(ownRoleKey, ownRoleDefault);
   }
   return i18n.t(levelKey, levelDefault);
@@ -13,46 +13,68 @@ const resolveForbiddenMessage = (error, { ownRoleKey, ownRoleDefault, levelKey, 
 
 export const rolesService = {
   // Get all roles
-  getAllRoles: (config = {}) => 
-    apiService.get(`${ROLES_BASE}`, {}, {
-      showErrorToast: true,
-      showSuccessToast: false,
-      messageMap: {
-        success: i18n.t('pages.rolesManagement.messages.getAllRoles.success', 'Roles retrieved successfully'),
-        ...config.messageMap,
-      },
-      ...config,
-    }),
+  getAllRoles: (config = {}) =>
+    apiService.get(
+      `${ROLES_BASE}`,
+      {},
+      {
+        showErrorToast: true,
+        showSuccessToast: false,
+        messageMap: {
+          success: i18n.t(
+            "pages.rolesManagement.messages.getAllRoles.success",
+            "Roles retrieved successfully"
+          ),
+          ...config.messageMap,
+        },
+        ...config,
+      }
+    ),
 
   // Create role
-  createRole: (roleData, config = {}) => 
+  createRole: (roleData, config = {}) =>
     apiService.post(`${ROLES_BASE}`, roleData, {
       showErrorToast: true,
       showSuccessToast: true,
       messageMap: {
-        success: i18n.t('pages.rolesManagement.messages.createRole.success', 'Role created successfully'),
-        409: i18n.t('pages.rolesManagement.messages.createRole.roleNameAlreadyExists', 'Role name already exists'),
-        403: i18n.t('pages.rolesManagement.messages.createRole.levelTooHigh', 'Cannot assign a role level higher than your own'),
+        success: i18n.t(
+          "pages.rolesManagement.messages.createRole.success",
+          "Role created successfully"
+        ),
+        409: i18n.t(
+          "pages.rolesManagement.messages.createRole.roleNameAlreadyExists",
+          "Role name already exists"
+        ),
+        403: i18n.t(
+          "pages.rolesManagement.messages.createRole.levelTooHigh",
+          "Cannot assign a role level higher than your own"
+        ),
         ...config.messageMap,
       },
       ...config,
     }),
 
   // Update role
-  updateRole: (roleId, roleData, config = {}) => 
+  updateRole: (roleId, roleData, config = {}) =>
     apiService.put(`${ROLES_BASE}/${roleId}`, roleData, {
       showErrorToast: true,
       showSuccessToast: true,
       messageMap: {
-        success: i18n.t('pages.rolesManagement.messages.updateRole.success', 'Role updated successfully'),
-        404: i18n.t('pages.rolesManagement.messages.updateRole.roleNotFound', 'Role not found'),
-        409: i18n.t('pages.rolesManagement.messages.updateRole.roleNameAlreadyExists', 'Role name already exists'),
+        success: i18n.t(
+          "pages.rolesManagement.messages.updateRole.success",
+          "Role updated successfully"
+        ),
+        404: i18n.t("pages.rolesManagement.messages.updateRole.roleNotFound", "Role not found"),
+        409: i18n.t(
+          "pages.rolesManagement.messages.updateRole.roleNameAlreadyExists",
+          "Role name already exists"
+        ),
         403: (error) =>
           resolveForbiddenMessage(error, {
-            ownRoleKey: 'pages.rolesManagement.messages.updateRole.cannotModifyOwnRole',
-            ownRoleDefault: 'Cannot modify your own role',
-            levelKey: 'pages.rolesManagement.messages.updateRole.levelTooHigh',
-            levelDefault: 'Cannot assign a role level higher than your own',
+            ownRoleKey: "pages.rolesManagement.messages.updateRole.cannotModifyOwnRole",
+            ownRoleDefault: "Cannot modify your own role",
+            levelKey: "pages.rolesManagement.messages.updateRole.levelTooHigh",
+            levelDefault: "Cannot assign a role level higher than your own",
           }),
         ...config.messageMap,
       },
@@ -60,20 +82,26 @@ export const rolesService = {
     }),
 
   // Delete role
-  deleteRole: (roleId, config = {}) => 
+  deleteRole: (roleId, config = {}) =>
     apiService.delete(`${ROLES_BASE}/${roleId}`, {
       showErrorToast: true,
       showSuccessToast: true,
       messageMap: {
-        success: i18n.t('pages.rolesManagement.messages.deleteRole.success', 'Role deleted successfully'),
-        404: i18n.t('pages.rolesManagement.messages.deleteRole.roleNotFound', 'Role not found'),
-        409: i18n.t('pages.rolesManagement.messages.deleteRole.roleInUse', 'Cannot delete role that is assigned to users'),
+        success: i18n.t(
+          "pages.rolesManagement.messages.deleteRole.success",
+          "Role deleted successfully"
+        ),
+        404: i18n.t("pages.rolesManagement.messages.deleteRole.roleNotFound", "Role not found"),
+        409: i18n.t(
+          "pages.rolesManagement.messages.deleteRole.roleInUse",
+          "Cannot delete role that is assigned to users"
+        ),
         403: (error) =>
           resolveForbiddenMessage(error, {
-            ownRoleKey: 'pages.rolesManagement.messages.deleteRole.cannotModifyOwnRole',
-            ownRoleDefault: 'Cannot delete your own role',
-            levelKey: 'pages.rolesManagement.messages.deleteRole.levelTooHigh',
-            levelDefault: 'Cannot manage a role with higher level than your own',
+            ownRoleKey: "pages.rolesManagement.messages.deleteRole.cannotModifyOwnRole",
+            ownRoleDefault: "Cannot delete your own role",
+            levelKey: "pages.rolesManagement.messages.deleteRole.levelTooHigh",
+            levelDefault: "Cannot manage a role with higher level than your own",
           }),
         ...config.messageMap,
       },
@@ -81,33 +109,52 @@ export const rolesService = {
     }),
 
   // Get role attributes
-  getRoleAttributes: (roleId, config = {}) => 
-    apiService.get(`${ROLES_BASE}/${roleId}/attributes`, {}, {
-      showErrorToast: true,
-      showSuccessToast: false,
-      messageMap: {
-        success: i18n.t('pages.rolesManagement.messages.getRoleAttributes.success', 'Role attributes retrieved successfully'),
-        404: i18n.t('pages.rolesManagement.messages.getRoleAttributes.roleNotFound', 'Role not found'),
-        ...config.messageMap,
-      },
-      ...config,
-    }),
+  getRoleAttributes: (roleId, config = {}) =>
+    apiService.get(
+      `${ROLES_BASE}/${roleId}/attributes`,
+      {},
+      {
+        showErrorToast: true,
+        showSuccessToast: false,
+        messageMap: {
+          success: i18n.t(
+            "pages.rolesManagement.messages.getRoleAttributes.success",
+            "Role attributes retrieved successfully"
+          ),
+          404: i18n.t(
+            "pages.rolesManagement.messages.getRoleAttributes.roleNotFound",
+            "Role not found"
+          ),
+          ...config.messageMap,
+        },
+        ...config,
+      }
+    ),
 
   // Update role attributes
-  updateRoleAttributes: (roleId, attributesData, config = {}) => 
+  updateRoleAttributes: (roleId, attributesData, config = {}) =>
     apiService.put(`${ROLES_BASE}/${roleId}/attributes`, attributesData, {
       showErrorToast: true,
       showSuccessToast: true,
       messageMap: {
-        success: i18n.t('pages.rolesManagement.messages.updateRoleAttributes.success', 'Role attributes updated successfully'),
-        400: i18n.t('pages.rolesManagement.messages.updateRoleAttributes.roleAttributesFailed', 'Role attributes failed to update'),
-        404: i18n.t('pages.rolesManagement.messages.updateRoleAttributes.roleNotFound', 'Role not found'),
+        success: i18n.t(
+          "pages.rolesManagement.messages.updateRoleAttributes.success",
+          "Role attributes updated successfully"
+        ),
+        400: i18n.t(
+          "pages.rolesManagement.messages.updateRoleAttributes.roleAttributesFailed",
+          "Role attributes failed to update"
+        ),
+        404: i18n.t(
+          "pages.rolesManagement.messages.updateRoleAttributes.roleNotFound",
+          "Role not found"
+        ),
         403: (error) =>
           resolveForbiddenMessage(error, {
-            ownRoleKey: 'pages.rolesManagement.messages.updateRoleAttributes.cannotModifyOwnRole',
-            ownRoleDefault: 'Cannot modify permissions on your own role',
-            levelKey: 'pages.rolesManagement.messages.updateRoleAttributes.levelTooHigh',
-            levelDefault: 'Cannot manage a role with higher level than your own',
+            ownRoleKey: "pages.rolesManagement.messages.updateRoleAttributes.cannotModifyOwnRole",
+            ownRoleDefault: "Cannot modify permissions on your own role",
+            levelKey: "pages.rolesManagement.messages.updateRoleAttributes.levelTooHigh",
+            levelDefault: "Cannot manage a role with higher level than your own",
           }),
         ...config.messageMap,
       },
@@ -115,16 +162,24 @@ export const rolesService = {
     }),
 
   // Get all user permissions (based on token)
-  getAllUserPermissions: (config = {}) => 
-    apiService.get(`${ROLES_BASE}/permissions`, {}, {
-      showErrorToast: true,
-      showSuccessToast: false,
-      messageMap: {
-        success: i18n.t('pages.rolesManagement.messages.getAllUserPermissions.success', 'User permissions retrieved successfully'),
-        ...config.messageMap,
+  getAllUserPermissions: (config = {}) =>
+    apiService.get(
+      `${ROLES_BASE}/permissions`,
+      {},
+      {
+        showErrorToast: true,
+        showSuccessToast: false,
+        messageMap: {
+          success: i18n.t(
+            "pages.rolesManagement.messages.getAllUserPermissions.success",
+            "User permissions retrieved successfully"
+          ),
+          ...config.messageMap,
+        },
+        ...config,
       },
-      ...config,
-    }, config),
+      config
+    ),
 };
 
 export default rolesService;

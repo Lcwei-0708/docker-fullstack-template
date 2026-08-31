@@ -16,7 +16,7 @@ export function Dock({ className }) {
   const [dockState, setDockState] = useState("default");
   const [isInitialRender, setIsInitialRender] = useState(true);
   const { theme, setTheme, themes } = useTheme();
-  const { i18n: i18nInstance, t } = useTranslation();
+  const { i18n: i18nInstance } = useTranslation();
   const dockRef = useRef(null);
 
   useEffect(() => {
@@ -172,12 +172,7 @@ export function Dock({ className }) {
           exit="exit"
           layout
         >
-          <motion.div
-            custom={0}
-            variants={itemVariants}
-            initial="hidden"
-            animate="visible"
-          >
+          <motion.div custom={0} variants={itemVariants} initial="hidden" animate="visible">
             <AnimateIcon animateOnHover loop loopDelay={1000}>
               <Button
                 variant="ghost"
@@ -208,19 +203,14 @@ export function Dock({ className }) {
                       size="sm"
                       className={cn(
                         "h-10 w-10 rounded-md flex items-center gap-1.5 transition-all duration-200",
-                        !isActive &&
-                          "hover:bg-accent hover:text-accent-foreground",
+                        !isActive && "hover:bg-accent hover:text-accent-foreground",
                         isActive &&
                           "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
                       )}
-                      onClick={
-                        isActive
-                          ? undefined
-                          : () => handleThemeSelect(themeOption.id)
-                      }
+                      onClick={isActive ? undefined : () => handleThemeSelect(themeOption.id)}
                     >
-                      <IconComponent 
-                        size={20} 
+                      <IconComponent
+                        size={20}
                         animation={themeOption.id === themes.DARK ? "balancing" : undefined}
                       />
                     </Button>
@@ -241,12 +231,7 @@ export function Dock({ className }) {
           exit="exit"
           layout
         >
-          <motion.div
-            custom={0}
-            variants={itemVariants}
-            initial="hidden"
-            animate="visible"
-          >
+          <motion.div custom={0} variants={itemVariants} initial="hidden" animate="visible">
             <AnimateIcon animateOnHover loop loopDelay={1000}>
               <Button
                 variant="ghost"
@@ -275,20 +260,13 @@ export function Dock({ className }) {
                     size="sm"
                     className={cn(
                       "h-10 p-3 rounded-md flex items-center gap-1.5 transition-all duration-200",
-                      !isActive &&
-                        "hover:bg-accent hover:text-accent-foreground",
+                      !isActive && "hover:bg-accent hover:text-accent-foreground",
                       isActive &&
                         "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
                     )}
-                    onClick={
-                      isActive
-                        ? undefined
-                        : () => handleLanguageSelect(language.id)
-                    }
+                    onClick={isActive ? undefined : () => handleLanguageSelect(language.id)}
                   >
-                    <span className="text-xs font-medium whitespace-nowrap">
-                      {language.name}
-                    </span>
+                    <span className="text-xs font-medium whitespace-nowrap">{language.name}</span>
                   </Button>
                 </motion.div>
               );

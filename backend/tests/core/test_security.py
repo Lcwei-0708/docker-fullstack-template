@@ -81,9 +81,7 @@ class TestCreateTokens:
 
     @pytest.mark.asyncio
     async def test_create_email_verification_token(self):
-        token = await create_email_verification_token(
-            "user-1", "a@b.c", "registration"
-        )
+        token = await create_email_verification_token("user-1", "a@b.c", "registration")
         payload = _decode(token)
         assert payload["token_type"] == "email_verification"
         assert payload["verification_type"] == "registration"
@@ -92,9 +90,7 @@ class TestCreateTokens:
     @pytest.mark.asyncio
     async def test_create_email_verification_token_server_error(self):
         with patch("core.security.jwt.encode", side_effect=RuntimeError("encode failed")):
-            with pytest.raises(
-                ServerException, match="Failed to create email verification token"
-            ):
+            with pytest.raises(ServerException, match="Failed to create email verification token"):
                 await create_email_verification_token("user-1", "a@b.c", "email_change")
 
 
@@ -107,9 +103,7 @@ class TestGetToken:
 
     @pytest.mark.asyncio
     async def test_get_token_returns_credentials(self):
-        credentials = HTTPAuthorizationCredentials(
-            scheme="Bearer", credentials="raw-token"
-        )
+        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials="raw-token")
         assert await get_token(credentials=credentials) == "raw-token"
 
 
@@ -117,9 +111,7 @@ class TestVerifySession:
     @pytest.mark.asyncio
     async def test_verify_session_success(self):
         redis_client = AsyncMock()
-        redis_client.get.return_value = str(
-            {"access_token": "tok", "user_id": "u1"}
-        )
+        redis_client.get.return_value = str({"access_token": "tok", "user_id": "u1"})
         data = await verify_session("sid-1", "tok", redis_client)
         assert data["access_token"] == "tok"
         redis_client.get.assert_awaited_once_with("session:sid-1")
@@ -154,15 +146,11 @@ class TestVerifySession:
 
 class TestVerifyToken:
     @pytest.mark.asyncio
-    async def test_verify_token_success(
-        self, test_db_session: AsyncSession, test_user: Users
-    ):
+    async def test_verify_token_success(self, test_db_session: AsyncSession, test_user: Users):
         token = await create_access_token({"sub": test_user.id, "sid": "sess-1"})
         redis_client = AsyncMock()
         redis_client.get.return_value = str({"access_token": token})
-        payload = await verify_token(
-            token=token, redis_client=redis_client, db=test_db_session
-        )
+        payload = await verify_token(token=token, redis_client=redis_client, db=test_db_session)
         assert payload["sub"] == test_user.id
         assert payload["sid"] == "sess-1"
 
@@ -170,9 +158,7 @@ class TestVerifyToken:
     async def test_verify_token_missing_session_id(self, test_db_session: AsyncSession):
         token = await create_access_token({"sub": "user-1"})
         with pytest.raises(HTTPException) as exc:
-            await verify_token(
-                token=token, redis_client=AsyncMock(), db=test_db_session
-            )
+            await verify_token(token=token, redis_client=AsyncMock(), db=test_db_session)
         assert exc.value.status_code == 401
 
     @pytest.mark.asyncio
@@ -185,17 +171,13 @@ class TestVerifyToken:
         redis_client = AsyncMock()
         redis_client.get.return_value = str({"access_token": token})
         with pytest.raises(HTTPException) as exc:
-            await verify_token(
-                token=token, redis_client=redis_client, db=test_db_session
-            )
+            await verify_token(token=token, redis_client=redis_client, db=test_db_session)
         assert exc.value.status_code == 403
 
     @pytest.mark.asyncio
     async def test_verify_token_invalid_jwt(self, test_db_session: AsyncSession):
         with pytest.raises(HTTPException) as exc:
-            await verify_token(
-                token="not-a-jwt", redis_client=AsyncMock(), db=test_db_session
-            )
+            await verify_token(token="not-a-jwt", redis_client=AsyncMock(), db=test_db_session)
         assert exc.value.status_code == 401
 
 
@@ -271,9 +253,7 @@ class TestVerifyPasswordResetToken:
 class TestVerifyEmailVerificationToken:
     @pytest.mark.asyncio
     async def test_valid_token(self):
-        token = await create_email_verification_token(
-            "user-1", "a@b.c", "email_change"
-        )
+        token = await create_email_verification_token("user-1", "a@b.c", "email_change")
         result = await verify_email_verification_token(token=token)
         assert result["verification_type"] == "email_change"
         assert result["sub"] == "user-1"
@@ -365,9 +345,7 @@ class TestSessionHelpers:
         test_user_session: UserSessions,
     ):
         redis_client = AsyncMock()
-        result = await clear_user_all_sessions(
-            test_db_session, redis_client, test_user.id
-        )
+        result = await clear_user_all_sessions(test_db_session, redis_client, test_user.id)
         assert result is True
         redis_client.delete.assert_awaited()
         keys = redis_client.delete.await_args.args

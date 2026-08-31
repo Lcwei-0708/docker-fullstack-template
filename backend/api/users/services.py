@@ -1,30 +1,39 @@
-import redis
 import logging
-from models.users import Users
-from models.roles import Roles
-from models.role_mapper import RoleMapper
-from models.login_logs import LoginLogs
-from models.user_sessions import UserSessions
-from models.password_reset_tokens import PasswordResetTokens
-from models.email_verification_tokens import EmailVerificationTokens
-from typing import Optional, List, Dict
+
+import redis
+from sqlalchemy import case, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_, delete, case, update
-from core.security import hash_password, clear_user_all_sessions
-from .schema import UserResponse, UserPagination, UserCreate, UserUpdate, UserDeleteBatchResponse, UserDeleteResult
-from utils.custom_exception import (
-    ServerException,
-    ConflictException,
-    NotFoundException,
-    AuthorizationException,
-)
-from core.permissions import Permission
+
 from core.config import settings
+from core.permissions import Permission
 from core.rbac import (
     check_user_has_super_role,
     get_user_attributes,
     get_user_role_level,
     is_super_admin_role_name,
+)
+from core.security import clear_user_all_sessions, hash_password
+from models.email_verification_tokens import EmailVerificationTokens
+from models.login_logs import LoginLogs
+from models.password_reset_tokens import PasswordResetTokens
+from models.role_mapper import RoleMapper
+from models.roles import Roles
+from models.user_sessions import UserSessions
+from models.users import Users
+from utils.custom_exception import (
+    AuthorizationException,
+    ConflictException,
+    NotFoundException,
+    ServerException,
+)
+
+from .schema import (
+    UserCreate,
+    UserDeleteBatchResponse,
+    UserDeleteResult,
+    UserPagination,
+    UserResponse,
+    UserUpdate,
 )
 
 logger = logging.getLogger("users")
@@ -41,38 +50,38 @@ def _super_admin_user_ids_subquery():
 
 async def get_all_users(
     db: AsyncSession,
-    keyword: Optional[str] = None,
-    status: Optional[str] = None,
-    role: Optional[str] = None,
+    keyword: str | None = None,
+    status: str | None = None,
+    role: str | None = None,
     page: int = 1,
     per_page: int = 10,
-    sort_by: Optional[str] = None,
-    desc: bool = False
+    sort_by: str | None = None,
+    desc: bool = False,
 ) -> UserPagination:
     """Get all users list"""
     try:
         query = select(Users)
-        
+
         if keyword:
             query = query.where(
                 or_(
                     Users.first_name.ilike(f"%{keyword}%"),
                     Users.last_name.ilike(f"%{keyword}%"),
-                    Users.email.ilike(f"%{keyword}%")
+                    Users.email.ilike(f"%{keyword}%"),
                 )
             )
-        
+
         if status:
-            status_list = [s.strip().lower() == 'true' for s in status.split(',')]
+            status_list = [s.strip().lower() == "true" for s in status.split(",")]
             if len(status_list) == 1:
                 query = query.where(Users.status == status_list[0])
             else:
                 query = query.where(Users.status.in_(status_list))
-        
+
         has_role_join = False
-        
+
         if role:
-            role_list = [r.strip() for r in role.split(',')]
+            role_list = [r.strip() for r in role.split(",")]
             query = query.join(RoleMapper, Users.id == RoleMapper.user_id)
             query = query.join(Roles, RoleMapper.role_id == Roles.id)
             query = query.where(Roles.name.in_(role_list))
@@ -80,7 +89,7 @@ async def get_all_users(
 
         if not settings.SHOW_SUPER_ADMIN:
             query = query.where(Users.id.not_in(_super_admin_user_ids_subquery()))
-        
+
         if sort_by:
             if sort_by == "role":
                 # For role sorting, use LEFT JOIN with distinct to avoid duplicates
@@ -106,51 +115,43 @@ async def get_all_users(
                     query = query.order_by(Users.created_at.desc())
         else:
             query = query.order_by(Users.id.asc())
-        
+
         count_query = select(func.count(Users.id))
         if keyword:
             count_query = count_query.where(
                 or_(
                     Users.first_name.ilike(f"%{keyword}%"),
                     Users.last_name.ilike(f"%{keyword}%"),
-                    Users.email.ilike(f"%{keyword}%")
+                    Users.email.ilike(f"%{keyword}%"),
                 )
             )
         if status:
-            status_list = [s.strip().lower() == 'true' for s in status.split(',')]
+            status_list = [s.strip().lower() == "true" for s in status.split(",")]
             if len(status_list) == 1:
                 count_query = count_query.where(Users.status == status_list[0])
             else:
                 count_query = count_query.where(Users.status.in_(status_list))
         if role:
-            role_list = [r.strip() for r in role.split(',')]
+            role_list = [r.strip() for r in role.split(",")]
             count_query = count_query.join(RoleMapper, Users.id == RoleMapper.user_id)
             count_query = count_query.join(Roles, RoleMapper.role_id == Roles.id)
             count_query = count_query.where(Roles.name.in_(role_list))
 
         if not settings.SHOW_SUPER_ADMIN:
-            count_query = count_query.where(
-                Users.id.not_in(_super_admin_user_ids_subquery())
-            )
-        
+            count_query = count_query.where(Users.id.not_in(_super_admin_user_ids_subquery()))
+
         total_result = await db.execute(count_query)
         total = total_result.scalar()
-        
+
         offset = (page - 1) * per_page
         query = query.offset(offset).limit(per_page)
-        
+
         result = await db.execute(query)
         users = result.scalars().all()
-        
+
         if not users:
-            return UserPagination(
-                users=[],
-                total=0,
-                page=page,
-                per_page=per_page,
-                total_pages=0
-            )
-        
+            return UserPagination(users=[], total=0, page=page, per_page=per_page, total_pages=0)
+
         user_roles = await _get_user_roles_map(db, [user.id for user in users])
 
         user_responses = []
@@ -168,19 +169,16 @@ async def get_all_users(
                 role_level=role_level,
             )
             user_responses.append(user_response)
-        
+
         total_pages = (total + per_page - 1) // per_page
-        
+
         return UserPagination(
-            users=user_responses,
-            total=total,
-            page=page,
-            per_page=per_page,
-            total_pages=total_pages
+            users=user_responses, total=total, page=page, per_page=per_page, total_pages=total_pages
         )
-        
+
     except Exception as e:
         raise ServerException(f"Failed to retrieve users: {str(e)}")
+
 
 async def create_user(
     db: AsyncSession,
@@ -192,10 +190,7 @@ async def create_user(
         # Check if the email already exists
         result = await db.execute(
             select(Users).where(
-                or_(
-                    Users.email == user_data.email,
-                    Users.pending_email == user_data.email
-                )
+                or_(Users.email == user_data.email, Users.pending_email == user_data.email)
             )
         )
         existing_user = result.scalar_one_or_none()
@@ -204,27 +199,27 @@ async def create_user(
 
         if user_data.role:
             await _assert_can_manage_user_role(db, actor_user_id, user_data.role)
-        
+
         user = Users(
             first_name=user_data.first_name,
             last_name=user_data.last_name,
             email=user_data.email,
             phone=user_data.phone,
             hash_password=await hash_password(user_data.password),
-            status=user_data.status
+            status=user_data.status,
         )
-        
+
         db.add(user)
         await db.commit()
         await db.refresh(user)
-        
+
         user_role = None
         user_role_level = None
         if user_data.role:
             await _assign_user_role(db, user.id, user_data.role)
             user_role = user_data.role
             user_role_level = await _get_role_level_by_name(db, user_data.role)
-        
+
         return UserResponse(
             id=user.id,
             email=user.email,
@@ -236,11 +231,12 @@ async def create_user(
             role=user_role,
             role_level=user_role_level,
         )
-        
-    except (ConflictException, NotFoundException, AuthorizationException):
+
+    except ConflictException, NotFoundException, AuthorizationException:
         raise
     except Exception as e:
         raise ServerException(f"Failed to create user: {str(e)}")
+
 
 async def update_user(
     db: AsyncSession,
@@ -250,22 +246,17 @@ async def update_user(
 ) -> UserResponse:
     """Update user information"""
     try:
-        result = await db.execute(
-            select(Users).where(Users.id == user_id)
-        )
+        result = await db.execute(select(Users).where(Users.id == user_id))
         user = result.scalar_one_or_none()
         if not user:
             raise NotFoundException("User not found")
-        
+
         # Check if the email is already used by another user
         if user_data.email and user_data.email != user.email:
             result = await db.execute(
                 select(Users).where(
-                    or_(
-                        Users.email == user_data.email,
-                        Users.pending_email == user_data.email
-                    ),
-                    Users.id != user_id
+                    or_(Users.email == user_data.email, Users.pending_email == user_data.email),
+                    Users.id != user_id,
                 )
             )
             if result.scalar_one_or_none():
@@ -285,8 +276,8 @@ async def update_user(
                 user_data.role,
                 target_user_id=user_id,
             )
-        
-        update_data = user_data.model_dump(exclude_unset=True, exclude={'role'})
+
+        update_data = user_data.model_dump(exclude_unset=True, exclude={"role"})
         email_changed = "email" in update_data and update_data["email"] != user.email
 
         for field, value in update_data.items():
@@ -301,17 +292,17 @@ async def update_user(
                 .where(
                     EmailVerificationTokens.user_id == user.id,
                     EmailVerificationTokens.token_type == "email_change",
-                    EmailVerificationTokens.is_used == False
+                    EmailVerificationTokens.is_used.is_(False),
                 )
                 .values(is_used=True)
             )
-        
+
         await db.commit()
         await db.refresh(user)
-        
+
         if role_update_requested:
             await _update_user_role(db, user_id, user_data.role)
-        
+
         role_query = (
             select(Roles.name, Roles.level)
             .join(RoleMapper, Roles.id == RoleMapper.role_id)
@@ -323,7 +314,7 @@ async def update_user(
         role_row = role_result.one_or_none()
         user_role = role_row[0] if role_row else None
         user_role_level = role_row[1] if role_row else None
-        
+
         return UserResponse(
             id=user.id,
             email=user.email,
@@ -335,19 +326,22 @@ async def update_user(
             role=user_role,
             role_level=user_role_level,
         )
-        
-    except (ConflictException, NotFoundException, AuthorizationException):
+
+    except ConflictException, NotFoundException, AuthorizationException:
         raise
     except Exception as e:
         raise ServerException(f"Failed to update user: {str(e)}")
 
-async def delete_users(db: AsyncSession, redis_client: redis.Redis, user_ids: List[str], token: Optional[dict] = None) -> UserDeleteBatchResponse:
+
+async def delete_users(
+    db: AsyncSession, redis_client: redis.Redis, user_ids: list[str], token: dict | None = None
+) -> UserDeleteBatchResponse:
     """Delete multiple users with detailed batch processing results"""
     try:
         results = []
         success_count = 0
         failed_count = 0
-        
+
         # Get current user ID from token
         current_user_id = token.get("sub") if token else None
         actor_is_super = False
@@ -356,125 +350,125 @@ async def delete_users(db: AsyncSession, redis_client: redis.Redis, user_ids: Li
             actor_is_super = await check_user_has_super_role(current_user_id, db)
             if not actor_is_super:
                 actor_level = await get_user_role_level(current_user_id, db)
-        
+
         # Check which users exist
-        result = await db.execute(
-            select(Users.id).where(Users.id.in_(user_ids))
-        )
+        result = await db.execute(select(Users.id).where(Users.id.in_(user_ids)))
         existing_ids = set(result.scalars().all())
-        
+
         # Process each user ID
         for user_id in user_ids:
             try:
                 # Skip if trying to delete own account
                 if current_user_id and user_id == current_user_id:
-                    results.append(UserDeleteResult(
-                        user_id=user_id,
-                        status="failed",
-                        message="Cannot delete your own account"
-                    ))
-                    failed_count += 1
-                    continue
-                
-                if user_id in existing_ids:
-                    if await check_user_has_super_role(user_id, db):
-                        results.append(UserDeleteResult(
+                    results.append(
+                        UserDeleteResult(
                             user_id=user_id,
                             status="failed",
-                            message="Cannot delete a system super-admin user"
-                        ))
+                            message="Cannot delete your own account",
+                        )
+                    )
+                    failed_count += 1
+                    continue
+
+                if user_id in existing_ids:
+                    if await check_user_has_super_role(user_id, db):
+                        results.append(
+                            UserDeleteResult(
+                                user_id=user_id,
+                                status="failed",
+                                message="Cannot delete a system super-admin user",
+                            )
+                        )
                         failed_count += 1
                         continue
 
                     if not actor_is_super:
                         target_level = await get_user_role_level(user_id, db)
                         if target_level > actor_level:
-                            results.append(UserDeleteResult(
-                                user_id=user_id,
-                                status="failed",
-                                message="Cannot delete a user with a higher role level than your own"
-                            ))
+                            results.append(
+                                UserDeleteResult(
+                                    user_id=user_id,
+                                    status="failed",
+                                    message=(
+                                        "Cannot delete a user with a higher role level "
+                                        "than your own"
+                                    ),
+                                )
+                            )
                             failed_count += 1
                             continue
 
                     # Clear user sessions and tokens before deletion
                     await clear_user_all_sessions(db, redis_client, user_id)
-                    
+
                     # Delete related records first to avoid foreign key constraints
                     await _delete_user_related_records(db, user_id)
-                    
+
                     # Delete the user
-                    await db.execute(
-                        delete(Users).where(Users.id == user_id)
+                    await db.execute(delete(Users).where(Users.id == user_id))
+
+                    results.append(
+                        UserDeleteResult(
+                            user_id=user_id, status="success", message="User deleted successfully"
+                        )
                     )
-                    
-                    results.append(UserDeleteResult(
-                        user_id=user_id,
-                        status="success",
-                        message="User deleted successfully"
-                    ))
                     success_count += 1
                 else:
-                    results.append(UserDeleteResult(
-                        user_id=user_id,
-                        status="failed",
-                        message="User not found"
-                    ))
+                    results.append(
+                        UserDeleteResult(user_id=user_id, status="failed", message="User not found")
+                    )
                     failed_count += 1
-                    
+
             except Exception as e:
-                results.append(UserDeleteResult(
-                    user_id=user_id,
-                    status="failed",
-                    message=f"Failed to delete user: {str(e)}"
-                ))
+                results.append(
+                    UserDeleteResult(
+                        user_id=user_id, status="failed", message=f"Failed to delete user: {str(e)}"
+                    )
+                )
                 failed_count += 1
-        
+
         # Commit all successful deletions
         if success_count > 0:
             await db.commit()
-        
+
         return UserDeleteBatchResponse(
             results=results,
             total_users=len(user_ids),
             success_count=success_count,
-            failed_count=failed_count
+            failed_count=failed_count,
         )
-        
+
     except Exception as e:
         raise ServerException(f"Failed to delete users: {str(e)}")
 
+
 async def reset_user_password(
-    db: AsyncSession, 
-    redis_client: redis.Redis, 
-    user_id: str, 
-    new_password: str
+    db: AsyncSession, redis_client: redis.Redis, user_id: str, new_password: str
 ) -> bool:
     """Reset user password and logout all devices"""
     try:
-        result = await db.execute(
-            select(Users).where(Users.id == user_id)
-        )
+        result = await db.execute(select(Users).where(Users.id == user_id))
         user = result.scalar_one_or_none()
         if not user:
             raise NotFoundException("User not found")
-        
+
         user.hash_password = await hash_password(new_password)
         user.password_reset_required = True
         await db.commit()
-        
+
         await clear_user_all_sessions(db, redis_client, user_id)
-        
+
         return True
-        
+
     except NotFoundException:
         raise
     except Exception as e:
         raise ServerException(f"Failed to reset password: {str(e)}")
 
+
 async def _get_user_roles_map(
-    db: AsyncSession, user_ids: List[str]
-) -> Dict[str, tuple[Optional[str], Optional[int]]]:
+    db: AsyncSession, user_ids: list[str]
+) -> dict[str, tuple[str | None, int | None]]:
     """Batch-load primary role name/level per user (highest level wins)."""
     if not user_ids:
         return {}
@@ -486,13 +480,14 @@ async def _get_user_roles_map(
         .order_by(Roles.level.desc(), Roles.name.asc())
     )
     role_result = await db.execute(roles_query)
-    user_roles: Dict[str, tuple[Optional[str], Optional[int]]] = {}
+    user_roles: dict[str, tuple[str | None, int | None]] = {}
     for user_id, role_name, role_level in role_result.all():
         if user_id not in user_roles:
             user_roles[user_id] = (role_name, role_level)
     return user_roles
 
-async def _get_user_role_name(db: AsyncSession, user_id: str) -> Optional[str]:
+
+async def _get_user_role_name(db: AsyncSession, user_id: str) -> str | None:
     result = await db.execute(
         select(Roles.name)
         .join(RoleMapper, Roles.id == RoleMapper.role_id)
@@ -503,10 +498,8 @@ async def _get_user_role_name(db: AsyncSession, user_id: str) -> Optional[str]:
     return result.scalar_one_or_none()
 
 
-async def _get_role_level_by_name(db: AsyncSession, role_name: str) -> Optional[int]:
-    result = await db.execute(
-        select(Roles.level).where(Roles.name == role_name).limit(1)
-    )
+async def _get_role_level_by_name(db: AsyncSession, role_name: str) -> int | None:
+    result = await db.execute(select(Roles.level).where(Roles.name == role_name).limit(1))
     level = result.scalar_one_or_none()
     return int(level) if level is not None else None
 
@@ -525,17 +518,15 @@ async def _assert_can_manage_target_user(
     actor_level = await get_user_role_level(actor_user_id, db)
     target_level = await get_user_role_level(target_user_id, db)
     if target_level > actor_level:
-        raise AuthorizationException(
-            "Cannot manage a user with a higher role level than your own"
-        )
+        raise AuthorizationException("Cannot manage a user with a higher role level than your own")
 
 
 async def _assert_can_manage_user_role(
     db: AsyncSession,
     actor_user_id: str,
-    role_name: Optional[str],
+    role_name: str | None,
     *,
-    target_user_id: Optional[str] = None,
+    target_user_id: str | None = None,
 ) -> None:
     """
     Require manage-roles (or super-admin) to change roles.
@@ -571,84 +562,66 @@ async def _assert_can_manage_user_role(
         if new_role_level is None:
             raise NotFoundException(f"Role '{role_name}' not found")
         if new_role_level > actor_level:
-            raise AuthorizationException(
-                "Cannot assign a role with a higher level than your own"
-            )
+            raise AuthorizationException("Cannot assign a role with a higher level than your own")
 
 
 async def _assign_user_role(db: AsyncSession, user_id: str, role_name: str) -> None:
     """Assign a role to a user"""
     try:
-        role_result = await db.execute(
-            select(Roles).where(Roles.name == role_name)
-        )
+        role_result = await db.execute(select(Roles).where(Roles.name == role_name))
         role = role_result.scalar_one_or_none()
         if not role:
             raise NotFoundException(f"Role '{role_name}' not found")
-        
+
         existing_mapping = await db.execute(
-            select(RoleMapper).where(
-                RoleMapper.user_id == user_id,
-                RoleMapper.role_id == role.id
-            )
+            select(RoleMapper).where(RoleMapper.user_id == user_id, RoleMapper.role_id == role.id)
         )
         if existing_mapping.scalar_one_or_none():
             return
-        
-        role_mapping = RoleMapper(
-            user_id=user_id,
-            role_id=role.id
-        )
+
+        role_mapping = RoleMapper(user_id=user_id, role_id=role.id)
         db.add(role_mapping)
         await db.commit()
-        
+
     except NotFoundException:
         raise
     except Exception as e:
         raise ServerException(f"Failed to assign role: {str(e)}")
 
-async def _update_user_role(db: AsyncSession, user_id: str, role_name: Optional[str]) -> None:
+
+async def _update_user_role(db: AsyncSession, user_id: str, role_name: str | None) -> None:
     """Update user role (remove existing and assign new one)"""
     try:
-        await db.execute(
-            delete(RoleMapper).where(RoleMapper.user_id == user_id)
-        )
-        
+        await db.execute(delete(RoleMapper).where(RoleMapper.user_id == user_id))
+
         if role_name:
             await _assign_user_role(db, user_id, role_name)
-        
+
         await db.commit()
-        
+
     except Exception as e:
         raise ServerException(f"Failed to update user role: {str(e)}")
+
 
 async def _delete_user_related_records(db: AsyncSession, user_id: str) -> None:
     """Delete all records related to a user to avoid foreign key constraints"""
     try:
         # Delete login logs
-        await db.execute(
-            delete(LoginLogs).where(LoginLogs.user_id == user_id)
-        )
-        
+        await db.execute(delete(LoginLogs).where(LoginLogs.user_id == user_id))
+
         # Delete user sessions
-        await db.execute(
-            delete(UserSessions).where(UserSessions.user_id == user_id)
-        )
-        
+        await db.execute(delete(UserSessions).where(UserSessions.user_id == user_id))
+
         # Delete role mappings
-        await db.execute(
-            delete(RoleMapper).where(RoleMapper.user_id == user_id)
-        )
-        
+        await db.execute(delete(RoleMapper).where(RoleMapper.user_id == user_id))
+
         # Delete password reset tokens
-        await db.execute(
-            delete(PasswordResetTokens).where(PasswordResetTokens.user_id == user_id)
-        )
+        await db.execute(delete(PasswordResetTokens).where(PasswordResetTokens.user_id == user_id))
 
         # Delete email verification tokens
         await db.execute(
             delete(EmailVerificationTokens).where(EmailVerificationTokens.user_id == user_id)
         )
-        
+
     except Exception as e:
         raise ServerException(f"Failed to delete user related records: {str(e)}")

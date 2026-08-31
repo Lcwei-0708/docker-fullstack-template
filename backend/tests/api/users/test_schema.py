@@ -1,16 +1,18 @@
-import pytest
 from datetime import datetime
+
+import pytest
 from pydantic import ValidationError
+
 from api.users.schema import (
-    UserResponse,
-    UserPagination,
-    UserSortBy,
-    UserCreate,
-    UserUpdate,
-    UserDelete,
     PasswordReset,
-    UserDeleteResult,
+    UserCreate,
+    UserDelete,
     UserDeleteBatchResponse,
+    UserDeleteResult,
+    UserPagination,
+    UserResponse,
+    UserSortBy,
+    UserUpdate,
 )
 
 
@@ -37,7 +39,7 @@ class TestUserResponse:
         assert user.first_name == "John"
         assert user.last_name == "Doe"
         assert user.phone == "+1234567890"
-        assert user.status == True
+        assert user.status
         assert user.role == "admin"
         assert user.role_level is None
 
@@ -189,7 +191,7 @@ class TestUserCreate:
         assert user.email == "john.doe@example.com"
         assert user.phone == "+1234567890"
         assert user.password == "TestPassword123!"
-        assert user.status == True
+        assert user.status
         assert user.role == "admin"
 
     def test_user_create_without_optional_fields(self):
@@ -204,7 +206,7 @@ class TestUserCreate:
 
         user = UserCreate(**user_data)
 
-        assert user.status == True  # Default value
+        assert user.status  # Default value
         assert user.role is None
 
     def test_user_create_invalid_email(self):
@@ -298,7 +300,7 @@ class TestUserUpdate:
         assert user.last_name == "Name"
         assert user.email == "updated@example.com"
         assert user.phone == "+1234567890"
-        assert user.status == False
+        assert not user.status
         assert user.role == "user"
 
     def test_user_update_partial_data(self):
@@ -486,7 +488,7 @@ class TestSchemaIntegration:
         assert serialized["email"] == "john.doe@example.com"
         assert serialized["phone"] == "+1234567890"
         assert serialized["password"] == "TestPassword123!"
-        assert serialized["status"] == True
+        assert serialized["status"]
         assert serialized["role"] == "admin"
 
     def test_schema_exclude_unset(self):
@@ -510,7 +512,7 @@ class TestUserDeleteResult:
         result_data = {
             "user_id": "user123",
             "status": "success",
-            "message": "User deleted successfully"
+            "message": "User deleted successfully",
         }
 
         result = UserDeleteResult(**result_data)
@@ -521,11 +523,7 @@ class TestUserDeleteResult:
 
     def test_user_delete_result_failed(self):
         """Test UserDeleteResult with failed status"""
-        result_data = {
-            "user_id": "user456",
-            "status": "failed",
-            "message": "User not found"
-        }
+        result_data = {"user_id": "user456", "status": "failed", "message": "User not found"}
 
         result = UserDeleteResult(**result_data)
 
@@ -547,11 +545,7 @@ class TestUserDeleteResult:
     def test_user_delete_result_invalid_status(self):
         """Test UserDeleteResult with invalid status"""
         with pytest.raises(ValidationError) as exc_info:
-            UserDeleteResult(
-                user_id="user123",
-                status="invalid_status",
-                message="Test message"
-            )
+            UserDeleteResult(user_id="user123", status="invalid_status", message="Test message")
 
         errors = exc_info.value.errors()
         assert any("status" in str(error) for error in errors)
@@ -564,23 +558,14 @@ class TestUserDeleteBatchResponse:
         """Test UserDeleteBatchResponse with all successful deletions"""
         results = [
             UserDeleteResult(
-                user_id="user1",
-                status="success",
-                message="User deleted successfully"
+                user_id="user1", status="success", message="User deleted successfully"
             ),
             UserDeleteResult(
-                user_id="user2",
-                status="success",
-                message="User deleted successfully"
-            )
+                user_id="user2", status="success", message="User deleted successfully"
+            ),
         ]
 
-        batch_data = {
-            "results": results,
-            "total_users": 2,
-            "success_count": 2,
-            "failed_count": 0
-        }
+        batch_data = {"results": results, "total_users": 2, "success_count": 2, "failed_count": 0}
 
         batch_response = UserDeleteBatchResponse(**batch_data)
 
@@ -594,23 +579,12 @@ class TestUserDeleteBatchResponse:
         """Test UserDeleteBatchResponse with partial success"""
         results = [
             UserDeleteResult(
-                user_id="user1",
-                status="success",
-                message="User deleted successfully"
+                user_id="user1", status="success", message="User deleted successfully"
             ),
-            UserDeleteResult(
-                user_id="user2",
-                status="failed",
-                message="User not found"
-            )
+            UserDeleteResult(user_id="user2", status="failed", message="User not found"),
         ]
 
-        batch_data = {
-            "results": results,
-            "total_users": 2,
-            "success_count": 1,
-            "failed_count": 1
-        }
+        batch_data = {"results": results, "total_users": 2, "success_count": 1, "failed_count": 1}
 
         batch_response = UserDeleteBatchResponse(**batch_data)
 
@@ -622,24 +596,11 @@ class TestUserDeleteBatchResponse:
     def test_user_delete_batch_response_all_failed(self):
         """Test UserDeleteBatchResponse with all failed deletions"""
         results = [
-            UserDeleteResult(
-                user_id="user1",
-                status="failed",
-                message="User not found"
-            ),
-            UserDeleteResult(
-                user_id="user2",
-                status="failed",
-                message="User not found"
-            )
+            UserDeleteResult(user_id="user1", status="failed", message="User not found"),
+            UserDeleteResult(user_id="user2", status="failed", message="User not found"),
         ]
 
-        batch_data = {
-            "results": results,
-            "total_users": 2,
-            "success_count": 0,
-            "failed_count": 2
-        }
+        batch_data = {"results": results, "total_users": 2, "success_count": 0, "failed_count": 2}
 
         batch_response = UserDeleteBatchResponse(**batch_data)
 
@@ -651,12 +612,7 @@ class TestUserDeleteBatchResponse:
 
     def test_user_delete_batch_response_empty_results(self):
         """Test UserDeleteBatchResponse with empty results"""
-        batch_data = {
-            "results": [],
-            "total_users": 0,
-            "success_count": 0,
-            "failed_count": 0
-        }
+        batch_data = {"results": [], "total_users": 0, "success_count": 0, "failed_count": 0}
 
         batch_response = UserDeleteBatchResponse(**batch_data)
 
@@ -679,19 +635,10 @@ class TestUserDeleteBatchResponse:
     def test_user_delete_batch_response_serialization(self):
         """Test UserDeleteBatchResponse serialization"""
         results = [
-            UserDeleteResult(
-                user_id="user1",
-                status="success",
-                message="User deleted successfully"
-            )
+            UserDeleteResult(user_id="user1", status="success", message="User deleted successfully")
         ]
 
-        batch_data = {
-            "results": results,
-            "total_users": 1,
-            "success_count": 1,
-            "failed_count": 0
-        }
+        batch_data = {"results": results, "total_users": 1, "success_count": 1, "failed_count": 0}
 
         batch_response = UserDeleteBatchResponse(**batch_data)
         serialized = batch_response.model_dump()
@@ -714,27 +661,16 @@ class TestBatchDeleteIntegration:
         # 1. Create batch response with mixed results
         results = [
             UserDeleteResult(
-                user_id="user1",
-                status="success",
-                message="User deleted successfully"
+                user_id="user1", status="success", message="User deleted successfully"
             ),
+            UserDeleteResult(user_id="user2", status="failed", message="User not found"),
             UserDeleteResult(
-                user_id="user2",
-                status="failed",
-                message="User not found"
+                user_id="user3", status="success", message="User deleted successfully"
             ),
-            UserDeleteResult(
-                user_id="user3",
-                status="success",
-                message="User deleted successfully"
-            )
         ]
 
         batch_response = UserDeleteBatchResponse(
-            results=results,
-            total_users=3,
-            success_count=2,
-            failed_count=1
+            results=results, total_users=3, success_count=2, failed_count=1
         )
 
         # 2. Verify response structure
@@ -765,11 +701,11 @@ class TestBatchDeleteIntegration:
         all_success = UserDeleteBatchResponse(
             results=[
                 UserDeleteResult(user_id="user1", status="success", message="Success"),
-                UserDeleteResult(user_id="user2", status="success", message="Success")
+                UserDeleteResult(user_id="user2", status="success", message="Success"),
             ],
             total_users=2,
             success_count=2,
-            failed_count=0
+            failed_count=0,
         )
         assert all_success.failed_count == 0  # Should return 200
 
@@ -777,22 +713,24 @@ class TestBatchDeleteIntegration:
         partial_success = UserDeleteBatchResponse(
             results=[
                 UserDeleteResult(user_id="user1", status="success", message="Success"),
-                UserDeleteResult(user_id="user2", status="failed", message="Failed")
+                UserDeleteResult(user_id="user2", status="failed", message="Failed"),
             ],
             total_users=2,
             success_count=1,
-            failed_count=1
+            failed_count=1,
         )
-        assert partial_success.success_count > 0 and partial_success.failed_count > 0  # Should return 207
+        assert (
+            partial_success.success_count > 0 and partial_success.failed_count > 0
+        )  # Should return 207
 
         # All failed
         all_failed = UserDeleteBatchResponse(
             results=[
                 UserDeleteResult(user_id="user1", status="failed", message="Failed"),
-                UserDeleteResult(user_id="user2", status="failed", message="Failed")
+                UserDeleteResult(user_id="user2", status="failed", message="Failed"),
             ],
             total_users=2,
             success_count=0,
-            failed_count=2
+            failed_count=2,
         )
         assert all_failed.success_count == 0  # Should return 400

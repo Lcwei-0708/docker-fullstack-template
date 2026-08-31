@@ -1,18 +1,19 @@
-import * as React from "react"
-import { useTranslation } from "react-i18next"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Spinner } from "@/components/ui/spinner"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
+import * as React from "react";
+import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   ArrowDown10,
   ArrowDownAZ,
@@ -26,11 +27,11 @@ import {
   Shield,
   Trash2,
   X,
-} from "lucide-react"
-import { Scroller } from "@/components/ui/scroller"
+} from "lucide-react";
+import { Scroller } from "@/components/ui/scroller";
 
-export function RolesList({ 
-  filteredRoles = [], 
+export function RolesList({
+  filteredRoles = [],
   selectedRole,
   isLoading = false,
   loadingDelayMs = 0,
@@ -225,10 +226,10 @@ export function RolesList({
                 className={cn("w-full h-10 rounded-md", searchKeyword?.trim() && "pr-10")}
               />
               {!!searchKeyword?.trim() && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="absolute right-2 top-1/2 z-10 -translate-y-1/2 h-7 w-7" 
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 z-10 -translate-y-1/2 h-7 w-7"
                   aria-label={t("common.actions.clear", "Clear")}
                   onClick={() => onSearchChange?.("")}
                 >
@@ -239,7 +240,7 @@ export function RolesList({
           </div>
           <div className="flex gap-2">
             {canManageRoles ? (
-              <Button 
+              <Button
                 type="button"
                 onClick={onCreateClick}
                 disabled={isSubmitting}
@@ -274,14 +275,14 @@ export function RolesList({
             <div className="flex flex-col items-center justify-center py-12 text-center px-4">
               <Shield className="size-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
-                {searchKeyword 
-                ? t("pages.rolesManagement.noRolesFound", "No matching roles") 
-                : t("pages.rolesManagement.noRoles", "No roles yet")}
+                {searchKeyword
+                  ? t("pages.rolesManagement.noRolesFound", "No matching roles")
+                  : t("pages.rolesManagement.noRoles", "No roles yet")}
               </p>
             </div>
           ) : (
             <div className="w-full space-y-2">
-              {filteredRoles.map((role) => (
+              {filteredRoles.map((role) =>
                 (() => {
                   const isSelected = selectedRole?.id === role.id;
                   return (
@@ -307,58 +308,60 @@ export function RolesList({
                             </Badge>
                           )}
                         </div>
-                        <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{role.description || "-"}</div>
+                        <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                          {role.description || "-"}
+                        </div>
                       </div>
 
                       {canEditOrDelete &&
                         Number(role.level ?? 0) <= Number(actorLevel ?? 0) &&
                         role.id !== actorRoleId && (
-                        <div
-                          className={cn(
-                            "absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1",
-                            "opacity-80 group-hover:opacity-100",
-                            isSelected && "opacity-100"
-                          )}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-9 w-9 hover:bg-foreground/10"
-                                aria-label={t("common.actions.more", "More actions")}
-                                disabled={isSubmitting}
-                              >
-                                <MoreVertical className="size-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" sideOffset={4} className="w-28">
-                              <DropdownMenuItem
-                                onSelect={() => onEditClick?.(role)}
-                                className="justify-between gap-2"
-                                disabled={isSubmitting}
-                              >
-                                {t("common.actions.edit", "Edit")}
-                                <Edit className="size-4" />
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onSelect={() => onDeleteClick?.(role)}
-                                className="justify-between gap-2 text-destructive focus:text-destructive hover:!bg-destructive/10"
-                                disabled={isSubmitting}
-                              >
-                                {t("common.actions.delete", "Delete")}
-                                <Trash2 className="size-4" />
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      )}
+                          <div
+                            className={cn(
+                              "absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1",
+                              "opacity-80 group-hover:opacity-100",
+                              isSelected && "opacity-100"
+                            )}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-9 w-9 hover:bg-foreground/10"
+                                  aria-label={t("common.actions.more", "More actions")}
+                                  disabled={isSubmitting}
+                                >
+                                  <MoreVertical className="size-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" sideOffset={4} className="w-28">
+                                <DropdownMenuItem
+                                  onSelect={() => onEditClick?.(role)}
+                                  className="justify-between gap-2"
+                                  disabled={isSubmitting}
+                                >
+                                  {t("common.actions.edit", "Edit")}
+                                  <Edit className="size-4" />
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onSelect={() => onDeleteClick?.(role)}
+                                  className="justify-between gap-2 text-destructive focus:text-destructive hover:!bg-destructive/10"
+                                  disabled={isSubmitting}
+                                >
+                                  {t("common.actions.delete", "Delete")}
+                                  <Trash2 className="size-4" />
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        )}
                     </div>
                   );
                 })()
-              ))}
+              )}
             </div>
           )}
         </Scroller>

@@ -1,15 +1,18 @@
-from core.redis import get_redis
-from core.dependencies import get_db
-from core.security import verify_token
-from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, HTTPException, Response
-from .schema import UserProfile, UserUpdate, PasswordChange
-from utils.response import APIResponse, parse_responses, common_responses, make_error_examples
-from .services import get_user_by_id, update_user_profile, change_password
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.dependencies import get_db
+from core.redis import get_redis
+from core.security import verify_token
+from extensions.smtp import SMTPMailer, get_mailer
 from utils.custom_exception import AuthenticationException, NotFoundException
-from extensions.smtp import get_mailer, SMTPMailer
+from utils.response import APIResponse, common_responses, make_error_examples, parse_responses
+
+from .schema import PasswordChange, UserProfile, UserUpdate
+from .services import change_password, get_user_by_id, update_user_profile
 
 router = APIRouter(tags=["Account"])
+
 
 def _to_user_profile(user) -> UserProfile:
     return UserProfile(
@@ -23,17 +26,17 @@ def _to_user_profile(user) -> UserProfile:
         created_at=user.created_at,
     )
 
+
 @router.get(
     "/profile",
     response_model=APIResponse[UserProfile],
     summary="Get current user profile",
-    responses=parse_responses({
-        200: ("User profile retrieved successfully", UserProfile)
-    }, common_responses)
+    responses=parse_responses(
+        {200: ("User profile retrieved successfully", UserProfile)}, common_responses
+    ),
 )
 async def get_user_profile_api(
-    token: dict = Depends(verify_token),
-    db: AsyncSession = Depends(get_db)
+    token: dict = Depends(verify_token), db: AsyncSession = Depends(get_db)
 ):
     """
     Get the current authenticated user's profile information.
@@ -41,56 +44,58 @@ async def get_user_profile_api(
     try:
         user_id = token.get("sub")
         user = await get_user_by_id(db, user_id)
-        
+
         if not user:
             raise NotFoundException("User not found")
-        
+
         user_data = _to_user_profile(user)
-        
+
         return APIResponse(code=200, message="User profile retrieved successfully", data=user_data)
     except NotFoundException:
         raise HTTPException(status_code=404, detail="User not found")
     except Exception:
         raise HTTPException(status_code=500)
 
+
 @router.put(
     "/profile",
     response_model=APIResponse[UserProfile],
     response_model_exclude_unset=True,
     summary="Update current user profile",
-    responses=parse_responses({
-        200: ("User profile updated successfully", UserProfile),
-        202: ("Email verification required", UserProfile)
-    }, common_responses)
+    responses=parse_responses(
+        {
+            200: ("User profile updated successfully", UserProfile),
+            202: ("Email verification required", UserProfile),
+        },
+        common_responses,
+    ),
 )
 async def update_user_profile_api(
     user_update: UserUpdate,
     response: Response,
     token: dict = Depends(verify_token),
     db: AsyncSession = Depends(get_db),
-    redis_client = Depends(get_redis),
-    mailer: SMTPMailer = Depends(get_mailer)
+    redis_client=Depends(get_redis),
+    mailer: SMTPMailer = Depends(get_mailer),
 ):
     """
     Update the current authenticated user's profile information (excluding password).
     """
     try:
         user_id = token.get("sub")
-        result = await update_user_profile(
-            db, user_id, user_update, mailer, redis_client
-        )
-        
+        result = await update_user_profile(db, user_id, user_update, mailer, redis_client)
+
         if not result:
             raise NotFoundException("User not found")
-        
+
         user, email_change_requested = result
-        
+
         user_data = _to_user_profile(user)
 
         if email_change_requested:
             response.status_code = 202
             return APIResponse(code=202, message="Email verification required", data=user_data)
-        
+
         return APIResponse(code=200, message="User profile updated successfully", data=user_data)
     except NotFoundException:
         raise HTTPException(status_code=404, detail="User not found")
@@ -99,24 +104,35 @@ async def update_user_profile_api(
     except Exception:
         raise HTTPException(status_code=500)
 
+
 @router.put(
     "/password",
     response_model=APIResponse[None],
     response_model_exclude_unset=True,
     summary="Change current user password",
-    responses=parse_responses({
-        200: ("Password changed successfully", None),
-        401: ("Unauthorized", None, make_error_examples(401, {
-            "invalidToken": "Invalid or expired token",
-            "incorrectPassword": "Current password is incorrect",
-        })),
-    }, common_responses)
+    responses=parse_responses(
+        {
+            200: ("Password changed successfully", None),
+            401: (
+                "Unauthorized",
+                None,
+                make_error_examples(
+                    401,
+                    {
+                        "invalidToken": "Invalid or expired token",
+                        "incorrectPassword": "Current password is incorrect",
+                    },
+                ),
+            ),
+        },
+        common_responses,
+    ),
 )
 async def change_user_password_api(
     password_change: PasswordChange,
     token: dict = Depends(verify_token),
     db: AsyncSession = Depends(get_db),
-    redis_client = Depends(get_redis)
+    redis_client=Depends(get_redis),
 ):
     """
     Change the current authenticated user's password.
@@ -131,10 +147,10 @@ async def change_user_password_api(
             redis_client,
             current_session_id=current_session_id,
         )
-        
+
         if success:
             return APIResponse(code=200, message="Password changed successfully")
-            
+
     except AuthenticationException:
         raise HTTPException(status_code=401, detail="Current password is incorrect")
     except Exception as e:

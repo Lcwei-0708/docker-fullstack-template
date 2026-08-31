@@ -1,6 +1,10 @@
-import * as React from 'react';
-import { motion } from 'motion/react';
-import { getVariants, useAnimateIconContext, IconWrapper } from '@/components/animate-ui/icons/icon';
+import * as React from "react";
+import { motion } from "motion/react";
+import {
+  getVariants,
+  useAnimateIconContext,
+  IconWrapper,
+} from "@/components/animate-ui/icons/icon";
 
 const animations = {
   default: (() => {
@@ -16,7 +20,7 @@ const animations = {
           pathLength: [0, 1],
           transition: {
             duration: 0.6,
-            ease: 'easeInOut',
+            ease: "easeInOut",
             delay: (i - 1) * 0.15,
           },
         },
@@ -24,13 +28,10 @@ const animations = {
     }
 
     return animation;
-  })()
+  })(),
 };
 
-function IconComponent({
-  size,
-  ...props
-}) {
+function IconComponent({ size, ...props }) {
   const { controls } = useAnimateIconContext();
   const variants = getVariants(animations);
 
@@ -47,14 +48,16 @@ function IconComponent({
       strokeLinejoin="round"
       initial="initial"
       animate={controls}
-      {...props}>
+      {...props}
+    >
       <motion.circle
         cx="12"
         cy="12"
         r="4"
         variants={variants.circle}
         initial="initial"
-        animate={controls} />
+        animate={controls}
+      />
       <motion.line
         x1="12"
         y1="4"
@@ -62,7 +65,8 @@ function IconComponent({
         y2="2"
         variants={variants.line1}
         initial="initial"
-        animate={controls} />
+        animate={controls}
+      />
       <motion.line
         x1="17.7"
         y1="6.3"
@@ -70,7 +74,8 @@ function IconComponent({
         y2="4.9"
         variants={variants.line2}
         initial="initial"
-        animate={controls} />
+        animate={controls}
+      />
       <motion.line
         x1="20"
         y1="12"
@@ -78,7 +83,8 @@ function IconComponent({
         y2="12"
         variants={variants.line3}
         initial="initial"
-        animate={controls} />
+        animate={controls}
+      />
       <motion.line
         x1="17.7"
         y1="17.7"
@@ -86,7 +92,8 @@ function IconComponent({
         y2="19.1"
         variants={variants.line4}
         initial="initial"
-        animate={controls} />
+        animate={controls}
+      />
       <motion.line
         x1="12"
         y1="20"
@@ -94,7 +101,8 @@ function IconComponent({
         y2="22"
         variants={variants.line5}
         initial="initial"
-        animate={controls} />
+        animate={controls}
+      />
       <motion.line
         x1="6.3"
         y1="17.7"
@@ -102,7 +110,8 @@ function IconComponent({
         y2="19.1"
         variants={variants.line6}
         initial="initial"
-        animate={controls} />
+        animate={controls}
+      />
       <motion.line
         x1="4"
         y1="12"
@@ -110,7 +119,8 @@ function IconComponent({
         y2="12"
         variants={variants.line7}
         initial="initial"
-        animate={controls} />
+        animate={controls}
+      />
       <motion.line
         x1="6.3"
         y1="6.3"
@@ -118,7 +128,8 @@ function IconComponent({
         y2="4.9"
         variants={variants.line8}
         initial="initial"
-        animate={controls} />
+        animate={controls}
+      />
     </motion.svg>
   );
 }

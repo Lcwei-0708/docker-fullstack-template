@@ -1,19 +1,19 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { useTranslation } from "react-i18next"
-import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
-import { Badge } from "@/components/ui/badge"
-import { Check, ChevronsUpDown, Edit, Trash2 } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { 
-  Command, 
-  CommandEmpty, 
-  CommandGroup, 
-  CommandInput, 
-  CommandItem, 
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { Badge } from "@/components/ui/badge";
+import { Check, ChevronsUpDown, Edit, Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
   CommandList,
-} from "@/components/ui/command"
+} from "@/components/ui/command";
 
 export function RoleSelector({
   filteredRoles = [],
@@ -29,19 +29,20 @@ export function RoleSelector({
   onEditClick,
   onDeleteClick,
 }) {
-  const { t } = useTranslation()
-  const [open, setOpen] = React.useState(false)
+  const { t } = useTranslation();
+  const [open, setOpen] = React.useState(false);
 
-  const selectedLabel = selectedRole?.name || t("pages.rolesManagement.selectRole", "Select a role")
-  const rawIsLoading = !!isLoading
-  const hasKeyword = !!searchKeyword?.trim()
+  const selectedLabel =
+    selectedRole?.name || t("pages.rolesManagement.selectRole", "Select a role");
+  const rawIsLoading = !!isLoading;
+  const hasKeyword = !!searchKeyword?.trim();
   const canEditOrDelete =
     !!selectedRole &&
     canManageRoles &&
     canEditSelected &&
     !rawIsLoading &&
     !disabled &&
-    !isSubmitting
+    !isSubmitting;
 
   return (
     <div className="flex flex-col gap-2 px-6">
@@ -66,7 +67,7 @@ export function RoleSelector({
             align="start"
             onOpenAutoFocus={(e) => {
               // Mobile UX: do not auto-focus the search input when opening.
-              e.preventDefault()
+              e.preventDefault();
             }}
           >
             <Command>
@@ -91,45 +92,50 @@ export function RoleSelector({
                         : t("pages.rolesManagement.noRoles", "No roles yet")}
                     </CommandEmpty>
                     <CommandGroup>
-                      {filteredRoles.map((role) => (
+                      {filteredRoles.map((role) =>
                         (() => {
-                          const isSelected = selectedRole?.id === role.id
+                          const isSelected = selectedRole?.id === role.id;
                           return (
-                        <CommandItem
-                          key={role.id}
-                          value={`${role.name || ""} ${role.description || ""}`.trim()}
-                          onSelect={() => {
-                            onRoleSelect?.(role)
-                            onSearchChange?.("")
-                            setOpen(false)
-                          }}
-                          className={cn(
-                            "flex items-center justify-between gap-2 py-2 px-3 rounded-md",
-                            "data-[selected=true]:bg-transparent aria-selected:bg-transparent",
-                            isSelected && "!bg-primary/15 border border-primary/20"
-                          )}
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <div className="text-base font-medium truncate">{role.name}</div>
-                              {role.level != null && (
-                                <Badge
-                                  variant="outline"
-                                  className="shrink-0 rounded-sm px-1.5 py-0 text-[10px] font-semibold leading-4 border-primary/40 bg-primary/10 text-primary"
-                                >
-                                  Lv.{role.level}
-                                </Badge>
+                            <CommandItem
+                              key={role.id}
+                              value={`${role.name || ""} ${role.description || ""}`.trim()}
+                              onSelect={() => {
+                                onRoleSelect?.(role);
+                                onSearchChange?.("");
+                                setOpen(false);
+                              }}
+                              className={cn(
+                                "flex items-center justify-between gap-2 py-2 px-3 rounded-md",
+                                "data-[selected=true]:bg-transparent aria-selected:bg-transparent",
+                                isSelected && "!bg-primary/15 border border-primary/20"
                               )}
-                            </div>
-                            <div className="text-sm text-muted-foreground line-clamp-2">{role.description || "-"}</div>
-                          </div>
-                          <Check
-                            className={cn("size-5 shrink-0 text-primary", isSelected ? "opacity-100" : "opacity-0")}
-                          />
-                        </CommandItem>
-                          )
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="text-base font-medium truncate">{role.name}</div>
+                                  {role.level != null && (
+                                    <Badge
+                                      variant="outline"
+                                      className="shrink-0 rounded-sm px-1.5 py-0 text-[10px] font-semibold leading-4 border-primary/40 bg-primary/10 text-primary"
+                                    >
+                                      Lv.{role.level}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-sm text-muted-foreground line-clamp-2">
+                                  {role.description || "-"}
+                                </div>
+                              </div>
+                              <Check
+                                className={cn(
+                                  "size-5 shrink-0 text-primary",
+                                  isSelected ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                            </CommandItem>
+                          );
                         })()
-                      ))}
+                      )}
                     </CommandGroup>
                   </>
                 )}
@@ -171,7 +177,7 @@ export function RoleSelector({
         {selectedRole?.description || ""}
       </div>
     </div>
-  )
+  );
 }
 
-export default RoleSelector
+export default RoleSelector;

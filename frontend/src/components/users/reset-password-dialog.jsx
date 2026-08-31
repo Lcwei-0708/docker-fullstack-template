@@ -1,12 +1,12 @@
-import * as React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Spinner } from '@/components/ui/spinner';
-import { useTranslation } from 'react-i18next';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { z } from 'zod';
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Spinner } from "@/components/ui/spinner";
+import { useTranslation } from "react-i18next";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { z } from "zod";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -22,16 +22,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from "@/components/ui/form";
 
 // Dialog for resetting user password
-export function ResetPasswordDialog({
-  open,
-  onOpenChange,
-  user,
-  onConfirm,
-  isResetting = false,
-}) {
+export function ResetPasswordDialog({ open, onOpenChange, user, onConfirm, isResetting = false }) {
   const { t } = useTranslation();
 
   // Form schema
@@ -39,15 +33,27 @@ export function ResetPasswordDialog({
     return z.object({
       new_password: z
         .string()
-        .min(1, t('pages.usersManagement.dialog.resetPassword.fields.newPassword.validation.required', 'New password is required'))
-        .min(6, t('pages.usersManagement.dialog.resetPassword.fields.newPassword.validation.minLength', 'Password must be at least 6 characters')),
+        .min(
+          1,
+          t(
+            "pages.usersManagement.dialog.resetPassword.fields.newPassword.validation.required",
+            "New password is required"
+          )
+        )
+        .min(
+          6,
+          t(
+            "pages.usersManagement.dialog.resetPassword.fields.newPassword.validation.minLength",
+            "Password must be at least 6 characters"
+          )
+        ),
     });
   }, [t]);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      new_password: '',
+      new_password: "",
     },
   });
 
@@ -59,19 +65,22 @@ export function ResetPasswordDialog({
   }, [open, form]);
 
   // Handle form submission
-  const handleSubmit = React.useCallback((values) => {
-    if (onConfirm && user) {
-      onConfirm(user, values.new_password);
-    }
-  }, [onConfirm, user]);
+  const handleSubmit = React.useCallback(
+    (values) => {
+      if (onConfirm && user) {
+        onConfirm(user, values.new_password);
+      }
+    },
+    [onConfirm, user]
+  );
 
   // Get user display name
   const userDisplayName = React.useMemo(() => {
-    if (!user) return '';
+    if (!user) return "";
     if (user.first_name || user.last_name) {
-      return `${user.first_name || ''} ${user.last_name || ''}`.trim();
+      return `${user.first_name || ""} ${user.last_name || ""}`.trim();
     }
-    return user.email || '';
+    return user.email || "";
   }, [user]);
 
   return (
@@ -79,12 +88,12 @@ export function ResetPasswordDialog({
       <DialogContent showCloseButton={false} className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {t('pages.usersManagement.dialog.resetPassword.title', 'Reset Password')}
+            {t("pages.usersManagement.dialog.resetPassword.title", "Reset Password")}
           </DialogTitle>
           <DialogDescription>
             {t(
-              'pages.usersManagement.dialog.resetPassword.description',
-              'Reset password for {{name}}',
+              "pages.usersManagement.dialog.resetPassword.description",
+              "Reset password for {{name}}",
               { name: userDisplayName }
             )}
           </DialogDescription>
@@ -99,11 +108,14 @@ export function ResetPasswordDialog({
                   <FormLabel
                     htmlFor="new_password"
                     className={cn(
-                      'flex items-center gap-1',
-                      form.formState.errors.new_password && 'text-destructive'
+                      "flex items-center gap-1",
+                      form.formState.errors.new_password && "text-destructive"
                     )}
                   >
-                    {t('pages.usersManagement.dialog.resetPassword.fields.newPassword.label', 'New Password')}
+                    {t(
+                      "pages.usersManagement.dialog.resetPassword.fields.newPassword.label",
+                      "New Password"
+                    )}
                     <span className="text-destructive">*</span>
                   </FormLabel>
                   <FormControl>
@@ -116,7 +128,7 @@ export function ResetPasswordDialog({
                       disabled={isResetting}
                       className={cn(
                         form.formState.errors.new_password &&
-                          'ring-2 ring-destructive focus-visible:ring-destructive'
+                          "ring-2 ring-destructive focus-visible:ring-destructive"
                       )}
                     />
                   </FormControl>
@@ -131,15 +143,10 @@ export function ResetPasswordDialog({
                 onClick={() => onOpenChange(false)}
                 disabled={isResetting}
               >
-                {t('common.actions.cancel', 'Cancel')}
+                {t("common.actions.cancel", "Cancel")}
               </Button>
-              <Button
-                type="submit"
-                disabled={isResetting}
-              >
-                {isResetting
-                  ? <Spinner className="size-4" />
-                  : t('common.actions.reset', 'Reset')}
+              <Button type="submit" disabled={isResetting}>
+                {isResetting ? <Spinner className="size-4" /> : t("common.actions.reset", "Reset")}
               </Button>
             </DialogFooter>
           </form>

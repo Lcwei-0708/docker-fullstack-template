@@ -1,10 +1,14 @@
-import React from "react"
-import { motion } from "motion/react"
-import { getVariants, useAnimateIconContext, IconWrapper } from "@/components/animate-ui/icons/icon"
+import React from "react";
+import { motion } from "motion/react";
+import {
+  getVariants,
+  useAnimateIconContext,
+  IconWrapper,
+} from "@/components/animate-ui/icons/icon";
 
 const animations = {
   default: (() => {
-    const animation = {}
+    const animation = {};
     for (let i = 0; i <= 5; i++) {
       animation[`path${i + 1}`] = {
         initial: { pathLength: 1, opacity: 1 },
@@ -17,12 +21,12 @@ const animations = {
             ease: [0.4, 0, 0.2, 1],
           },
         },
-      }
+      };
     }
-    return animation
+    return animation;
   })(),
   "draw-stroke": (() => {
-    const animation = {}
+    const animation = {};
     for (let i = 0; i <= 5; i++) {
       animation[`path${i + 1}`] = {
         initial: { pathLength: 1, opacity: 1 },
@@ -35,12 +39,12 @@ const animations = {
             ease: [0.4, 0, 0.2, 1],
           },
         },
-      }
+      };
     }
-    return animation
+    return animation;
   })(),
   "scale-group": (() => {
-    const animation = {}
+    const animation = {};
     animation.path1 = {
       initial: { scale: 1, opacity: 1 },
       animate: {
@@ -52,7 +56,7 @@ const animations = {
           ease: [0.34, 1.56, 0.64, 1],
         },
       },
-    }
+    };
     animation.path2 = {
       initial: { scale: 1, opacity: 1 },
       animate: {
@@ -64,7 +68,7 @@ const animations = {
           ease: [0.34, 1.56, 0.64, 1],
         },
       },
-    }
+    };
     animation.path3 = {
       initial: { scale: 1, opacity: 1 },
       animate: {
@@ -76,7 +80,7 @@ const animations = {
           ease: [0.34, 1.56, 0.64, 1],
         },
       },
-    }
+    };
     animation.path4 = {
       initial: { scale: 1, opacity: 1 },
       animate: {
@@ -88,7 +92,7 @@ const animations = {
           ease: [0.34, 1.56, 0.64, 1],
         },
       },
-    }
+    };
     animation.path5 = {
       initial: { scale: 1, opacity: 1 },
       animate: {
@@ -100,7 +104,7 @@ const animations = {
           ease: [0.34, 1.56, 0.64, 1],
         },
       },
-    }
+    };
     animation.path6 = {
       initial: { scale: 1, opacity: 1 },
       animate: {
@@ -112,8 +116,8 @@ const animations = {
           ease: [0.34, 1.56, 0.64, 1],
         },
       },
-    }
-    return animation
+    };
+    return animation;
   })(),
   bounce: {
     group: {
@@ -133,12 +137,12 @@ const animations = {
     path5: {},
     path6: {},
   },
-}
+};
 
 function IconComponent({ size, ...props }) {
-  const { controls, animation: animationType } = useAnimateIconContext()
-  const variants = getVariants(animations)
-  const variant = animationType || "draw-stroke"
+  const { controls, animation: animationType } = useAnimateIconContext();
+  const variants = getVariants(animations);
+  const variant = animationType || "draw-stroke";
 
   if (variant === "draw-stroke") {
     return (
@@ -157,13 +161,23 @@ function IconComponent({ size, ...props }) {
         {...props}
       >
         <motion.path d="m5 8 6 6" variants={variants.path1} initial="initial" animate={controls} />
-        <motion.path d="m4 14 6-6 2-3" variants={variants.path2} initial="initial" animate={controls} />
+        <motion.path
+          d="m4 14 6-6 2-3"
+          variants={variants.path2}
+          initial="initial"
+          animate={controls}
+        />
         <motion.path d="M2 5h12" variants={variants.path3} initial="initial" animate={controls} />
         <motion.path d="M7 2h1" variants={variants.path4} initial="initial" animate={controls} />
-        <motion.path d="m22 22-5-10-5 10" variants={variants.path5} initial="initial" animate={controls} />
+        <motion.path
+          d="m22 22-5-10-5 10"
+          variants={variants.path5}
+          initial="initial"
+          animate={controls}
+        />
         <motion.path d="M14 18h6" variants={variants.path6} initial="initial" animate={controls} />
       </motion.svg>
-    )
+    );
   }
 
   if (variant === "scale-group") {
@@ -225,7 +239,7 @@ function IconComponent({ size, ...props }) {
           style={{ originX: 0.5, originY: 0.5 }}
         />
       </motion.svg>
-    )
+    );
   }
 
   if (variant === "bounce") {
@@ -252,7 +266,7 @@ function IconComponent({ size, ...props }) {
         <path d="m22 22-5-10-5 10" />
         <path d="M14 18h6" />
       </motion.svg>
-    )
+    );
   }
 
   return (
@@ -271,17 +285,27 @@ function IconComponent({ size, ...props }) {
       {...props}
     >
       <motion.path d="m5 8 6 6" variants={variants.path1} initial="initial" animate={controls} />
-      <motion.path d="m4 14 6-6 2-3" variants={variants.path2} initial="initial" animate={controls} />
+      <motion.path
+        d="m4 14 6-6 2-3"
+        variants={variants.path2}
+        initial="initial"
+        animate={controls}
+      />
       <motion.path d="M2 5h12" variants={variants.path3} initial="initial" animate={controls} />
       <motion.path d="M7 2h1" variants={variants.path4} initial="initial" animate={controls} />
-      <motion.path d="m22 22-5-10-5 10" variants={variants.path5} initial="initial" animate={controls} />
+      <motion.path
+        d="m22 22-5-10-5 10"
+        variants={variants.path5}
+        initial="initial"
+        animate={controls}
+      />
       <motion.path d="M14 18h6" variants={variants.path6} initial="initial" animate={controls} />
     </motion.svg>
-  )
+  );
 }
 
 function LanguagesIcon(props) {
-  return <IconWrapper icon={IconComponent} {...props} />
+  return <IconWrapper icon={IconComponent} {...props} />;
 }
 
-export { animations, LanguagesIcon, LanguagesIcon as LanguagesIconIcon }
+export { animations, LanguagesIcon, LanguagesIcon as LanguagesIconIcon };

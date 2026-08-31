@@ -18,10 +18,7 @@ const ITEM_SELECT = "actionbar.itemSelect";
 const ENTRY_FOCUS = "actionbarFocusGroup.onEntryFocus";
 const EVENT_OPTIONS = { bubbles: false, cancelable: true };
 
-function focusFirst(
-  candidates,
-  preventScroll = false,
-) {
+function focusFirst(candidates, preventScroll = false) {
   const PREVIOUSLY_FOCUSED_ELEMENT = document.activeElement;
   for (const candidateRef of candidates) {
     const candidate = candidateRef.current;
@@ -38,11 +35,7 @@ function wrapArray(array, startIndex) {
 
 function getDirectionAwareKey(key, dir) {
   if (dir !== "rtl") return key;
-  return key === "ArrowLeft"
-    ? "ArrowRight"
-    : key === "ArrowRight"
-      ? "ArrowLeft"
-      : key;
+  return key === "ArrowLeft" ? "ArrowRight" : key === "ArrowRight" ? "ArrowLeft" : key;
 }
 
 const ActionBarContext = React.createContext(null);
@@ -119,15 +112,17 @@ function ActionBar(props) {
     return () => ownerDocument.removeEventListener("keydown", onKeyDown);
   }, [open, propsRef]);
 
-  const contextValue = React.useMemo(() => ({
-    onOpenChange,
-    dir,
-    orientation,
-    loop,
-  }), [onOpenChange, dir, orientation, loop]);
+  const contextValue = React.useMemo(
+    () => ({
+      onOpenChange,
+      dir,
+      orientation,
+      loop,
+    }),
+    [onOpenChange, dir, orientation, loop]
+  );
 
-  const portalContainer =
-    portalContainerProp ?? (mounted ? globalThis.document?.body : null);
+  const portalContainer = portalContainerProp ?? (mounted ? globalThis.document?.body : null);
 
   if (!portalContainer || !open) return null;
 
@@ -135,65 +130,69 @@ function ActionBar(props) {
 
   return (
     <ActionBarContext.Provider value={contextValue}>
-      {ReactDOM.createPortal(<RootPrimitive
-        role="toolbar"
-        aria-orientation={orientation}
-        data-slot="action-bar"
-        data-side={side}
-        data-align={align}
-        data-orientation={orientation}
-        dir={dir}
-        {...rootProps}
-        ref={composedRef}
-        layout
-        initial={{ 
-          opacity: 0, 
-          scale: 0.95, 
-          y: orientation === "horizontal" ? 0 : 16,
-        }}
-        animate={{ 
-          opacity: 1, 
-          scale: 1, 
-          y: 0,
-          transition: {
-            type: "spring",
-            stiffness: 400,
-            damping: 35,
-            opacity: { duration: 0.15 },
-          }
-        }}
-        exit={{ 
-          opacity: 0, 
-          scale: 0.95, 
-          y: orientation === "horizontal" ? 0 : 16,
-          transition: {
-            duration: 0.15,
-          }
-        }}
-        transition={{
-          layout: {
-            type: "spring",
-            stiffness: 500,
-            damping: 40,
-          }
-        }}
-        style={{
-          [side]: `${sideOffset}px`,
-          ...(align === "center" && {
-            left: "50%",
-            translate: "-50% 0",
-          }),
-          ...(align === "start" && { left: `${alignOffset}px` }),
-          ...(align === "end" && { right: `${alignOffset}px` }),
-          ...style,
-        }}
-        className={cn(
-          "fixed z-50 rounded-lg border bg-card/70 shadow-lg backdrop-blur-sm outline-none",
-          orientation === "horizontal"
-            ? "flex flex-row items-center gap-2 px-2 py-1.5"
-            : "flex flex-col items-start gap-2 px-1.5 py-2",
-          className
-        )} />, portalContainer)}
+      {ReactDOM.createPortal(
+        <RootPrimitive
+          role="toolbar"
+          aria-orientation={orientation}
+          data-slot="action-bar"
+          data-side={side}
+          data-align={align}
+          data-orientation={orientation}
+          dir={dir}
+          {...rootProps}
+          ref={composedRef}
+          layout
+          initial={{
+            opacity: 0,
+            scale: 0.95,
+            y: orientation === "horizontal" ? 0 : 16,
+          }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            transition: {
+              type: "spring",
+              stiffness: 400,
+              damping: 35,
+              opacity: { duration: 0.15 },
+            },
+          }}
+          exit={{
+            opacity: 0,
+            scale: 0.95,
+            y: orientation === "horizontal" ? 0 : 16,
+            transition: {
+              duration: 0.15,
+            },
+          }}
+          transition={{
+            layout: {
+              type: "spring",
+              stiffness: 500,
+              damping: 40,
+            },
+          }}
+          style={{
+            [side]: `${sideOffset}px`,
+            ...(align === "center" && {
+              left: "50%",
+              translate: "-50% 0",
+            }),
+            ...(align === "start" && { left: `${alignOffset}px` }),
+            ...(align === "end" && { right: `${alignOffset}px` }),
+            ...style,
+          }}
+          className={cn(
+            "fixed z-50 rounded-lg border bg-card/70 shadow-lg backdrop-blur-sm outline-none",
+            orientation === "horizontal"
+              ? "flex flex-row items-center gap-2 px-2 py-1.5"
+              : "flex flex-col items-start gap-2 px-1.5 py-2",
+            className
+          )}
+        />,
+        portalContainer
+      )}
     </ActionBarContext.Provider>
   );
 }
@@ -211,7 +210,8 @@ function ActionBarSelection(props) {
       className={cn(
         "bg-input flex items-center gap-1 rounded-sm border px-3 py-1 font-medium text-sm tabular-nums shrink-0",
         className
-      )} />
+      )}
+    />
   );
 }
 
@@ -279,64 +279,72 @@ function ActionBarGroup(props) {
       });
   }, []);
 
-  const onBlur = React.useCallback((event) => {
-    onBlurProp?.(event);
-    if (event.defaultPrevented) return;
+  const onBlur = React.useCallback(
+    (event) => {
+      onBlurProp?.(event);
+      if (event.defaultPrevented) return;
 
-    setIsTabbingBackOut(false);
-  }, [onBlurProp]);
+      setIsTabbingBackOut(false);
+    },
+    [onBlurProp]
+  );
 
-  const onFocus = React.useCallback((event) => {
-    onFocusProp?.(event);
-    if (event.defaultPrevented) return;
+  const onFocus = React.useCallback(
+    (event) => {
+      onFocusProp?.(event);
+      if (event.defaultPrevented) return;
 
-    const isKeyboardFocus = !isClickFocusRef.current;
-    if (
-      event.target === event.currentTarget &&
-      isKeyboardFocus &&
-      !isTabbingBackOut
-    ) {
-      const entryFocusEvent = new CustomEvent(ENTRY_FOCUS, EVENT_OPTIONS);
-      event.currentTarget.dispatchEvent(entryFocusEvent);
+      const isKeyboardFocus = !isClickFocusRef.current;
+      if (event.target === event.currentTarget && isKeyboardFocus && !isTabbingBackOut) {
+        const entryFocusEvent = new CustomEvent(ENTRY_FOCUS, EVENT_OPTIONS);
+        event.currentTarget.dispatchEvent(entryFocusEvent);
 
-      if (!entryFocusEvent.defaultPrevented) {
-        const items = Array.from(itemsRef.current.values()).filter((item) => !item.disabled);
-        const currentItem = items.find((item) => item.id === tabStopId);
+        if (!entryFocusEvent.defaultPrevented) {
+          const items = Array.from(itemsRef.current.values()).filter((item) => !item.disabled);
+          const currentItem = items.find((item) => item.id === tabStopId);
 
-        const candidateItems = [currentItem, ...items].filter(Boolean);
-        const candidateRefs = candidateItems.map((item) => item.ref);
-        focusFirst(candidateRefs, false);
+          const candidateItems = [currentItem, ...items].filter(Boolean);
+          const candidateRefs = candidateItems.map((item) => item.ref);
+          focusFirst(candidateRefs, false);
+        }
       }
-    }
-    isClickFocusRef.current = false;
-  }, [onFocusProp, isTabbingBackOut, tabStopId]);
+      isClickFocusRef.current = false;
+    },
+    [onFocusProp, isTabbingBackOut, tabStopId]
+  );
 
-  const onMouseDown = React.useCallback((event) => {
-    onMouseDownProp?.(event);
-    if (event.defaultPrevented) return;
+  const onMouseDown = React.useCallback(
+    (event) => {
+      onMouseDownProp?.(event);
+      if (event.defaultPrevented) return;
 
-    isClickFocusRef.current = true;
-  }, [onMouseDownProp]);
+      isClickFocusRef.current = true;
+    },
+    [onMouseDownProp]
+  );
 
-  const focusContextValue = React.useMemo(() => ({
-    tabStopId,
-    onItemFocus,
-    onItemShiftTab,
-    onFocusableItemAdd,
-    onFocusableItemRemove,
-    onItemRegister,
-    onItemUnregister,
-    getItems,
-  }), [
-    tabStopId,
-    onItemFocus,
-    onItemShiftTab,
-    onFocusableItemAdd,
-    onFocusableItemRemove,
-    onItemRegister,
-    onItemUnregister,
-    getItems,
-  ]);
+  const focusContextValue = React.useMemo(
+    () => ({
+      tabStopId,
+      onItemFocus,
+      onItemShiftTab,
+      onFocusableItemAdd,
+      onFocusableItemRemove,
+      onItemRegister,
+      onItemUnregister,
+      getItems,
+    }),
+    [
+      tabStopId,
+      onItemFocus,
+      onItemShiftTab,
+      onFocusableItemAdd,
+      onFocusableItemRemove,
+      onItemRegister,
+      onItemUnregister,
+      getItems,
+    ]
+  );
 
   const GroupPrimitive = asChild ? Slot : motion.div;
 
@@ -356,14 +364,17 @@ function ActionBarGroup(props) {
             type: "spring",
             stiffness: 500,
             damping: 40,
-          }
+          },
         }}
-        className={cn("flex gap-2 outline-none shrink-0", orientation === "horizontal"
-          ? "items-center"
-          : "w-full flex-col items-start", className)}
+        className={cn(
+          "flex gap-2 outline-none shrink-0",
+          orientation === "horizontal" ? "items-center" : "w-full flex-col items-start",
+          className
+        )}
         onBlur={onBlur}
         onFocus={onFocus}
-        onMouseDown={onMouseDown} />
+        onMouseDown={onMouseDown}
+      />
     </FocusContext.Provider>
   );
 }
@@ -385,8 +396,7 @@ function ActionBarItem(props) {
   const composedRef = useComposedRefs(ref, itemRef);
   const isMouseClickRef = React.useRef(false);
 
-  const { onOpenChange, dir, orientation, loop } =
-    useActionBarContext(ITEM_NAME);
+  const { onOpenChange, dir, orientation, loop } = useActionBarContext(ITEM_NAME);
   const focusContext = useFocusContext(ITEM_NAME);
 
   const itemId = React.useId();
@@ -411,97 +421,110 @@ function ActionBarItem(props) {
     };
   }, [focusContext, itemId, disabled]);
 
-  const onClick = React.useCallback((event) => {
-    onClickProp?.(event);
-    if (event.defaultPrevented) return;
+  const onClick = React.useCallback(
+    (event) => {
+      onClickProp?.(event);
+      if (event.defaultPrevented) return;
 
-    const item = itemRef.current;
-    if (!item) return;
+      const item = itemRef.current;
+      if (!item) return;
 
-    const itemSelectEvent = new CustomEvent(ITEM_SELECT, {
-      bubbles: true,
-      cancelable: true,
-    });
+      const itemSelectEvent = new CustomEvent(ITEM_SELECT, {
+        bubbles: true,
+        cancelable: true,
+      });
 
-    item.addEventListener(ITEM_SELECT, (event) => onSelect?.(event), {
-      once: true,
-    });
+      item.addEventListener(ITEM_SELECT, (event) => onSelect?.(event), {
+        once: true,
+      });
 
-    item.dispatchEvent(itemSelectEvent);
+      item.dispatchEvent(itemSelectEvent);
 
-    if (!itemSelectEvent.defaultPrevented) {
-      onOpenChange?.(false);
-    }
-  }, [onClickProp, onOpenChange, onSelect]);
+      if (!itemSelectEvent.defaultPrevented) {
+        onOpenChange?.(false);
+      }
+    },
+    [onClickProp, onOpenChange, onSelect]
+  );
 
-  const onFocus = React.useCallback((event) => {
-    onFocusProp?.(event);
-    if (event.defaultPrevented) return;
+  const onFocus = React.useCallback(
+    (event) => {
+      onFocusProp?.(event);
+      if (event.defaultPrevented) return;
 
-    focusContext.onItemFocus(itemId);
-    isMouseClickRef.current = false;
-  }, [onFocusProp, focusContext, itemId]);
+      focusContext.onItemFocus(itemId);
+      isMouseClickRef.current = false;
+    },
+    [onFocusProp, focusContext, itemId]
+  );
 
-  const onKeyDown = React.useCallback((event) => {
-    onKeyDownProp?.(event);
-    if (event.defaultPrevented) return;
+  const onKeyDown = React.useCallback(
+    (event) => {
+      onKeyDownProp?.(event);
+      if (event.defaultPrevented) return;
 
-    if (event.key === "Tab" && event.shiftKey) {
-      focusContext.onItemShiftTab();
-      return;
-    }
-
-    if (event.target !== event.currentTarget) return;
-
-    const key = getDirectionAwareKey(event.key, dir);
-    let focusIntent;
-
-    if (orientation === "horizontal") {
-      if (key === "ArrowLeft") focusIntent = "prev";
-      else if (key === "ArrowRight") focusIntent = "next";
-      else if (key === "Home") focusIntent = "first";
-      else if (key === "End") focusIntent = "last";
-    } else {
-      if (key === "ArrowUp") focusIntent = "prev";
-      else if (key === "ArrowDown") focusIntent = "next";
-      else if (key === "Home") focusIntent = "first";
-      else if (key === "End") focusIntent = "last";
-    }
-
-    if (focusIntent !== undefined) {
-      if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey)
+      if (event.key === "Tab" && event.shiftKey) {
+        focusContext.onItemShiftTab();
         return;
-      event.preventDefault();
-
-      const items = focusContext.getItems().filter((item) => !item.disabled);
-      let candidateRefs = items.map((item) => item.ref);
-
-      if (focusIntent === "last") {
-        candidateRefs.reverse();
-      } else if (focusIntent === "prev" || focusIntent === "next") {
-        if (focusIntent === "prev") candidateRefs.reverse();
-        const currentIndex = candidateRefs.findIndex((ref) => ref.current === event.currentTarget);
-        candidateRefs = loop
-          ? wrapArray(candidateRefs, currentIndex + 1)
-          : candidateRefs.slice(currentIndex + 1);
       }
 
-      queueMicrotask(() => focusFirst(candidateRefs));
-    }
-  }, [onKeyDownProp, focusContext, dir, orientation, loop]);
+      if (event.target !== event.currentTarget) return;
 
-  const onMouseDown = React.useCallback((event) => {
-    onMouseDownProp?.(event);
-    if (event.defaultPrevented) return;
+      const key = getDirectionAwareKey(event.key, dir);
+      let focusIntent;
 
-    isMouseClickRef.current = true;
+      if (orientation === "horizontal") {
+        if (key === "ArrowLeft") focusIntent = "prev";
+        else if (key === "ArrowRight") focusIntent = "next";
+        else if (key === "Home") focusIntent = "first";
+        else if (key === "End") focusIntent = "last";
+      } else {
+        if (key === "ArrowUp") focusIntent = "prev";
+        else if (key === "ArrowDown") focusIntent = "next";
+        else if (key === "Home") focusIntent = "first";
+        else if (key === "End") focusIntent = "last";
+      }
 
-    if (disabled) {
-      event.preventDefault();
-    } else {
-      focusContext.onItemFocus(itemId);
-    }
-  }, [onMouseDownProp, focusContext, itemId, disabled]);
+      if (focusIntent !== undefined) {
+        if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+        event.preventDefault();
+
+        const items = focusContext.getItems().filter((item) => !item.disabled);
+        let candidateRefs = items.map((item) => item.ref);
+
+        if (focusIntent === "last") {
+          candidateRefs.reverse();
+        } else if (focusIntent === "prev" || focusIntent === "next") {
+          if (focusIntent === "prev") candidateRefs.reverse();
+          const currentIndex = candidateRefs.findIndex(
+            (ref) => ref.current === event.currentTarget
+          );
+          candidateRefs = loop
+            ? wrapArray(candidateRefs, currentIndex + 1)
+            : candidateRefs.slice(currentIndex + 1);
+        }
+
+        queueMicrotask(() => focusFirst(candidateRefs));
+      }
+    },
+    [onKeyDownProp, focusContext, dir, orientation, loop]
+  );
+
+  const onMouseDown = React.useCallback(
+    (event) => {
+      onMouseDownProp?.(event);
+      if (event.defaultPrevented) return;
+
+      isMouseClickRef.current = true;
+
+      if (disabled) {
+        event.preventDefault();
+      } else {
+        focusContext.onItemFocus(itemId);
+      }
+    },
+    [onMouseDownProp, focusContext, itemId, disabled]
+  );
 
   return (
     <Button
@@ -512,16 +535,13 @@ function ActionBarItem(props) {
       disabled={disabled}
       tabIndex={isTabStop ? 0 : -1}
       {...itemProps}
-      className={cn(
-        "shrink-0",
-        orientation === "vertical" && "w-full",
-        className
-      )}
+      className={cn("shrink-0", orientation === "vertical" && "w-full", className)}
       ref={composedRef}
       onClick={onClick}
       onFocus={onFocus}
       onKeyDown={onKeyDown}
-      onMouseDown={onMouseDown} />
+      onMouseDown={onMouseDown}
+    />
   );
 }
 
@@ -530,12 +550,15 @@ function ActionBarClose(props) {
 
   const { onOpenChange } = useActionBarContext(CLOSE_NAME);
 
-  const onCloseClick = React.useCallback((event) => {
-    onClick?.(event);
-    if (event.defaultPrevented) return;
+  const onCloseClick = React.useCallback(
+    (event) => {
+      onClick?.(event);
+      if (event.defaultPrevented) return;
 
-    onOpenChange?.(false);
-  }, [onOpenChange, onClick]);
+      onOpenChange?.(false);
+    },
+    [onOpenChange, onClick]
+  );
 
   const ClosePrimitive = asChild ? Slot : Button;
 
@@ -550,17 +573,13 @@ function ActionBarClose(props) {
         "shrink-0 opacity-70 outline-none hover:opacity-100 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none [&_svg:not([class*='size-'])]:size-3.5 [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className
       )}
-      onClick={onCloseClick} />
+      onClick={onCloseClick}
+    />
   );
 }
 
 function ActionBarSeparator(props) {
-  const {
-    orientation: orientationProp,
-    asChild,
-    className,
-    ...separatorProps
-  } = props;
+  const { orientation: orientationProp, asChild, className, ...separatorProps } = props;
 
   const context = useActionBarContext(SEPARATOR_NAME);
   const orientation = orientationProp ?? context.orientation;
@@ -578,8 +597,16 @@ function ActionBarSeparator(props) {
         "in-data-[slot=action-bar-selection]:ml-0.5 in-data-[slot=action-bar-selection]:h-4 in-data-[slot=action-bar-selection]:w-px bg-border",
         orientation === "horizontal" ? "h-6 w-px" : "h-px w-full",
         className
-      )} />
+      )}
+    />
   );
 }
 
-export { ActionBar, ActionBarSelection, ActionBarGroup, ActionBarItem, ActionBarClose, ActionBarSeparator };
+export {
+  ActionBar,
+  ActionBarSelection,
+  ActionBarGroup,
+  ActionBarItem,
+  ActionBarClose,
+  ActionBarSeparator,
+};

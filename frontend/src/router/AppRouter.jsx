@@ -23,28 +23,41 @@ function getRouteElement(elementName) {
   if (elementMap[elementName]) {
     return elementMap[elementName];
   }
-  
-  debugWarn(`Route element "${elementName}" not found. Please create the corresponding page component.`);
-  return <Error errorCode="404" customTitle="Page not found" customMessage={`Page component "${elementName}" not found`} />;
+
+  debugWarn(
+    `Route element "${elementName}" not found. Please create the corresponding page component.`
+  );
+  return (
+    <Error
+      errorCode="404"
+      customTitle="Page not found"
+      customMessage={`Page component "${elementName}" not found`}
+    />
+  );
 }
 
 export default function AppRouter() {
   return (
     <Routes>
-      {routes.map(route => (
+      {routes.map((route) => (
         <Route
           key={route.path}
           path={route.path}
           element={
             <ProtectedRoute permissions={route.permissions} requireAuth={route.requireAuth}>
-              <Layout>
-                {getRouteElement(route.element)}
-              </Layout>
+              <Layout>{getRouteElement(route.element)}</Layout>
             </ProtectedRoute>
           }
         />
       ))}
-      <Route path="*" element={<Layout><Error errorCode="404" /></Layout>} />
+      <Route
+        path="*"
+        element={
+          <Layout>
+            <Error errorCode="404" />
+          </Layout>
+        }
+      />
     </Routes>
   );
 }

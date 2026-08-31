@@ -1,14 +1,9 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { Slot } from "@radix-ui/react-slot"
-import { cva } from "class-variance-authority"
-import { useComposedRefs } from "@/lib/compose-refs"
-import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-} from "lucide-react"
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import { Slot } from "@radix-ui/react-slot";
+import { cva } from "class-variance-authority";
+import { useComposedRefs } from "@/lib/compose-refs";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 
 const DATA_TOP_SCROLL = "data-top-scroll";
 const DATA_BOTTOM_SCROLL = "data-bottom-scroll";
@@ -96,15 +91,15 @@ const Scroller = React.forwardRef(function Scroller(props, forwardedRef) {
   const composedRef = useComposedRefs(forwardedRef, containerRef);
   const maxScrollbarWidthRef = React.useRef(0);
   const maxScrollbarHeightRef = React.useRef(0);
-  const [scrollVisibility, setScrollVisibility] =
-    React.useState({
+  const [scrollVisibility, setScrollVisibility] = React.useState({
     up: false,
     down: false,
     left: false,
     right: false,
   });
 
-  const onScrollBy = React.useCallback((direction) => {
+  const onScrollBy = React.useCallback(
+    (direction) => {
       const container = containerRef.current;
       if (!container) return;
 
@@ -116,14 +111,19 @@ const Scroller = React.forwardRef(function Scroller(props, forwardedRef) {
       };
 
       scrollMap[direction]();
-  }, [scrollStep]);
+    },
+    [scrollStep]
+  );
 
-  const scrollHandlers = React.useMemo(() => ({
+  const scrollHandlers = React.useMemo(
+    () => ({
       up: () => onScrollBy("up"),
       down: () => onScrollBy("down"),
       left: () => onScrollBy("left"),
       right: () => onScrollBy("right"),
-  }), [onScrollBy]);
+    }),
+    [onScrollBy]
+  );
 
   React.useLayoutEffect(() => {
     const container = containerRef.current;
@@ -154,10 +154,19 @@ const Scroller = React.forwardRef(function Scroller(props, forwardedRef) {
       // which can cause content jitter if padding depends on it.
       // Use the max observed size to keep layout stable.
       maxScrollbarWidthRef.current = Math.max(maxScrollbarWidthRef.current, measuredScrollbarWidth);
-      maxScrollbarHeightRef.current = Math.max(maxScrollbarHeightRef.current, measuredScrollbarHeight);
+      maxScrollbarHeightRef.current = Math.max(
+        maxScrollbarHeightRef.current,
+        measuredScrollbarHeight
+      );
 
-      container.style.setProperty("--scroller-scrollbar-width", `${maxScrollbarWidthRef.current}px`);
-      container.style.setProperty("--scroller-scrollbar-height", `${maxScrollbarHeightRef.current}px`);
+      container.style.setProperty(
+        "--scroller-scrollbar-width",
+        `${maxScrollbarWidthRef.current}px`
+      );
+      container.style.setProperty(
+        "--scroller-scrollbar-height",
+        `${maxScrollbarHeightRef.current}px`
+      );
 
       if (isVertical) {
         const scrollTop = container.scrollTop;
@@ -193,7 +202,8 @@ const Scroller = React.forwardRef(function Scroller(props, forwardedRef) {
           container.removeAttribute(DATA_TOP_BOTTOM_SCROLL);
           if (hasTopScroll) container.setAttribute(DATA_TOP_SCROLL, "true");
           else container.removeAttribute(DATA_TOP_SCROLL);
-          if (hasBottomScroll && isVerticallyScrollable) container.setAttribute(DATA_BOTTOM_SCROLL, "true");
+          if (hasBottomScroll && isVerticallyScrollable)
+            container.setAttribute(DATA_BOTTOM_SCROLL, "true");
           else container.removeAttribute(DATA_BOTTOM_SCROLL);
         }
       }
@@ -231,7 +241,8 @@ const Scroller = React.forwardRef(function Scroller(props, forwardedRef) {
         container.removeAttribute(DATA_LEFT_RIGHT_SCROLL);
         if (hasLeftScroll) container.setAttribute(DATA_LEFT_SCROLL, "true");
         else container.removeAttribute(DATA_LEFT_SCROLL);
-        if (hasRightScroll && isHorizontallyScrollable) container.setAttribute(DATA_RIGHT_SCROLL, "true");
+        if (hasRightScroll && isHorizontallyScrollable)
+          container.setAttribute(DATA_RIGHT_SCROLL, "true");
         else container.removeAttribute(DATA_RIGHT_SCROLL);
       }
     }
@@ -264,10 +275,13 @@ const Scroller = React.forwardRef(function Scroller(props, forwardedRef) {
     };
   }, [orientation, offset, withNavigation]);
 
-  const composedStyle = React.useMemo(() => ({
+  const composedStyle = React.useMemo(
+    () => ({
       "--scroll-shadow-size": `${size}px`,
       ...style,
-  }), [size, style]);
+    }),
+    [size, style]
+  );
 
   const activeDirections = React.useMemo(() => {
     if (!withNavigation) return [];
@@ -282,7 +296,8 @@ const Scroller = React.forwardRef(function Scroller(props, forwardedRef) {
       {...scrollerProps}
       ref={composedRef}
       style={composedStyle}
-      className={cn(scrollerVariants({ orientation, hideScrollbar, className }))} />
+      className={cn(scrollerVariants({ orientation, hideScrollbar, className }))}
+    />
   );
 
   const navigationButtons = React.useMemo(() => {
@@ -296,15 +311,10 @@ const Scroller = React.forwardRef(function Scroller(props, forwardedRef) {
           data-slot="scroll-button"
           direction={direction}
           onClick={scrollHandlers[direction]}
-          triggerMode={scrollTriggerMode} />
+          triggerMode={scrollTriggerMode}
+        />
       ));
-  }, [
-    activeDirections,
-    scrollVisibility,
-    scrollHandlers,
-    scrollTriggerMode,
-    withNavigation,
-  ]);
+  }, [activeDirections, scrollVisibility, scrollHandlers, scrollTriggerMode, withNavigation]);
 
   if (withNavigation) {
     return (
@@ -321,17 +331,17 @@ const Scroller = React.forwardRef(function Scroller(props, forwardedRef) {
 const scrollButtonVariants = cva(
   "absolute z-10 transition-opacity [&>svg]:size-4 [&>svg]:opacity-80 hover:[&>svg]:opacity-100",
   {
-  variants: {
-    direction: {
-      up: "top-2 left-1/2 -translate-x-1/2",
-      down: "bottom-2 left-1/2 -translate-x-1/2",
-      left: "top-1/2 left-2 -translate-y-1/2",
-      right: "top-1/2 right-2 -translate-y-1/2",
+    variants: {
+      direction: {
+        up: "top-2 left-1/2 -translate-x-1/2",
+        down: "bottom-2 left-1/2 -translate-x-1/2",
+        left: "top-1/2 left-2 -translate-y-1/2",
+        right: "top-1/2 right-2 -translate-y-1/2",
+      },
     },
-  },
-  defaultVariants: {
-    direction: "up",
-  },
+    defaultVariants: {
+      direction: "up",
+    },
   }
 );
 
@@ -339,21 +349,16 @@ const directionToIcon = {
   up: ChevronUp,
   down: ChevronDown,
   left: ChevronLeft,
-  right: ChevronRight
+  right: ChevronRight,
 };
 
 const ScrollButton = React.forwardRef(function ScrollButton(props, forwardedRef) {
-  const {
-    direction,
-    className,
-    triggerMode = "press",
-    onClick,
-    ...buttonProps
-  } = props;
+  const { direction, className, triggerMode = "press", onClick, ...buttonProps } = props;
 
   const [autoScrollTimer, setAutoScrollTimer] = React.useState(null);
 
-  const onAutoScrollStart = React.useCallback((event) => {
+  const onAutoScrollStart = React.useCallback(
+    (event) => {
       if (autoScrollTimer !== null) return;
 
       if (triggerMode === "press") {
@@ -365,7 +370,9 @@ const ScrollButton = React.forwardRef(function ScrollButton(props, forwardedRef)
         }, 50);
         setAutoScrollTimer(timer);
       }
-  }, [autoScrollTimer, onClick, triggerMode]);
+    },
+    [autoScrollTimer, onClick, triggerMode]
+  );
 
   const onAutoScrollStop = React.useCallback(() => {
     if (autoScrollTimer === null) return;
@@ -391,7 +398,7 @@ const ScrollButton = React.forwardRef(function ScrollButton(props, forwardedRef)
 
       click: {
         onClick,
-      }
+      },
     };
 
     return triggerModeHandlers[triggerMode] ?? {};
@@ -409,7 +416,8 @@ const ScrollButton = React.forwardRef(function ScrollButton(props, forwardedRef)
       {...buttonProps}
       {...eventHandlers}
       ref={forwardedRef}
-      className={cn(scrollButtonVariants({ direction, className }))}>
+      className={cn(scrollButtonVariants({ direction, className }))}
+    >
       <Icon />
     </button>
   );

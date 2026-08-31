@@ -1,9 +1,12 @@
-from fastapi import Request
-from utils import get_real_ip
 import redis.asyncio as aioredis
+from fastapi import Request
+
 from core.config import settings
+from utils import get_real_ip
 from utils.custom_exception import ServerException
-from .schema import IPDebugResponse, ClearBlockedIPsResponse
+
+from .schema import ClearBlockedIPsResponse, IPDebugResponse
+
 
 async def get_ip_debug_info(request: Request) -> IPDebugResponse:
     try:
@@ -11,10 +14,11 @@ async def get_ip_debug_info(request: Request) -> IPDebugResponse:
             client_host=request.client.host if request.client else None,
             x_forwarded_for=request.headers.get("x-forwarded-for"),
             x_real_ip=request.headers.get("x-real-ip"),
-            detected_real_ip=get_real_ip(request)
+            detected_real_ip=get_real_ip(request),
         )
     except Exception as e:
         raise ServerException(f"Failed to get IP debug info: {e}")
+
 
 async def clear_blocked_ips() -> ClearBlockedIPsResponse:
     try:
