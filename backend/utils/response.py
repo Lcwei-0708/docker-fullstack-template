@@ -1,18 +1,24 @@
 from datetime import datetime
+from typing import TypeVar
+
 from pydantic import BaseModel, RootModel
-from typing import Optional, Type, TypeVar, Generic
 
 T = TypeVar("T")
 
-class APIResponse(BaseModel, Generic[T]):
+
+class APIResponse[T](BaseModel):
     """Generic API response wrapper that maintains consistent response structure"""
+
     code: int
     message: str
-    data: Optional[T] = None
+    data: T | None = None
+
 
 class ValidationErrorData(RootModel[dict[str, str]]):
     """Model for validation error data structure"""
+
     pass
+
 
 def is_openapi_examples(example: dict) -> bool:
     """
@@ -28,25 +34,21 @@ def is_openapi_examples(example: dict) -> bool:
         return False
     if "code" in example or "message" in example or "data" in example:
         return False
-    return all(
-        isinstance(item, dict) and "value" in item
-        for item in example.values()
-    )
+    return all(isinstance(item, dict) and "value" in item for item in example.values())
 
 
-def make_response_doc(description: str, model: Optional[Type] = None, example: Optional[dict] = None) -> dict:
+def make_response_doc(
+    description: str, model: type | None = None, example: dict | None = None
+) -> dict:
     """Create OpenAPI response documentation with model and example(s)"""
     doc = {"description": description}
     if model:
         doc["model"] = APIResponse[model]
     if example:
-        media = (
-            {"examples": example}
-            if is_openapi_examples(example)
-            else {"example": example}
-        )
+        media = {"examples": example} if is_openapi_examples(example) else {"example": example}
         doc["content"] = {"application/json": media}
     return doc
+
 
 def make_error_examples(code: int, cases: dict[str, str]) -> dict:
     """
@@ -93,9 +95,9 @@ def parse_responses(custom: dict, default: dict = None) -> dict:
                     try:
                         schema = model.model_json_schema()
                         data_example = generate_example_from_schema(schema)
-                    except:
+                    except Exception:
                         data_example = None
-                
+
                 example = {"code": code, "message": desc, "data": data_example}
                 result[code] = make_response_doc(desc, model, example)
             elif len(val) == 3:
@@ -114,6 +116,7 @@ def parse_responses(custom: dict, default: dict = None) -> dict:
             result[code] = val
     return result
 
+
 def generate_example_from_schema(schema: dict) -> dict:
     """Generate example data from JSON schema object properties"""
     if schema.get("type") == "object":
@@ -124,6 +127,7 @@ def generate_example_from_schema(schema: dict) -> dict:
         return example
     return None
 
+
 def generate_property_example(prop: dict, key: str = "", full_schema: dict = None):
     """Generate example value for a single property based on its type and field name"""
     # Handle $ref references first (for nested objects)
@@ -132,9 +136,9 @@ def generate_property_example(prop: dict, key: str = "", full_schema: dict = Non
         if referenced_schema:
             return generate_example_from_schema(referenced_schema)
         return None
-    
+
     prop_type = prop.get("type")
-    
+
     if prop_type == "string":
         if key == "id":
             return "123e4567-e89b-12d3-a456-426614174000"
@@ -151,7 +155,7 @@ def generate_property_example(prop: dict, key: str = "", full_schema: dict = Non
         else:
             return f"Example {key.replace('_', ' ').title()}"
     elif prop_type == "integer":
-        if key in  ["per_page", "total_pages"]:
+        if key in ["per_page", "total_pages"]:
             return 10
         elif key == "page":
             return 1
@@ -183,17 +187,18 @@ def generate_property_example(prop: dict, key: str = "", full_schema: dict = Non
     else:
         return None
 
+
 def resolve_ref(ref_path: str, schema: dict) -> dict:
     """
     Resolve JSON Schema $ref references to actual schema definitions
     """
     if not ref_path.startswith("#/"):
         return None
-    
+
     # Parse reference path: "#/$defs/UserRead" -> ["$defs", "UserRead"]
     path_parts = ref_path[2:].split("/")
     current = schema
-    
+
     # Navigate through nested dict structure following the path
     for part in path_parts:
         if isinstance(current, dict) and part in current:
@@ -201,56 +206,37 @@ def resolve_ref(ref_path: str, schema: dict) -> dict:
         else:
             # Reference not found
             return None
-    
+
     if isinstance(current, dict):
         return current
     else:
         return None
 
+
 common_responses = {
     401: (
         "Invalid or expired token",
         APIResponse[None],
-        {
-            "code": 401,
-            "message": "Invalid or expired token",
-            "data": None
-        }
+        {"code": 401, "message": "Invalid or expired token", "data": None},
     ),
     403: (
         "Permission denied",
         APIResponse[None],
-        {
-            "code": 403,
-            "message": "Permission denied",
-            "data": None
-        }
+        {"code": 403, "message": "Permission denied", "data": None},
     ),
     422: (
         "Validation Error",
         APIResponse[ValidationErrorData],
-        {
-            "code": 422,
-            "message": "Validation Error",
-            "data": {"body.params": "field required"}
-        }
+        {"code": 422, "message": "Validation Error", "data": {"body.params": "field required"}},
     ),
     429: (
         "Too many requests. Try again later.",
         APIResponse[None],
-        {
-            "code": 429,
-            "message": "Too many requests. Try again later.",
-            "data": None
-        }
+        {"code": 429, "message": "Too many requests. Try again later.", "data": None},
     ),
     500: (
         "Internal Server Error",
         APIResponse[None],
-        {
-            "code": 500,
-            "message": "Internal Server Error",
-            "data": None
-        }
-    )
+        {"code": 500, "message": "Internal Server Error", "data": None},
+    ),
 }

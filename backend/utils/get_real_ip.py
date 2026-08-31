@@ -1,5 +1,6 @@
 from fastapi import Request
 
+
 def get_real_ip(request: Request) -> str:
     """
     Get the client IP address from the X-Real-IP header set by nginx.

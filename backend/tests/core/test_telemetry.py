@@ -74,9 +74,7 @@ async def test_skip_paths_are_not_traced_and_api_log_has_trace_id():
 
     stream = io.StringIO()
     handler = logging.StreamHandler(stream)
-    handler.setFormatter(
-        TraceIdFormatter("%(message)s traceID=%(otelTraceID)s")
-    )
+    handler.setFormatter(TraceIdFormatter("%(message)s traceID=%(otelTraceID)s"))
     api_logger = logging.getLogger("api_logger")
     api_logger.addHandler(handler)
     api_logger.setLevel(logging.INFO)
@@ -217,26 +215,28 @@ class TestBuildResource:
 class TestSetupAndShutdownTelemetry:
     def test_setup_returns_when_disabled(self):
         test_app = FastAPI()
-        with patch("core.telemetry.settings.OTEL_ENABLE", False), patch(
-            "core.telemetry.LoggingInstrumentor"
-        ) as logging_instrumentor, patch(
-            "core.telemetry.FastAPIInstrumentor.instrument_app"
-        ) as instrument_app:
+        with (
+            patch("core.telemetry.settings.OTEL_ENABLE", False),
+            patch("core.telemetry.LoggingInstrumentor") as logging_instrumentor,
+            patch("core.telemetry.FastAPIInstrumentor.instrument_app") as instrument_app,
+        ):
             setup_telemetry(test_app)
         logging_instrumentor.return_value.instrument.assert_called_once()
         instrument_app.assert_not_called()
 
     def test_shutdown_returns_when_disabled(self):
-        with patch("core.telemetry.settings.OTEL_ENABLE", False), patch(
-            "core.telemetry.trace.get_tracer_provider"
-        ) as get_provider:
+        with (
+            patch("core.telemetry.settings.OTEL_ENABLE", False),
+            patch("core.telemetry.trace.get_tracer_provider") as get_provider,
+        ):
             shutdown_telemetry()
         get_provider.assert_not_called()
 
     def test_shutdown_calls_provider_shutdown(self):
         provider = MagicMock()
-        with patch("core.telemetry.settings.OTEL_ENABLE", True), patch(
-            "core.telemetry.trace.get_tracer_provider", return_value=provider
+        with (
+            patch("core.telemetry.settings.OTEL_ENABLE", True),
+            patch("core.telemetry.trace.get_tracer_provider", return_value=provider),
         ):
             shutdown_telemetry()
         provider.shutdown.assert_called_once()

@@ -1,25 +1,29 @@
 import ast
-import redis
 import logging
-from models.users import Users
-from jose import jwt, JWTError
-from core.redis import get_redis
+from datetime import datetime, timedelta
+from typing import Any
+
+import bcrypt
+import redis
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from core.config import settings
 from core.dependencies import get_db
-from sqlalchemy import update, select
-from typing import Optional, Dict, Any
-from datetime import datetime, timedelta
-import bcrypt
+from core.redis import get_redis
 from models.user_sessions import UserSessions
-from sqlalchemy.ext.asyncio import AsyncSession
+from models.users import Users
 from utils.custom_exception import ServerException
-from fastapi import HTTPException, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 logger = logging.getLogger("security")
 
+
 async def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
 
 async def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(
@@ -27,7 +31,8 @@ async def verify_password(plain_password: str, hashed_password: str) -> bool:
         hashed_password.encode("utf-8"),
     )
 
-async def create_access_token(data: Dict[str, Any]) -> str:
+
+async def create_access_token(data: dict[str, Any]) -> str:
     to_encode = data.copy()
     now = datetime.now().astimezone()
     expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -35,27 +40,29 @@ async def create_access_token(data: Dict[str, Any]) -> str:
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
+
 async def create_password_reset_token(user_id: str, email: str) -> str:
     """Create password reset token"""
     try:
         now = datetime.now().astimezone()
         expire = now + timedelta(minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES)
-        
+
         payload = {
             "sub": user_id,
             "email": email,
             "token_type": "password_reset",
             "force_change_password": True,
             "iat": now,
-            "exp": expire
+            "exp": expire,
         }
-        
+
         token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-        
+
         return token
-        
+
     except Exception as e:
         raise ServerException(f"Failed to create password reset token: {str(e)}")
+
 
 async def create_csrf_token(session_id: str) -> str:
     """Create CSRF token bound to a session"""
@@ -75,38 +82,43 @@ async def create_csrf_token(session_id: str) -> str:
     except Exception as e:
         raise ServerException(f"Failed to create CSRF token: {str(e)}")
 
+
 async def create_email_verification_token(user_id: str, email: str, token_type: str) -> str:
     """Create email verification token"""
     try:
         now = datetime.now().astimezone()
         expire = now + timedelta(minutes=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES)
-        
+
         payload = {
             "sub": user_id,
             "email": email,
             "token_type": "email_verification",
             "verification_type": token_type,  # 'registration' or 'email_change'
             "iat": now,
-            "exp": expire
+            "exp": expire,
         }
-        
+
         token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-        
+
         return token
-        
+
     except Exception as e:
         raise ServerException(f"Failed to create email verification token: {str(e)}")
 
-async def get_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))) -> str:
+
+async def get_token(
+    credentials: HTTPAuthorizationCredentials | None = Depends(HTTPBearer(auto_error=False)),
+) -> str:
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
     return credentials.credentials
 
-async def verify_session(sid: str, token: str, redis_client) -> Dict[str, Any]:
+
+async def verify_session(sid: str, token: str, redis_client) -> dict[str, Any]:
     try:
         redis_key = f"session:{sid}"
         raw = await redis_client.get(redis_key)
@@ -114,161 +126,166 @@ async def verify_session(sid: str, token: str, redis_client) -> Dict[str, Any]:
             raise ValueError("Invalid or expired session")
         try:
             session_data = ast.literal_eval(raw)
-        except (ValueError, SyntaxError):
+        except ValueError, SyntaxError:
             logger.error(f"Invalid session data: {raw}")
             raise ValueError("Invalid session data")
-        
+
         if session_data.get("access_token") and session_data.get("access_token") != token:
             logger.error(f"Token mismatch: {session_data.get('access_token')} != {token}")
-            raise JWTError("Token mismatch")    
+            raise JWTError("Token mismatch")
         return session_data
     except JWTError as e:
         logger.warning(f"JWT validation failed: {type(e).__name__}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
     except Exception as e:
         logger.error(f"Failed to verify session: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired session",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
-async def verify_token(token: str = Depends(get_token), redis_client = Depends(get_redis), db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
+
+async def verify_token(
+    token: str = Depends(get_token),
+    redis_client=Depends(get_redis),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         sid = payload.get("sid")
         if not sid:
             raise ValueError("Missing session ID")
-        session_data = await verify_session(sid, token, redis_client)
-        
+        await verify_session(sid, token, redis_client)
+
         user = await db.execute(select(Users.status).where(Users.id == payload.get("sub")))
         user_status = user.scalar_one_or_none()
         if user_status is not None and not user_status:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Account is disabled"
-            )
-        
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is disabled")
+
         return payload
-        
+
     except JWTError as e:
         logger.warning(f"JWT validation failed: {type(e).__name__}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
     except ValueError as e:
         logger.warning(f"Token validation error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
-async def verify_password_reset_token(token: str = Depends(get_token)) -> Dict[str, Any]:
+
+async def verify_password_reset_token(token: str = Depends(get_token)) -> dict[str, Any]:
     """Verify password reset token"""
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        
+
         if payload.get("token_type") != "password_reset":
             raise ValueError("Invalid token type")
-        
+
         # Check if force change password
         if not payload.get("force_change_password"):
             raise ValueError("Token not authorized for password reset")
 
         if payload.get("exp") < datetime.now().astimezone().timestamp():
             raise ValueError("Token expired")
-        
+
         user_id = payload.get("sub")
         email = payload.get("email")
-        
+
         if not user_id or not email:
             raise ValueError("Invalid token payload")
-        
+
         return {
             "token": token,
             "sub": user_id,
             "email": email,
             "exp": payload.get("exp"),
-            "iat": payload.get("iat")
+            "iat": payload.get("iat"),
         }
-        
+
     except JWTError as e:
-        logger.warning(f"JWT validation failed: {type(e).__name__}: {str(e)}")        
+        logger.warning(f"JWT validation failed: {type(e).__name__}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
     except ValueError as e:
-        logger.error(f"Failed to verify password reset token: {str(e)}")        
+        logger.error(f"Failed to verify password reset token: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
-async def verify_email_verification_token(token: str = Depends(get_token)) -> Dict[str, Any]:
+
+async def verify_email_verification_token(token: str = Depends(get_token)) -> dict[str, Any]:
     """Verify email verification token"""
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        
+
         if payload.get("token_type") != "email_verification":
             raise ValueError("Invalid token type")
-        
+
         verification_type = payload.get("verification_type")
         if verification_type not in ["registration", "email_change"]:
             raise ValueError("Invalid verification type")
 
         if payload.get("exp") < datetime.now().astimezone().timestamp():
             raise ValueError("Token expired")
-        
+
         user_id = payload.get("sub")
         email = payload.get("email")
-        
+
         if not user_id or not email:
             raise ValueError("Invalid token payload")
-        
+
         return {
             "token": token,
             "sub": user_id,
             "email": email,
             "verification_type": verification_type,
             "exp": payload.get("exp"),
-            "iat": payload.get("iat")
+            "iat": payload.get("iat"),
         }
-        
+
     except JWTError as e:
-        logger.warning(f"JWT validation failed: {type(e).__name__}: {str(e)}")        
+        logger.warning(f"JWT validation failed: {type(e).__name__}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
     except ValueError as e:
-        logger.error(f"Failed to verify email verification token: {str(e)}")        
+        logger.error(f"Failed to verify email verification token: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
-async def extend_session_ttl(redis_client, session_id: str, session_data: Dict[str, Any]) -> None:
+
+async def extend_session_ttl(redis_client, session_id: str, session_data: dict[str, Any]) -> None:
     """Extend session TTL and update last activity time"""
     try:
         # Update last activity time using system timezone with timezone info
         session_data["last_activity"] = datetime.now().astimezone().isoformat()
-        
+
         # Reset TTL, start from current time
         ttl = settings.SESSION_EXPIRE_MINUTES * 60
         await redis_client.setex(f"session:{session_id}", ttl, str(session_data))
-        
+
     except Exception as e:
         logger.error(f"Failed to extend session TTL: {e}")
 
@@ -277,16 +294,13 @@ async def clear_user_all_sessions(
     db: AsyncSession,
     redis_client: redis.Redis,
     user_id: str,
-    exclude_session_id: Optional[str] = None,
+    exclude_session_id: str | None = None,
 ) -> bool:
     """Logout user from all devices, optionally keeping one active session."""
     try:
         update_query = (
             update(UserSessions)
-            .where(
-                UserSessions.user_id == user_id,
-                UserSessions.is_active == True
-            )
+            .where(UserSessions.user_id == user_id, UserSessions.is_active)
             .values(is_active=False)
         )
         if exclude_session_id:
@@ -294,24 +308,23 @@ async def clear_user_all_sessions(
 
         await db.execute(update_query)
         await db.commit()
-        
+
         sessions_query = select(UserSessions.id).where(
-            UserSessions.user_id == user_id,
-            UserSessions.is_active == False
+            UserSessions.user_id == user_id, not UserSessions.is_active
         )
         if exclude_session_id:
             sessions_query = sessions_query.where(UserSessions.id != exclude_session_id)
 
         result = await db.execute(sessions_query)
         session_ids = result.scalars().all()
-        
+
         if session_ids:
             redis_keys = []
             for sid in session_ids:
                 redis_keys.append(f"session:{sid}")
                 redis_keys.append(f"csrf:{sid}")
             await redis_client.delete(*redis_keys)
-        
+
         return True
     except Exception as e:
         raise ServerException(f"Failed to logout all devices: {e}")

@@ -4,7 +4,6 @@ from pydantic import BaseModel
 
 from utils.response import (
     generate_example_from_schema,
-    generate_property_example,
     is_openapi_examples,
     make_error_examples,
     make_response_doc,

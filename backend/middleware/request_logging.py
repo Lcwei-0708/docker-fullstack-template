@@ -1,10 +1,11 @@
 import logging
 import time
-from utils import get_real_ip
+
 from fastapi import FastAPI, Request
 from starlette.middleware.base import BaseHTTPMiddleware
-from core.config import SKIP_METHODS, SKIP_PATHS
-from core.config import settings
+
+from core.config import SKIP_METHODS, SKIP_PATHS, settings
+from utils import get_real_ip
 from utils.log_sanitize import (
     format_log_value,
     sanitize_body,
@@ -52,7 +53,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
         logger.info(
             f"API Request: method={method} path={path} ipAddress={client_ip} "
-            f"user-agent=\"{user_agent}\"{request_extra}"
+            f'user-agent="{user_agent}"{request_extra}'
         )
 
         started = time.perf_counter()
@@ -75,6 +76,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                         settings.LOG_HTTP_BODY_MAX_BYTES,
                     ),
                 )
+
                 # Replay on the same response so multiple Set-Cookie headers stay intact.
                 # dict(response.headers) collapses them into one and drops csrf_token.
                 async def _replay(content: bytes = body):
@@ -85,7 +87,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         logger.info(
             f"API Response: method={method} path={path} ipAddress={client_ip} "
             f"status_code={response.status_code} duration={duration_ms:.1f}ms "
-            f"user-agent=\"{user_agent}\"{response_extra}"
+            f'user-agent="{user_agent}"{response_extra}'
         )
 
         return response

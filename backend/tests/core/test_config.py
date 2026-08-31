@@ -12,9 +12,7 @@ from core.config import (
 
 class TestSkipConfig:
     def test_skip_paths_include_docs_and_health(self):
-        assert SKIP_PATHS == frozenset(
-            {"/", "/docs", "/redoc", "/openapi.json", "/healthz"}
-        )
+        assert SKIP_PATHS == frozenset({"/", "/docs", "/redoc", "/openapi.json", "/healthz"})
 
     def test_skip_methods_include_options(self):
         assert SKIP_METHODS == frozenset({"OPTIONS"})

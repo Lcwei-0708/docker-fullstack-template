@@ -1,8 +1,10 @@
-import pytest
 from datetime import datetime
-from core.config import settings
+
+import pytest
 from pydantic import ValidationError
-from api.account.schema import UserProfile, UserUpdate, PasswordChange
+
+from api.account.schema import PasswordChange, UserProfile, UserUpdate
+from core.config import settings
 
 
 class TestUserProfile:
@@ -232,9 +234,7 @@ class TestPasswordChange:
         long_password = "a" * 51  # Exceeds max_length=50
 
         with pytest.raises(ValidationError) as exc_info:
-            PasswordChange(
-                current_password="CurrentPass123!", new_password=long_password
-            )
+            PasswordChange(current_password="CurrentPass123!", new_password=long_password)
 
         errors = exc_info.value.errors()
         assert any("max_length" in str(error) for error in errors)

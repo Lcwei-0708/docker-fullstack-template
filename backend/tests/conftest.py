@@ -3,16 +3,18 @@ import os
 os.environ.setdefault("OTEL_ENABLE", "false")
 os.environ.setdefault("LOG_HTTP_BODY", "false")
 
-import pytest
 import asyncio
-import pytest_asyncio
-from uuid_utils import uuid7
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, patch
-from httpx import AsyncClient, ASGITransport
+
+import pytest
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
+from uuid_utils import uuid7
+
 from core.config import settings
 from core.database import Base, make_async_url
 from core.dependencies import get_db
@@ -22,12 +24,12 @@ from core.security import create_access_token, hash_password
 with patch("core.config.setup_logging"):
     from main import app
 from models.password_reset_tokens import PasswordResetTokens
-from models.user_sessions import UserSessions
-from models.users import Users
-from models.roles import Roles
 from models.role_attributes import RoleAttributes
 from models.role_attributes_mapper import RoleAttributesMapper
 from models.role_mapper import RoleMapper
+from models.roles import Roles
+from models.user_sessions import UserSessions
+from models.users import Users
 
 mock_redis = AsyncMock()
 mock_redis.evalsha.return_value = 1000  # Indicates 1000ms remaining
@@ -136,10 +138,12 @@ def event_loop():
 @pytest.fixture(autouse=True)
 def mock_other_components():
     """Mock startup components that are not needed for testing"""
-    with patch("schedule.register_schedules"), patch("schedule.scheduler.start"), patch(
-        "schedule.scheduler.shutdown"
-    ), patch("core.redis.init_redis", new=AsyncMock()), patch(
-        "core.config.setup_logging"
+    with (
+        patch("schedule.register_schedules"),
+        patch("schedule.scheduler.start"),
+        patch("schedule.scheduler.shutdown"),
+        patch("core.redis.init_redis", new=AsyncMock()),
+        patch("core.config.setup_logging"),
     ):
         yield
 
@@ -264,7 +268,6 @@ async def auth_headers(test_user: Users, test_user_session: UserSessions):
     }
 
 
-
 @pytest_asyncio.fixture(scope="function")
 async def account_test_user(test_db_session: AsyncSession):
     """Create a dedicated test user for account module tests"""
@@ -350,6 +353,7 @@ async def account_auth_headers(account_test_user: Users, test_db_session: AsyncS
         "access_token": user_session.jwt_access_token,
     }
 
+
 # Users module specific fixtures
 @pytest_asyncio.fixture(scope="function")
 async def users_test_user(test_db_session: AsyncSession):
@@ -382,9 +386,7 @@ async def users_test_role(test_db_session: AsyncSession):
     """Create a non-system admin role for users/roles API tests"""
     role_id = str(uuid7())
     role = Roles(
-        id=role_id,
-        name="admin",
-        description="Administrator role with management permissions"
+        id=role_id, name="admin", description="Administrator role with management permissions"
     )
     test_db_session.add(role)
     await test_db_session.commit()
@@ -395,45 +397,37 @@ async def users_test_role(test_db_session: AsyncSession):
 @pytest_asyncio.fixture(scope="function")
 async def users_test_role_attributes(test_db_session: AsyncSession, users_test_role: Roles):
     """Create role attributes and mappings for users/roles management permissions"""
-    
+
     attribute_names = [
         "view-users",
         "manage-users",
         "view-roles",
         "manage-roles",
     ]
-    attributes = [
-        RoleAttributes(id=str(uuid7()), name=name)
-        for name in attribute_names
-    ]
-    
+    attributes = [RoleAttributes(id=str(uuid7()), name=name) for name in attribute_names]
+
     test_db_session.add_all(attributes)
     await test_db_session.commit()
-    
+
     attribute_mappings = [
-        RoleAttributesMapper(
-            role_id=users_test_role.id,
-            attributes_id=attr.id,
-            value=True
-        )
+        RoleAttributesMapper(role_id=users_test_role.id, attributes_id=attr.id, value=True)
         for attr in attributes
     ]
-    
+
     for mapping in attribute_mappings:
         test_db_session.add(mapping)
-    
+
     await test_db_session.commit()
     return attribute_mappings
 
 
 @pytest_asyncio.fixture(scope="function")
-async def users_test_role_mapping(test_db_session: AsyncSession, users_test_user: Users, users_test_role: Roles):
-    """Create role mapping for test user"""    
-    role_mapping = RoleMapper(
-        user_id=users_test_user.id,
-        role_id=users_test_role.id
-    )
-    
+async def users_test_role_mapping(
+    test_db_session: AsyncSession, users_test_user: Users, users_test_role: Roles
+):
+    """Create role mapping for test user"""
+    role_mapping = RoleMapper(user_id=users_test_user.id, role_id=users_test_role.id)
+
     test_db_session.add(role_mapping)
     await test_db_session.commit()
     return role_mapping
@@ -472,10 +466,10 @@ async def users_test_session(test_db_session: AsyncSession, users_test_user: Use
 
 @pytest_asyncio.fixture(scope="function")
 async def users_auth_headers(
-    users_test_user: Users, 
-    users_test_session: UserSessions, 
+    users_test_user: Users,
+    users_test_session: UserSessions,
     users_test_role_mapping,
-    users_test_role_attributes
+    users_test_role_attributes,
 ):
     """Generate authentication headers for users API tests"""
     session_data = {
@@ -513,37 +507,39 @@ async def users_auth_headers(
 @pytest_asyncio.fixture
 async def create_password_reset_token_with_invalid_user(test_db_session: AsyncSession):
     """Create a password reset token with invalid user for testing edge cases"""
-    
+
     nonexistent_user_id = "nonexistent_user_id"
     token_id = str(uuid7())
     token_string = "test_token_123"
     expires_at = datetime.now() + timedelta(minutes=30)
-    
+
     # Temporarily disable foreign key checks to insert invalid data
     await test_db_session.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-    await test_db_session.execute(text("""
-        INSERT INTO password_reset_tokens (id, user_id, token, is_used, expires_at, created_at, updated_at)
+    await test_db_session.execute(
+        text("""
+        INSERT INTO password_reset_tokens (
+            id, user_id, token, is_used, expires_at, created_at, updated_at
+        )
         VALUES (:id, :user_id, :token, :is_used, :expires_at, NOW(), NOW())
-    """), {
-        "id": token_id,
-        "user_id": nonexistent_user_id,
-        "token": token_string,
-        "is_used": False,
-        "expires_at": expires_at
-    })
+    """),
+        {
+            "id": token_id,
+            "user_id": nonexistent_user_id,
+            "token": token_string,
+            "is_used": False,
+            "expires_at": expires_at,
+        },
+    )
     # Re-enable foreign key checks
     await test_db_session.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
     await test_db_session.commit()
-    
+
     return {
         "token_id": token_id,
         "user_id": nonexistent_user_id,
         "token": token_string,
         "expires_at": expires_at,
-        "token_data": {
-            "sub": nonexistent_user_id,
-            "token": token_string
-        }
+        "token_data": {"sub": nonexistent_user_id, "token": token_string},
     }
 
 
@@ -552,7 +548,7 @@ async def create_password_reset_token_with_valid_user(test_db_session: AsyncSess
     """Create a password reset token with valid user for testing normal scenarios"""
     user_id = str(uuid7())
     hashed_pwd = await hash_password("TestPassword123!")
-    
+
     user = Users(
         id=user_id,
         email="tokenuser@example.com",
@@ -561,25 +557,21 @@ async def create_password_reset_token_with_valid_user(test_db_session: AsyncSess
         phone="+1234567890",
         hash_password=hashed_pwd,
         status=True,
-        password_reset_required=True
+        password_reset_required=True,
     )
     test_db_session.add(user)
     await test_db_session.commit()
-    
+
     token_id = str(uuid7())
     token_string = "valid_test_token_123"
     expires_at = datetime.now() + timedelta(minutes=30)
-    
+
     reset_token_record = PasswordResetTokens(
-        id=token_id,
-        user_id=user_id,
-        token=token_string,
-        is_used=False,
-        expires_at=expires_at
+        id=token_id, user_id=user_id, token=token_string, is_used=False, expires_at=expires_at
     )
     test_db_session.add(reset_token_record)
     await test_db_session.commit()
-    
+
     return {
         "token_id": token_id,
         "user_id": user_id,
@@ -587,8 +579,5 @@ async def create_password_reset_token_with_valid_user(test_db_session: AsyncSess
         "expires_at": expires_at,
         "user": user,
         "token_record": reset_token_record,
-        "token_data": {
-            "sub": user_id,
-            "token": token_string
-        }
+        "token_data": {"sub": user_id, "token": token_string},
     }

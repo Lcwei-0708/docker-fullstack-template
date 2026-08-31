@@ -1,10 +1,13 @@
 import logging
 from datetime import datetime
-from sqlalchemy import delete, or_, select, update, func
+
+from sqlalchemy import delete, func, or_, select, update
+
 from core.database import AsyncSessionLocal
-from models.user_sessions import UserSessions
 from models.email_verification_tokens import EmailVerificationTokens
+from models.user_sessions import UserSessions
 from models.users import Users
+
 
 class CleanupTasks:
     def __init__(self):
@@ -18,12 +21,14 @@ class CleanupTasks:
                     delete(UserSessions).where(
                         or_(
                             UserSessions.expires_at < datetime.now().astimezone(),
-                            UserSessions.is_active == False
+                            not UserSessions.is_active,
                         )
                     )
                 )
                 await db.commit()
-                self.logger.info(f"Cleaned up {expired_sessions.rowcount} expired or inactive sessions")
+                self.logger.info(
+                    f"Cleaned up {expired_sessions.rowcount} expired or inactive sessions"
+                )
             except Exception as e:
                 self.logger.error(f"Failed to cleanup expired sessions: {e}")
                 await db.rollback()
@@ -46,8 +51,9 @@ class CleanupTasks:
                 )
 
                 expired_tokens = await db.execute(
-                    delete(EmailVerificationTokens)
-                    .where(EmailVerificationTokens.email.in_(expired_emails_subquery))
+                    delete(EmailVerificationTokens).where(
+                        EmailVerificationTokens.email.in_(expired_emails_subquery)
+                    )
                 )
 
                 await db.commit()

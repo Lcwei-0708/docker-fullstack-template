@@ -87,10 +87,14 @@ exclude = [
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
-ignore = ["B008"]
+ignore = ["B008", "B904"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["B"]
+"main.py" = ["E402"]
+"core/config.py" = ["E402"]
+"migrations/env.py" = ["E402"]
+"utils/email_templates.py" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"

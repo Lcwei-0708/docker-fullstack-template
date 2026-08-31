@@ -1,13 +1,15 @@
-import ssl
-import smtplib
 import logging
-from fastapi import FastAPI
-from core.config import settings
+import smtplib
+import ssl
+from collections.abc import Iterable
 from dataclasses import dataclass
-from email.mime.text import MIMEText
-from typing import Iterable, Optional
 from email.message import EmailMessage
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+from fastapi import FastAPI
+
+from core.config import settings
 from utils.custom_exception import SMTPNotConfiguredException
 
 logger = logging.getLogger("smtp")
@@ -18,9 +20,9 @@ class SMTPSettings:
     enabled: bool
     host: str
     port: int
-    username: Optional[str]
-    password: Optional[str]
-    from_email: Optional[str]
+    username: str | None
+    password: str | None
+    from_email: str | None
     from_name: str
     encryption: str
 
@@ -65,7 +67,9 @@ class SMTPMailer:
         context = ssl.create_default_context()
 
         if enc == "ssl":
-            client: smtplib.SMTP = smtplib.SMTP_SSL(self._cfg.host, self._cfg.port, timeout=timeout, context=context)
+            client: smtplib.SMTP = smtplib.SMTP_SSL(
+                self._cfg.host, self._cfg.port, timeout=timeout, context=context
+            )
         else:
             client = smtplib.SMTP(self._cfg.host, self._cfg.port, timeout=timeout)
 
@@ -90,9 +94,9 @@ class SMTPMailer:
         to_emails: Iterable[str],
         subject: str,
         body: str,
-        html_body: Optional[str] = None,
-        from_email: Optional[str] = None,
-        from_name: Optional[str] = None,
+        html_body: str | None = None,
+        from_email: str | None = None,
+        from_name: str | None = None,
         timeout: int = 30,
     ) -> None:
         self._validate()
@@ -106,7 +110,7 @@ class SMTPMailer:
             msg["Subject"] = subject
             msg["From"] = f"{sender_name} <{sender_email}>"
             msg["To"] = ", ".join(list(to_emails))
-            
+
             # Add plain text and HTML parts
             part1 = MIMEText(body, "plain", "utf-8")
             part2 = MIMEText(html_body, "html", "utf-8")
@@ -138,7 +142,7 @@ def build_smtp_settings() -> SMTPSettings:
 
 
 # Global singleton instance
-_SMTP_MAILER: Optional[SMTPMailer] = None
+_SMTP_MAILER: SMTPMailer | None = None
 
 
 def get_mailer() -> SMTPMailer:
@@ -150,7 +154,7 @@ def get_mailer() -> SMTPMailer:
     if _SMTP_MAILER is None:
         cfg = build_smtp_settings()
         _SMTP_MAILER = SMTPMailer(cfg)
-        
+
         if cfg.enabled:
             logger.info(
                 "SMTP enabled: host=%s port=%s encryption=%s from=%s",
@@ -161,7 +165,7 @@ def get_mailer() -> SMTPMailer:
             )
         else:
             logger.info("SMTP disabled")
-    
+
     return _SMTP_MAILER
 
 

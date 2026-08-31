@@ -1,20 +1,22 @@
-import pytest
 from datetime import datetime
+
+import pytest
 from pydantic import ValidationError
+
 from api.auth.schema import (
-    UserRegister,
-    UserLogin,
-    UserResponse,
-    UserLoginResponse,
-    TokenResponse,
-    PasswordResetRequiredResponse,
-    LogoutRequest,
-    ResetPasswordRequest,
-    TokenValidationResponse,
     ForgotPasswordRequest,
-    PasswordResetCooldownResponse,
     LoginResult,
+    LogoutRequest,
+    PasswordResetCooldownResponse,
+    PasswordResetRequiredResponse,
+    ResetPasswordRequest,
     SessionResult,
+    TokenResponse,
+    TokenValidationResponse,
+    UserLogin,
+    UserLoginResponse,
+    UserRegister,
+    UserResponse,
 )
 
 

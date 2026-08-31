@@ -1,19 +1,18 @@
-import pytest
 from datetime import datetime
-from httpx import AsyncClient
 from unittest.mock import patch
-from utils.custom_exception import NotFoundException, ConflictException
-from api.users.schema import UserResponse, UserPagination
-from api.users.schema import UserDeleteBatchResponse, UserDeleteResult
+
+import pytest
+from httpx import AsyncClient
+
+from api.users.schema import UserDeleteBatchResponse, UserDeleteResult, UserPagination, UserResponse
+from utils.custom_exception import ConflictException, NotFoundException
 
 
 class TestUsersController:
     """Test Users controller API endpoints"""
 
     @pytest.mark.asyncio
-    async def test_get_users_success(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_get_users_success(self, client: AsyncClient, users_auth_headers: dict):
         """Test successful users retrieval with valid authentication"""
         with patch("api.users.controller.get_all_users") as mock_get_users:
             mock_pagination = UserPagination(
@@ -56,14 +55,10 @@ class TestUsersController:
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_get_users_with_filters(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_get_users_with_filters(self, client: AsyncClient, users_auth_headers: dict):
         """Test users retrieval with search filters"""
         with patch("api.users.controller.get_all_users") as mock_get_users:
-            mock_pagination = UserPagination(
-                users=[], total=0, page=1, per_page=10, total_pages=0
-            )
+            mock_pagination = UserPagination(users=[], total=0, page=1, per_page=10, total_pages=0)
             mock_get_users.return_value = mock_pagination
 
             response = await client.get(
@@ -86,9 +81,7 @@ class TestUsersController:
             assert response.status_code == 500
 
     @pytest.mark.asyncio
-    async def test_create_user_success(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_create_user_success(self, client: AsyncClient, users_auth_headers: dict):
         """Test successful user creation"""
         user_data = {
             "first_name": "John",
@@ -126,9 +119,7 @@ class TestUsersController:
             assert data["data"]["email"] == user_data["email"]
 
     @pytest.mark.asyncio
-    async def test_create_user_email_exists(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_create_user_email_exists(self, client: AsyncClient, users_auth_headers: dict):
         """Test user creation with existing email"""
         user_data = {
             "first_name": "John",
@@ -154,9 +145,7 @@ class TestUsersController:
             assert data["message"] == "Email already exists"
 
     @pytest.mark.asyncio
-    async def test_create_user_server_error(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_create_user_server_error(self, client: AsyncClient, users_auth_headers: dict):
         """Test user creation with server error"""
         user_data = {
             "first_name": "John",
@@ -179,9 +168,7 @@ class TestUsersController:
             assert response.status_code == 500
 
     @pytest.mark.asyncio
-    async def test_update_user_success(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_update_user_success(self, client: AsyncClient, users_auth_headers: dict):
         """Test successful user update"""
         user_id = "test-user-id"
         update_data = {
@@ -216,9 +203,7 @@ class TestUsersController:
             assert data["data"]["first_name"] == update_data["first_name"]
 
     @pytest.mark.asyncio
-    async def test_update_user_not_found(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_update_user_not_found(self, client: AsyncClient, users_auth_headers: dict):
         """Test user update with non-existent user"""
         user_id = "nonexistent-user-id"
         update_data = {"first_name": "Updated"}
@@ -238,9 +223,7 @@ class TestUsersController:
             assert data["message"] == "User not found"
 
     @pytest.mark.asyncio
-    async def test_update_user_email_conflict(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_update_user_email_conflict(self, client: AsyncClient, users_auth_headers: dict):
         """Test user update with email conflict"""
         user_id = "test-user-id"
         update_data = {"email": "existing@example.com"}
@@ -258,22 +241,26 @@ class TestUsersController:
             assert data["message"] == "Email already exists"
 
     @pytest.mark.asyncio
-    async def test_delete_users_success(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
-        """Test successful users deletion"""        
+    async def test_delete_users_success(self, client: AsyncClient, users_auth_headers: dict):
+        """Test successful users deletion"""
         delete_data = {"user_ids": ["user1", "user2", "user3"]}
 
         with patch("api.users.controller.delete_users") as mock_delete_users:
             mock_batch_response = UserDeleteBatchResponse(
                 results=[
-                    UserDeleteResult(user_id="user1", status="success", message="User deleted successfully"),
-                    UserDeleteResult(user_id="user2", status="success", message="User deleted successfully"),
-                    UserDeleteResult(user_id="user3", status="success", message="User deleted successfully")
+                    UserDeleteResult(
+                        user_id="user1", status="success", message="User deleted successfully"
+                    ),
+                    UserDeleteResult(
+                        user_id="user2", status="success", message="User deleted successfully"
+                    ),
+                    UserDeleteResult(
+                        user_id="user3", status="success", message="User deleted successfully"
+                    ),
                 ],
                 total_users=3,
                 success_count=3,
-                failed_count=0
+                failed_count=0,
             )
             mock_delete_users.return_value = mock_batch_response
 
@@ -296,18 +283,22 @@ class TestUsersController:
     async def test_delete_users_partial_success(
         self, client: AsyncClient, users_auth_headers: dict
     ):
-        """Test users deletion with partial success"""        
+        """Test users deletion with partial success"""
         delete_data = {"user_ids": ["user1", "nonexistent2"]}
 
         with patch("api.users.controller.delete_users") as mock_delete_users:
             mock_batch_response = UserDeleteBatchResponse(
                 results=[
-                    UserDeleteResult(user_id="user1", status="success", message="User deleted successfully"),
-                    UserDeleteResult(user_id="nonexistent2", status="failed", message="User not found")
+                    UserDeleteResult(
+                        user_id="user1", status="success", message="User deleted successfully"
+                    ),
+                    UserDeleteResult(
+                        user_id="nonexistent2", status="failed", message="User not found"
+                    ),
                 ],
                 total_users=2,
                 success_count=1,
-                failed_count=1
+                failed_count=1,
             )
             mock_delete_users.return_value = mock_batch_response
 
@@ -327,21 +318,23 @@ class TestUsersController:
             assert data["data"]["failed_count"] == 1
 
     @pytest.mark.asyncio
-    async def test_delete_users_all_failed(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
-        """Test users deletion with all failed"""        
+    async def test_delete_users_all_failed(self, client: AsyncClient, users_auth_headers: dict):
+        """Test users deletion with all failed"""
         delete_data = {"user_ids": ["nonexistent1", "nonexistent2"]}
 
         with patch("api.users.controller.delete_users") as mock_delete_users:
             mock_batch_response = UserDeleteBatchResponse(
                 results=[
-                    UserDeleteResult(user_id="nonexistent1", status="failed", message="User not found"),
-                    UserDeleteResult(user_id="nonexistent2", status="failed", message="User not found")
+                    UserDeleteResult(
+                        user_id="nonexistent1", status="failed", message="User not found"
+                    ),
+                    UserDeleteResult(
+                        user_id="nonexistent2", status="failed", message="User not found"
+                    ),
                 ],
                 total_users=2,
                 success_count=0,
-                failed_count=2
+                failed_count=2,
             )
             mock_delete_users.return_value = mock_batch_response
 
@@ -375,9 +368,7 @@ class TestUsersController:
             assert response.status_code == 500
 
     @pytest.mark.asyncio
-    async def test_reset_password_success(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_reset_password_success(self, client: AsyncClient, users_auth_headers: dict):
         """Test successful password reset"""
         user_id = "test-user-id"
         password_data = {"new_password": "NewPassword123!"}
@@ -394,10 +385,7 @@ class TestUsersController:
             assert response.status_code == 200
             data = response.json()
             assert data["code"] == 200
-            assert (
-                data["message"]
-                == "Password reset successfully and all devices logged out"
-            )
+            assert data["message"] == "Password reset successfully and all devices logged out"
 
     @pytest.mark.asyncio
     async def test_reset_password_user_not_found(
@@ -422,9 +410,7 @@ class TestUsersController:
             assert data["message"] == "User not found"
 
     @pytest.mark.asyncio
-    async def test_reset_password_server_error(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_reset_password_server_error(self, client: AsyncClient, users_auth_headers: dict):
         """Test password reset with server error"""
         user_id = "test-user-id"
         password_data = {"new_password": "NewPassword123!"}
@@ -445,9 +431,7 @@ class TestUsersControllerValidation:
     """Test Users controller input validation"""
 
     @pytest.mark.asyncio
-    async def test_create_user_invalid_email(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_create_user_invalid_email(self, client: AsyncClient, users_auth_headers: dict):
         """Test user creation with invalid email format"""
         user_data = {
             "first_name": "John",
@@ -467,9 +451,7 @@ class TestUsersControllerValidation:
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_create_user_short_password(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_create_user_short_password(self, client: AsyncClient, users_auth_headers: dict):
         """Test user creation with password too short"""
         user_data = {
             "first_name": "John",
@@ -501,9 +483,7 @@ class TestUsersControllerValidation:
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_delete_users_empty_list(
-        self, client: AsyncClient, users_auth_headers: dict
-    ):
+    async def test_delete_users_empty_list(self, client: AsyncClient, users_auth_headers: dict):
         """Test users deletion with empty user list"""
         delete_data = {"user_ids": []}
 

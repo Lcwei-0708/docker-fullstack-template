@@ -1,6 +1,6 @@
-from typing import Dict, List, Optional
-from models.roles import Roles
-from models.role_mapper import RoleMapper
+from sqlalchemy import and_, delete, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from core.config import settings
 from core.rbac import (
     check_user_has_super_role,
@@ -9,27 +9,36 @@ from core.rbac import (
     is_super_admin_role_name,
     user_has_role,
 )
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, delete, and_
 from models.role_attributes import RoleAttributes
 from models.role_attributes_mapper import RoleAttributesMapper
+from models.role_mapper import RoleMapper
+from models.roles import Roles
 from utils.custom_exception import (
-    ServerException,
+    AuthorizationException,
     ConflictException,
     NotFoundException,
-    AuthorizationException,
+    ServerException,
 )
+
 from .schema import (
-    RoleResponse, RoleCreate, RoleUpdate, RolesListResponse,
-    RoleAttributeMappingBatchResponse, AttributeMappingResult,
-    RoleAttributesGroupedResponse, RoleAttributesGroup, RoleAttributeDetail,
-    PermissionCheckResponse
+    AttributeMappingResult,
+    PermissionCheckResponse,
+    RoleAttributeDetail,
+    RoleAttributeMappingBatchResponse,
+    RoleAttributesGroup,
+    RoleAttributesGroupedResponse,
+    RoleCreate,
+    RoleResponse,
+    RolesListResponse,
+    RoleUpdate,
 )
+
 
 def _ensure_role_is_mutable(role: Roles) -> None:
     """Block mutations of the system super-admin role."""
     if is_super_admin_role_name(role.name):
         raise AuthorizationException("Cannot modify the system super-admin role")
+
 
 def _to_role_response(role: Roles) -> RoleResponse:
     return RoleResponse(
@@ -39,12 +48,13 @@ def _to_role_response(role: Roles) -> RoleResponse:
         level=role.level,
     )
 
+
 async def _assert_can_manage_role_level(
     db: AsyncSession,
     actor_user_id: str,
     *,
     target_level: int,
-    existing_role_level: Optional[int] = None,
+    existing_role_level: int | None = None,
 ) -> int:
     """
     Allow managing roles at the same level or lower.
@@ -52,14 +62,11 @@ async def _assert_can_manage_role_level(
     """
     actor_level = await get_user_role_level(actor_user_id, db)
     if existing_role_level is not None and existing_role_level > actor_level:
-        raise AuthorizationException(
-            "Cannot manage a role with higher level than your own"
-        )
+        raise AuthorizationException("Cannot manage a role with higher level than your own")
     if target_level > actor_level:
-        raise AuthorizationException(
-            "Cannot assign a role level higher than your own"
-        )
+        raise AuthorizationException("Cannot assign a role level higher than your own")
     return actor_level
+
 
 async def _assert_not_own_role(
     db: AsyncSession,
@@ -69,6 +76,7 @@ async def _assert_not_own_role(
     """Block editing/deleting the role currently assigned to the actor."""
     if await user_has_role(actor_user_id, role_id, db):
         raise AuthorizationException("Cannot modify or delete your own role")
+
 
 async def get_all_roles(db: AsyncSession, actor_user_id: str) -> RolesListResponse:
     """Get assignable roles (excludes the system super-admin role)."""
@@ -93,6 +101,7 @@ async def get_all_roles(db: AsyncSession, actor_user_id: str) -> RolesListRespon
     except Exception as e:
         raise ServerException(f"Failed to retrieve roles: {str(e)}")
 
+
 async def create_role(
     db: AsyncSession,
     role_data: RoleCreate,
@@ -109,9 +118,7 @@ async def create_role(
             target_level=role_data.level,
         )
 
-        existing_role = await db.execute(
-            select(Roles).where(Roles.name == role_data.name)
-        )
+        existing_role = await db.execute(select(Roles).where(Roles.name == role_data.name))
         if existing_role.scalar_one_or_none():
             raise ConflictException("Role name already exists")
 
@@ -126,10 +133,11 @@ async def create_role(
 
         return _to_role_response(role)
 
-    except (ConflictException, AuthorizationException):
+    except ConflictException, AuthorizationException:
         raise
     except Exception as e:
         raise ServerException(f"Failed to create role: {str(e)}")
+
 
 async def update_role(
     db: AsyncSession,
@@ -139,9 +147,7 @@ async def update_role(
 ) -> RoleResponse:
     """Update role information"""
     try:
-        role_result = await db.execute(
-            select(Roles).where(Roles.id == role_id)
-        )
+        role_result = await db.execute(select(Roles).where(Roles.id == role_id))
         role = role_result.scalar_one_or_none()
         if not role:
             raise NotFoundException("Role not found")
@@ -177,17 +183,16 @@ async def update_role(
 
         return _to_role_response(role)
 
-    except (ConflictException, NotFoundException, AuthorizationException):
+    except ConflictException, NotFoundException, AuthorizationException:
         raise
     except Exception as e:
         raise ServerException(f"Failed to update role: {str(e)}")
 
+
 async def delete_role(db: AsyncSession, role_id: str, actor_user_id: str) -> bool:
     """Delete a role"""
     try:
-        role_result = await db.execute(
-            select(Roles).where(Roles.id == role_id)
-        )
+        role_result = await db.execute(select(Roles).where(Roles.id == role_id))
         role = role_result.scalar_one_or_none()
         if not role:
             raise NotFoundException("Role not found")
@@ -211,24 +216,23 @@ async def delete_role(db: AsyncSession, role_id: str, actor_user_id: str) -> boo
             delete(RoleAttributesMapper).where(RoleAttributesMapper.role_id == role_id)
         )
 
-        await db.execute(
-            delete(Roles).where(Roles.id == role_id)
-        )
+        await db.execute(delete(Roles).where(Roles.id == role_id))
         await db.commit()
 
         return True
 
-    except (ConflictException, NotFoundException, AuthorizationException):
+    except ConflictException, NotFoundException, AuthorizationException:
         raise
     except Exception as e:
         raise ServerException(f"Failed to delete role: {str(e)}")
 
-async def get_role_attribute_mapping(db: AsyncSession, role_id: str) -> RoleAttributesGroupedResponse:
+
+async def get_role_attribute_mapping(
+    db: AsyncSession, role_id: str
+) -> RoleAttributesGroupedResponse:
     """Get role attributes mapping grouped by group and category (left join)."""
     try:
-        role_result = await db.execute(
-            select(Roles).where(Roles.id == role_id)
-        )
+        role_result = await db.execute(select(Roles).where(Roles.id == role_id))
         role = role_result.scalar_one_or_none()
         if not role:
             raise NotFoundException("Role not found")
@@ -236,25 +240,28 @@ async def get_role_attribute_mapping(db: AsyncSession, role_id: str) -> RoleAttr
         _ensure_role_is_mutable(role)
 
         # Use LEFT JOIN to get all attributes and their mappings
-        query = select(
-            RoleAttributes.name,
-            RoleAttributes.group,
-            RoleAttributes.category,
-            RoleAttributesMapper.value
-        ).select_from(
-            RoleAttributes
-        ).outerjoin(
-            RoleAttributesMapper,
-            and_(
-                RoleAttributes.id == RoleAttributesMapper.attributes_id,
-                RoleAttributesMapper.role_id == role_id
+        query = (
+            select(
+                RoleAttributes.name,
+                RoleAttributes.group,
+                RoleAttributes.category,
+                RoleAttributesMapper.value,
             )
-        ).order_by(RoleAttributes.id)
+            .select_from(RoleAttributes)
+            .outerjoin(
+                RoleAttributesMapper,
+                and_(
+                    RoleAttributes.id == RoleAttributesMapper.attributes_id,
+                    RoleAttributesMapper.role_id == role_id,
+                ),
+            )
+            .order_by(RoleAttributes.id)
+        )
 
         result = await db.execute(query)
         rows = result.all()
 
-        grouped: Dict[str, Dict[str, List[RoleAttributeDetail]]] = {}
+        grouped: dict[str, dict[str, list[RoleAttributeDetail]]] = {}
         for row in rows:
             group = row.group or "default"
             category = row.category or "uncategorized"
@@ -276,22 +283,21 @@ async def get_role_attribute_mapping(db: AsyncSession, role_id: str) -> RoleAttr
 
         return RoleAttributesGroupedResponse(groups=groups)
 
-    except (NotFoundException, AuthorizationException):
+    except NotFoundException, AuthorizationException:
         raise
     except Exception as e:
         raise ServerException(f"Failed to get role attributes: {str(e)}")
 
+
 async def update_role_attribute_mapping(
     db: AsyncSession,
     role_id: str,
-    attributes_data: Dict[str, bool],
+    attributes_data: dict[str, bool],
     actor_user_id: str,
 ) -> RoleAttributeMappingBatchResponse:
     """Batch update role and attributes mapping with detailed results"""
     try:
-        role_result = await db.execute(
-            select(Roles).where(Roles.id == role_id)
-        )
+        role_result = await db.execute(select(Roles).where(Roles.id == role_id))
         role = role_result.scalar_one_or_none()
         if not role:
             raise NotFoundException("Role not found")
@@ -316,7 +322,9 @@ async def update_role_attribute_mapping(
 
         if attribute_names:
             existing_attributes = await db.execute(
-                select(RoleAttributes.id, RoleAttributes.name).where(RoleAttributes.name.in_(attribute_names))
+                select(RoleAttributes.id, RoleAttributes.name).where(
+                    RoleAttributes.name.in_(attribute_names)
+                )
             )
             for row in existing_attributes:
                 name_to_id_map[row.name] = row.id
@@ -324,11 +332,13 @@ async def update_role_attribute_mapping(
             # Handle invalid attribute names
             invalid_names = set(attribute_names) - set(name_to_id_map.keys())
             for invalid_name in invalid_names:
-                results.append(AttributeMappingResult(
-                    attribute_id=invalid_name,  # Keep name for error reporting
-                    status="failed",
-                    message="Invalid attribute name"
-                ))
+                results.append(
+                    AttributeMappingResult(
+                        attribute_id=invalid_name,  # Keep name for error reporting
+                        status="failed",
+                        message="Invalid attribute name",
+                    )
+                )
                 failed_count += 1
 
         # Process valid attributes
@@ -345,7 +355,7 @@ async def update_role_attribute_mapping(
                     select(RoleAttributesMapper).where(
                         and_(
                             RoleAttributesMapper.role_id == role_id,
-                            RoleAttributesMapper.attributes_id == attribute_id
+                            RoleAttributesMapper.attributes_id == attribute_id,
                         )
                     )
                 )
@@ -357,25 +367,27 @@ async def update_role_attribute_mapping(
                 else:
                     # Create new mapping
                     new_mapping = RoleAttributesMapper(
-                        role_id=role_id,
-                        attributes_id=attribute_id,
-                        value=value
+                        role_id=role_id, attributes_id=attribute_id, value=value
                     )
                     db.add(new_mapping)
 
-                results.append(AttributeMappingResult(
-                    attribute_id=attribute_name,
-                    status="success",
-                    message="Updated successfully"
-                ))
+                results.append(
+                    AttributeMappingResult(
+                        attribute_id=attribute_name,
+                        status="success",
+                        message="Updated successfully",
+                    )
+                )
                 success_count += 1
 
             except Exception as e:
-                results.append(AttributeMappingResult(
-                    attribute_id=attribute_name,
-                    status="failed",
-                    message=f"Failed to process: {str(e)}"
-                ))
+                results.append(
+                    AttributeMappingResult(
+                        attribute_id=attribute_name,
+                        status="failed",
+                        message=f"Failed to process: {str(e)}",
+                    )
+                )
                 failed_count += 1
 
         await db.commit()
@@ -384,18 +396,17 @@ async def update_role_attribute_mapping(
             results=results,
             total_attributes=len(attributes_data),
             success_count=success_count,
-            failed_count=failed_count
+            failed_count=failed_count,
         )
 
-    except (NotFoundException, AuthorizationException):
+    except NotFoundException, AuthorizationException:
         raise
     except Exception as e:
         raise ServerException(f"Failed to update role attributes mapping: {str(e)}")
 
+
 async def check_user_permissions(
-    db: AsyncSession,
-    user_id: str,
-    required_attributes: List[str] = None
+    db: AsyncSession, user_id: str, required_attributes: list[str] = None
 ) -> PermissionCheckResponse:
     """Check if user has required permission attributes."""
     try:
@@ -416,13 +427,14 @@ async def check_user_permissions(
 
         user_attributes_set = set()
         if user_role_id:
-            attributes_query = select(RoleAttributes.name).join(
-                RoleAttributesMapper,
-                RoleAttributes.id == RoleAttributesMapper.attributes_id
-            ).where(
-                and_(
-                    RoleAttributesMapper.role_id == user_role_id,
-                    RoleAttributesMapper.value == True
+            attributes_query = (
+                select(RoleAttributes.name)
+                .join(RoleAttributesMapper, RoleAttributes.id == RoleAttributesMapper.attributes_id)
+                .where(
+                    and_(
+                        RoleAttributesMapper.role_id == user_role_id,
+                        RoleAttributesMapper.value,
+                    )
                 )
             )
             attributes_result = await db.execute(attributes_query)

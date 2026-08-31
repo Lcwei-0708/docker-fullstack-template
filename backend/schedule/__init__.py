@@ -1,17 +1,18 @@
-from core.database import engine
-from .cleanup_tasks import CleanupTasks
 from apscheduler.executors.asyncio import AsyncIOExecutor
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+from core.database import engine
+
+from .cleanup_tasks import CleanupTasks
 
 executors = {
-    'default': AsyncIOExecutor(),
+    "default": AsyncIOExecutor(),
 }
-jobstores = {
-    'default': SQLAlchemyJobStore(engine=engine)
-}
+jobstores = {"default": SQLAlchemyJobStore(engine=engine)}
 scheduler = AsyncIOScheduler(jobstores=jobstores, executors=executors)
 cleanup_tasks = CleanupTasks()
+
 
 def register_schedules():
     # Add new schedules imports below.
@@ -22,7 +23,7 @@ def register_schedules():
         minute=0,
         id="cleanup_expired_sessions",
         name="Cleanup Expired Sessions",
-        replace_existing=True
+        replace_existing=True,
     )
     scheduler.add_job(
         cleanup_tasks.cleanup_expired_email_verifications,
@@ -31,5 +32,5 @@ def register_schedules():
         minute=0,
         id="cleanup_expired_email_verifications",
         name="Cleanup Expired Email Verifications",
-        replace_existing=True
+        replace_existing=True,
     )
