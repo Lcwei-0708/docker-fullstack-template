@@ -15,3 +15,18 @@ This frontend project is built with modern web technologies to provide a fast, m
 - 🎨 Modern, fully responsive UI styled with Tailwind CSS
 - 🧩 Modular, component-based architecture using React
 - 🛡️ Code quality enforced by ESLint
+
+## Lint
+
+Requires `npm install` in this directory.
+
+```bash
+cd frontend
+npm run lint
+```
+
+Auto-fix:
+
+```bash
+npm run lint:fix
+```

@@ -37,6 +37,7 @@ dev = [
     "pytest-asyncio==1.4.0",
     "coverage==7.15.2",
     "pytest-cov==7.1.0",
+    "ruff>=0.16.5",
 ]
 
 [tool.uv]
@@ -73,3 +74,22 @@ exclude_lines = [
 ]
 show_missing = true
 precision = 2
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+src = ["."]
+exclude = [
+    ".venv",
+    "migrations/versions",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["B"]
+
+[tool.ruff.format]
+quote-style = "double"

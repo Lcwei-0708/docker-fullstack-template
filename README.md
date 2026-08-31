@@ -44,9 +44,9 @@ This project is a ready-to-use fullstack template that leverages Docker Compose 
      On first start, `nginx/whitelist.conf` is auto-created from `whitelist.conf.example`
      (not tracked by git). Edit that file if you need to restrict allowed IP addresses.
 
-  
+
    - To enable SSL (HTTPS), you need to configure SSL settings in your `.env` file and place your SSL certificates in the `nginx/ssl` directory.
-      - Env setting: 
+      - Env setting:
          ```bash
          SSL_ENABLE=true
          SSL_CERT_FILE=cert.pem
@@ -59,10 +59,30 @@ This project is a ready-to-use fullstack template that leverages Docker Compose 
          ├── cert.pem       # Your SSL certificate
          └── privkey.pem    # Your private key
          ```
-   
+
    > See [Nginx Docs](./nginx/README.md) for more details.
 
-#### 5. **Start the services**
+#### 5. **Enable pre-commit hooks (one-time, for local development)**
+
+   Run once after clone to install tools, dependencies, and git hooks. Requires [uv](https://docs.astral.sh/uv/) and [Node.js](https://nodejs.org/) on the host.
+
+   ```bash
+   ./scripts/setup-pre-commit.sh
+   ```
+
+   re-enable hooks:
+
+   ```bash
+   pre-commit install
+   ```
+
+   disable hooks before commit:
+
+   ```bash
+   pre-commit uninstall
+   ```
+
+#### 6. **Start the services**
 
    First run or after code changes:
 
@@ -76,7 +96,7 @@ This project is a ready-to-use fullstack template that leverages Docker Compose 
    docker compose up -d
    ```
 
-#### 6. **Stop the services**
+#### 7. **Stop the services**
 
    ```bash
    docker compose down
