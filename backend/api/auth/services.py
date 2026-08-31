@@ -4,7 +4,7 @@ from urllib.parse import quote
 
 import redis
 from jose import JWTError, jwt
-from sqlalchemy import or_, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
@@ -406,8 +406,8 @@ async def reset_password(
             select(PasswordResetTokens).where(
                 PasswordResetTokens.token == token_string,
                 PasswordResetTokens.user_id == user_id,
-                not PasswordResetTokens.is_used,
-                PasswordResetTokens.expires_at > datetime.now().astimezone(),
+                PasswordResetTokens.is_used.is_(False),
+                PasswordResetTokens.expires_at > func.now(),
             )
         )
         token_record = result.scalar_one_or_none()
@@ -457,8 +457,8 @@ async def validate_password_reset_token(db: AsyncSession, token: dict) -> TokenV
             select(PasswordResetTokens).where(
                 PasswordResetTokens.token == token_string,
                 PasswordResetTokens.user_id == user_id,
-                not PasswordResetTokens.is_used,
-                PasswordResetTokens.expires_at > datetime.now().astimezone(),
+                PasswordResetTokens.is_used.is_(False),
+                PasswordResetTokens.expires_at > func.now(),
             )
         )
         token_record = result.scalar_one_or_none()
@@ -708,7 +708,7 @@ async def _request_password_reset_email(
     # Invalidate all previous unused tokens for this user
     await db.execute(
         update(PasswordResetTokens)
-        .where(PasswordResetTokens.user_id == user.id, not PasswordResetTokens.is_used)
+        .where(PasswordResetTokens.user_id == user.id, PasswordResetTokens.is_used.is_(False))
         .values(is_used=True)
     )
 
@@ -745,8 +745,8 @@ async def verify_email(
                 EmailVerificationTokens.user_id == user_id,
                 EmailVerificationTokens.email == email,
                 EmailVerificationTokens.token_type == verification_type,
-                not EmailVerificationTokens.is_used,
-                EmailVerificationTokens.expires_at > datetime.now().astimezone(),
+                EmailVerificationTokens.is_used.is_(False),
+                EmailVerificationTokens.expires_at > func.now(),
             )
         )
         token_record = result.scalar_one_or_none()
@@ -964,7 +964,7 @@ async def _request_registration_verification_email(
         .where(
             EmailVerificationTokens.user_id == user.id,
             EmailVerificationTokens.token_type == "registration",
-            not EmailVerificationTokens.is_used,
+            EmailVerificationTokens.is_used.is_(False),
         )
         .values(is_used=True)
     )
@@ -1002,7 +1002,7 @@ async def _request_email_change_verification_email(
         .where(
             EmailVerificationTokens.user_id == user.id,
             EmailVerificationTokens.token_type == "email_change",
-            not EmailVerificationTokens.is_used,
+            EmailVerificationTokens.is_used.is_(False),
         )
         .values(is_used=True)
     )

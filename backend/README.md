@@ -53,7 +53,14 @@ This backend project is built with modern Python technologies to provide a robus
 | Ignored | Reason |
 |---------|--------|
 | `B008` | FastAPI `Depends()` in default arguments |
-| `B` in `tests/**` | Relaxed rules for tests |
+| `B904` | Exception chaining in FastAPI handlers |
+| `E712` | SQLAlchemy boolean checks; auto-fix breaks ORM queries |
+
+| Per-file ignored | Path | Reason |
+|------------------|------|--------|
+| `B` | `tests/**` | Relaxed bugbear rules in tests |
+| `E402` | `main.py`, `core/config.py`, `migrations/env.py` | Imports after bootstrap / env setup |
+| `E501` | `utils/email_templates.py` | Long HTML email template lines |
 
 ### Manual commands
 

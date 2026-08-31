@@ -298,32 +298,29 @@ async def clear_user_all_sessions(
 ) -> bool:
     """Logout user from all devices, optionally keeping one active session."""
     try:
-        update_query = (
-            update(UserSessions)
-            .where(UserSessions.user_id == user_id, UserSessions.is_active)
-            .values(is_active=False)
-        )
-        if exclude_session_id:
-            update_query = update_query.where(UserSessions.id != exclude_session_id)
-
-        await db.execute(update_query)
-        await db.commit()
-
         sessions_query = select(UserSessions.id).where(
-            UserSessions.user_id == user_id, not UserSessions.is_active
+            UserSessions.user_id == user_id,
+            UserSessions.is_active.is_(True),
         )
         if exclude_session_id:
             sessions_query = sessions_query.where(UserSessions.id != exclude_session_id)
 
         result = await db.execute(sessions_query)
-        session_ids = result.scalars().all()
+        session_ids = list(result.scalars().all())
 
-        if session_ids:
-            redis_keys = []
-            for sid in session_ids:
-                redis_keys.append(f"session:{sid}")
-                redis_keys.append(f"csrf:{sid}")
-            await redis_client.delete(*redis_keys)
+        if not session_ids:
+            return True
+
+        await db.execute(
+            update(UserSessions).where(UserSessions.id.in_(session_ids)).values(is_active=False)
+        )
+        await db.commit()
+
+        redis_keys = []
+        for sid in session_ids:
+            redis_keys.append(f"session:{sid}")
+            redis_keys.append(f"csrf:{sid}")
+        await redis_client.delete(*redis_keys)
 
         return True
     except Exception as e:

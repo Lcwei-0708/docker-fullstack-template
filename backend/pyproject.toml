@@ -87,7 +87,11 @@ exclude = [
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
-ignore = ["B008", "B904"]
+ignore = [
+    "B008",  # FastAPI Depends() in default arguments
+    "B904",  # raise ... from err in except (FastAPI handlers)
+    "E712",  # SQLAlchemy columns need == True/False or .is_(), not `not column`
+]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["B"]

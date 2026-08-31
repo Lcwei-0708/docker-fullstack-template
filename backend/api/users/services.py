@@ -292,7 +292,7 @@ async def update_user(
                 .where(
                     EmailVerificationTokens.user_id == user.id,
                     EmailVerificationTokens.token_type == "email_change",
-                    not EmailVerificationTokens.is_used,
+                    EmailVerificationTokens.is_used.is_(False),
                 )
                 .values(is_used=True)
             )

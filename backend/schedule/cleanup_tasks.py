@@ -21,7 +21,7 @@ class CleanupTasks:
                     delete(UserSessions).where(
                         or_(
                             UserSessions.expires_at < datetime.now().astimezone(),
-                            not UserSessions.is_active,
+                            UserSessions.is_active.is_(False),
                         )
                     )
                 )
