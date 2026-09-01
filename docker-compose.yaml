@@ -23,7 +23,7 @@ services:
       - FRONTEND_PORT=${FRONTEND_PORT:-3000}
       - BACKEND_PORT=${BACKEND_PORT:-5000}
       - PMA_PORT=${PMA_PORT:-8080}
-      - GRAFANA_PORT=${GRAFANA_PORT:-3001}
+      - GRAFANA_PORT=${GRAFANA_PORT:-8109}
       - REDIS_INSIGHT_PORT=${REDIS_INSIGHT_PORT:-5540}
       # Redis Insight authentication
       - REDIS_INSIGHT_USER=${REDIS_INSIGHT_USER:-}
@@ -34,7 +34,7 @@ services:
       - "${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}"
       - "${BACKEND_PORT:-5000}:${BACKEND_PORT:-5000}"
       - "${PMA_PORT:-8080}:${PMA_PORT:-8080}"
-      - "${GRAFANA_PORT:-3001}:${GRAFANA_PORT:-3001}"
+      - "${GRAFANA_PORT:-8109}:${GRAFANA_PORT:-8109}"
       - "${REDIS_INSIGHT_PORT:-5540}:${REDIS_INSIGHT_PORT:-5540}"
     depends_on:
       frontend:
@@ -96,9 +96,9 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - SSL_ENABLE=${SSL_ENABLE:-false}
       - SECRET_KEY=${SECRET_KEY:-change-me}
-      - PROJECT_NAME=${PROJECT_NAME:-docker-fullstack-template}
-      - PROJECT_VERSION=${PROJECT_VERSION:-0.1.0}
-      - PROJECT_DESCRIPTION=${PROJECT_DESCRIPTION:-Docker fullstack template}
+      - PROJECT_NAME=${PROJECT_NAME:-Docker Fullstack Template}
+      - PROJECT_VERSION=${PROJECT_VERSION:-1.0.0}
+      - PROJECT_DESCRIPTION=${PROJECT_DESCRIPTION:-Docker Fullstack Template}
       # CORS settings
       - HOSTNAME=${HOSTNAME:-localhost}
       - BACKEND_PORT=${BACKEND_PORT:-5000}
@@ -145,7 +145,7 @@ services:
         condition: service_started
     networks:
       - backend-network
-    restart: always    
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "curl --silent --fail localhost:5000/healthz || exit 1"]
       interval: 10s
@@ -183,7 +183,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
-      
+
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:5.2.3
     environment:
@@ -344,7 +344,7 @@ services:
       - TZ=${TIMEZONE:-UTC}
       - SSL_ENABLE=${SSL_ENABLE:-false}
       - GRAFANA_HOST=${GRAFANA_HOST:-localhost}
-      - GRAFANA_PORT=${GRAFANA_PORT:-3001}
+      - GRAFANA_PORT=${GRAFANA_PORT:-8109}
       - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
       - GF_PANELS_DISABLE_SANITIZE_HTML=true
