@@ -1,11 +1,9 @@
 [![Testing](https://github.com/Lcwei-0708/docker-fullstack-template/actions/workflows/test-backend.yml/badge.svg)](https://github.com/Lcwei-0708/docker-fullstack-template/actions/workflows/test-backend.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://lcwei-0708.github.io/docker-fullstack-template/coverage.json)](https://lcwei-0708.github.io/docker-fullstack-template/)
 
-
 # Docker Fullstack Template
 
 This project is a ready-to-use fullstack template that leverages Docker Compose to seamlessly integrate Nginx, React, FastAPI, and MariaDB. It provides a modern, production-like environment for rapid development and deployment of web applications with a clear separation between frontend and backend services.
-
 
 ## Features
 
@@ -18,101 +16,100 @@ This project is a ready-to-use fullstack template that leverages Docker Compose 
 - 🐳 **Dockerized**: All services are containerized with Docker Compose for easy deployment.
 - ⚙️ **CI/CD Testing**: Automated testing and generate coverage reporting with GitHub Actions.
 
-
 ## How to Use
 
 #### 1. **Clone the repository**
 
-   ```bash
-   git clone https://github.com/Lcwei-0708/docker-fullstack-template.git
-   ```
+```bash
+git clone https://github.com/Lcwei-0708/docker-fullstack-template.git
+```
 
 #### 2. **Move to project**
 
-   ```bash
-   cd docker-fullstack-template
-   ```
+```bash
+cd docker-fullstack-template
+```
 
 #### 3. **Configure environment variables**
 
-   If you want to customize settings, copy `.env.example` to `.env` and edit as needed.
+Copy `.env.example` to `.env`, then edit as needed:
 
-   > Set the `COMPOSE_FILE` environment variable to switch between development and production modes.
+```bash
+cp .env.example .env
+```
 
-#### 4. **Set up Nginx IP whitelist and SSL certificates**
+> Set the `COMPOSE_FILE` environment variable to switch between development and production modes.
 
-     On first start, `nginx/whitelist.conf` is auto-created from `whitelist.conf.example`
-     (not tracked by git). Edit that file if you need to restrict allowed IP addresses.
+#### 4. **Start the services**
 
+First run or after code changes:
 
-   - To enable SSL (HTTPS), you need to configure SSL settings in your `.env` file and place your SSL certificates in the `nginx/ssl` directory.
-      - Env setting:
-         ```bash
-         SSL_ENABLE=true
-         SSL_CERT_FILE=cert.pem
-         SSL_KEY_FILE=privkey.pem
-         ```
+```bash
+docker compose up -d --build
+```
 
-      - Place your certificates in the `nginx/ssl` directory:
-         ```bash
-         nginx/ssl/
-         ├── cert.pem       # Your SSL certificate
-         └── privkey.pem    # Your private key
-         ```
+Subsequent runs (no code changes):
 
-   > See [Nginx Docs](./nginx/README.md) for more details.
+```bash
+docker compose up -d
+```
 
-#### 5. **Enable pre-commit hooks (one-time, for local development)**
+#### 5. **Stop the services**
 
-   Run once after clone to install tools, dependencies, and git hooks. Requires [uv](https://docs.astral.sh/uv/) and [Node.js](https://nodejs.org/) on the host.
+```bash
+docker compose down
+```
 
-   ```bash
-   ./scripts/setup-pre-commit.sh
-   ```
+#### 6. **Set up Nginx IP whitelist and SSL certificates**
 
-   Hooks auto-fix on commit: backend (Ruff format + lint fix), frontend (Prettier + ESLint fix), then re-stage if files changed.
+On first start, `nginx/whitelist.conf` is auto-created from `whitelist.conf.example`. Edit that file if you need to restrict allowed IP addresses.
 
-   re-enable hooks:
+To enable SSL (HTTPS), configure SSL settings in `.env` and place certificates in `nginx/ssl`:
 
-   ```bash
-   pre-commit install
-   ```
+```bash
+SSL_ENABLE=true
+SSL_CERT_FILE=cert.pem
+SSL_KEY_FILE=privkey.pem
+```
 
-   disable hooks before commit:
+```bash
+nginx/ssl/
+├── cert.pem       # Your SSL certificate
+└── privkey.pem    # Your private key
+```
 
-   ```bash
-   pre-commit uninstall
-   ```
+> See [Nginx Docs](./nginx/README.md) for more details.
 
-#### 6. **Start the services**
+#### 7. **Enable pre-commit hooks (for local development)**
 
-   First run or after code changes:
+Run once if you want lint/format checks on commit. Requires [uv](https://docs.astral.sh/uv/) and [Node.js](https://nodejs.org/) on the host.
 
-   ```bash
-   docker compose up -d --build
-   ```
+```bash
+./scripts/setup-pre-commit.sh
+```
 
-   Subsequent runs (no code changes):
+Hooks auto-fix on commit: backend (Ruff format + lint fix), frontend (Prettier + ESLint fix), then re-stage if files changed.
 
-   ```bash
-   docker compose up -d
-   ```
+Re-enable hooks:
 
-#### 7. **Stop the services**
+```bash
+pre-commit install
+```
 
-   ```bash
-   docker compose down
-   ```
+Disable hooks before commit:
+
+```bash
+pre-commit uninstall
+```
 
 ## Documentation
 
-| Directory    | Link                                      |
-|--------------|-------------------------------------------|
-| Frontend     | [Docs](./frontend/README.md)              |
-| Backend      | [Docs](./backend/README.md)               |
-| Nginx        | [Docs](./nginx/README.md)                 |
-| CICD         | [Docs](./.github/workflows/README.md)     |
-
+| Directory | Link                                  |
+| --------- | ------------------------------------- |
+| Frontend  | [Docs](./frontend/README.md)          |
+| Backend   | [Docs](./backend/README.md)           |
+| Nginx     | [Docs](./nginx/README.md)             |
+| CICD      | [Docs](./.github/workflows/README.md) |
 
 ## License
 
