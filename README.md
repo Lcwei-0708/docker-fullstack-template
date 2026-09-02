@@ -64,7 +64,7 @@ docker compose down
 
 On first start, `nginx/whitelist.conf` is auto-created from `whitelist.conf.example`. Edit that file if you need to restrict allowed IP addresses.
 
-To enable SSL (HTTPS), configure SSL settings in `.env` and place certificates in `nginx/ssl`:
+To enable SSL (HTTPS), configure SSL settings in `.env` and place certificates in `nginx/certs`:
 
 ```bash
 SSL_ENABLE=true
@@ -73,7 +73,7 @@ SSL_KEY_FILE=privkey.pem
 ```
 
 ```bash
-nginx/ssl/
+nginx/certs/
 ├── cert.pem       # Your SSL certificate
 └── privkey.pem    # Your private key
 ```

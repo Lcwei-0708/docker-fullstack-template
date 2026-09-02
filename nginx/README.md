@@ -48,9 +48,9 @@ SSL_CERT_FILE=cert.pem
 SSL_KEY_FILE=privkey.pem
 ```
 
-Place your certificates in the `nginx/ssl` directory:
+Place your certificates in the `nginx/certs` directory:
 ```bash
-nginx/ssl/
+nginx/certs/
 ├── cert.pem         # Your SSL certificate
 └── privkey.pem      # Your private key
 ```
