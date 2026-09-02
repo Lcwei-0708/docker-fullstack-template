@@ -147,5 +147,5 @@ async def change_password(
         return True
     except AuthenticationException:
         raise
-    except Exception:
-        raise ServerException("Failed to change password")
+    except Exception as e:
+        raise ServerException(f"Failed to change password: {e}")

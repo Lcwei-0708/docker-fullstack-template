@@ -332,8 +332,9 @@ class TestSMTPMailer:
             mailer._open()
         assert "SMTP_USERNAME" in str(exc_info.value) or "SMTP_PASSWORD" in str(exc_info.value)
 
+    @patch("extensions.smtp.logger")
     @patch("extensions.smtp.smtplib.SMTP")
-    def test_open_connection_error(self, mock_smtp):
+    def test_open_connection_error(self, mock_smtp, mock_logger):
         """Test handling connection errors"""
         cfg = SMTPSettings(
             enabled=True,
@@ -355,6 +356,8 @@ class TestSMTPMailer:
             mailer._open()
         assert "Connection failed" in str(exc_info.value)
         mock_client.quit.assert_called_once()
+        mock_logger.error.assert_called_once()
+        assert "Connection failed" in str(mock_logger.error.call_args)
 
     @patch.object(SMTPMailer, "_open")
     def test_send_text_plain(self, mock_open):

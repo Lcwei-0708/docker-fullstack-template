@@ -153,5 +153,5 @@ async def change_user_password_api(
 
     except AuthenticationException:
         raise HTTPException(status_code=401, detail="Current password is incorrect")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500)

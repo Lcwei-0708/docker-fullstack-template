@@ -1,8 +1,12 @@
+import logging
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from utils.response import APIResponse
+
+logger = logging.getLogger("http")
 
 
 def add_exception_handlers(app: FastAPI):
@@ -30,5 +34,12 @@ def add_exception_handlers(app: FastAPI):
 
     @app.exception_handler(Exception)
     async def internal_server_error_handler(request: Request, exc: Exception):
+        logger.error(
+            "Unhandled exception for %s %s: %s",
+            request.method,
+            request.url.path,
+            exc,
+            exc_info=(type(exc), exc, exc.__traceback__),
+        )
         resp = APIResponse(code=500, message="Internal Server Error", data=None)
         return JSONResponse(status_code=500, content=resp.dict(exclude_none=True))

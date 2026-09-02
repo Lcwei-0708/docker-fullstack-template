@@ -485,7 +485,7 @@ class TestChangePasswordAPI:
             assert response.status_code == 500
             data = response.json()
             assert data["code"] == 500
-            assert data["message"] == "Database error"
+            assert data["message"] == "Internal Server Error"
 
     @pytest.mark.asyncio
     async def test_change_password_authentication_exception(

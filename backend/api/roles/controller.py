@@ -9,7 +9,6 @@ from utils.custom_exception import (
     AuthorizationException,
     ConflictException,
     NotFoundException,
-    ServerException,
 )
 from utils.response import APIResponse, common_responses, parse_responses
 
@@ -121,7 +120,7 @@ async def update_role_api(
         raise HTTPException(status_code=403, detail=e.message)
     except ConflictException:
         raise HTTPException(status_code=409, detail="Role name already exists")
-    except ServerException:
+    except Exception:
         raise HTTPException(status_code=500)
 
 
