@@ -81,7 +81,15 @@ class SMTPMailer:
             if self._cfg.username and self._cfg.password:
                 client.login(self._cfg.username, self._cfg.password)
             return client
-        except Exception:
+        except Exception as e:
+            logger.error(
+                "SMTP connection failed: host=%s port=%s encryption=%s error=%s",
+                self._cfg.host,
+                self._cfg.port,
+                enc,
+                e,
+                exc_info=True,
+            )
             try:
                 client.quit()
             except Exception:

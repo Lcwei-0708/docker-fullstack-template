@@ -17,7 +17,7 @@ async def get_db() -> AsyncSession:
             await db.rollback()
             raise
         except Exception as e:
-            logger.error(f"Database error: {e}")
+            logger.error("Database error: %s", e, exc_info=True)
             await db.rollback()
             raise e
 
@@ -28,7 +28,7 @@ def get_sync_db():
     try:
         yield db
     except Exception as e:
-        logger.error(f"Database error: {e}")
+        logger.error("Database error: %s", e, exc_info=True)
         db.rollback()
         raise e
     finally:

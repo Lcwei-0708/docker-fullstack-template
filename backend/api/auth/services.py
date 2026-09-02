@@ -293,16 +293,16 @@ async def logout(
             await db.commit()
 
         return True
-    except Exception:
-        raise ServerException("Logout failed")
+    except Exception as e:
+        raise ServerException(f"Logout failed: {e}")
 
 
 async def logout_all_devices(db: AsyncSession, redis_client: redis.Redis, user_id: str) -> bool:
     """Logout user from all devices"""
     try:
         return await clear_user_all_sessions(db, redis_client, user_id)
-    except Exception:
-        raise ServerException("Failed to logout all devices")
+    except Exception as e:
+        raise ServerException(f"Failed to logout all devices: {e}")
 
 
 async def get_or_create_csrf_token(
