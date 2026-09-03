@@ -53,9 +53,16 @@ EOF
 # Start cron service
 service cron start
 
-# Auto-create whitelist.conf from example on first run (nginx/whitelist.conf on host)
-if [ -f /etc/nginx/host/whitelist.conf.example ] && [ ! -f /etc/nginx/host/whitelist.conf ]; then
-    cp /etc/nginx/host/whitelist.conf.example /etc/nginx/host/whitelist.conf
+# Auto-create whitelist.conf from example on first run (nginx/whitelist.conf on host).
+# If a directory exists at that path (common Docker bind-mount mistake), replace it.
+WHITELIST_PATH=/etc/nginx/host/whitelist.conf
+WHITELIST_EXAMPLE=/etc/nginx/host/whitelist.conf.example
+if [ -d "$WHITELIST_PATH" ]; then
+    echo "WARNING: $WHITELIST_PATH is a directory; replacing with file from example"
+    rm -rf "$WHITELIST_PATH"
+fi
+if [ -f "$WHITELIST_EXAMPLE" ] && [ ! -f "$WHITELIST_PATH" ]; then
+    cp "$WHITELIST_EXAMPLE" "$WHITELIST_PATH"
 fi
 
 # Process all template files
