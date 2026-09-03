@@ -18,6 +18,7 @@ from models.role_attributes_mapper import RoleAttributesMapper
 from models.role_mapper import RoleMapper
 from models.roles import Roles
 from models.users import Users
+from utils.custom_exception import ServerException
 
 
 class TestIsSuperAdminRoleName:
@@ -54,10 +55,11 @@ class TestCheckUserHasSuperRole:
         assert await check_user_has_super_role(test_user.id, test_db_session) is False
 
     @pytest.mark.asyncio
-    async def test_returns_false_on_error(self):
+    async def test_raises_server_exception_on_error(self):
         db = AsyncMock()
         db.execute.side_effect = RuntimeError("db down")
-        assert await check_user_has_super_role("user-1", db) is False
+        with pytest.raises(ServerException, match="Failed to check super role"):
+            await check_user_has_super_role("user-1", db)
 
 
 class TestGetUserAttributes:
@@ -102,10 +104,11 @@ class TestGetUserAttributes:
         assert attributes["view-users"] is True
 
     @pytest.mark.asyncio
-    async def test_returns_empty_on_error(self):
+    async def test_raises_server_exception_on_error(self):
         db = AsyncMock()
         db.execute.side_effect = RuntimeError("db down")
-        assert await get_user_attributes("user-1", db) == {}
+        with pytest.raises(ServerException, match="Failed to get user attributes"):
+            await get_user_attributes("user-1", db)
 
 
 class TestRequirePermission:
