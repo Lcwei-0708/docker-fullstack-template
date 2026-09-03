@@ -6,17 +6,25 @@ from pydantic import BaseModel, EmailStr, Field
 from core.config import settings
 
 
+class UserResponse(BaseModel):
+    id: str = Field(..., description="User ID")
+    first_name: str = Field(..., description="First name")
+    last_name: str = Field(..., description="Last name")
+    email: str = Field(..., description="User email address")
+    phone: str = Field(..., description="Phone number")
+
+
 class LoginResult(TypedDict):
     user: UserResponse
-    session_id: str = Field(..., description="Session ID")
-    access_token: str = Field(..., description="JWT access token")
-    csrf_token: str = Field(..., description="CSRF token")
+    session_id: str
+    access_token: str
+    csrf_token: str
 
 
 class SessionResult(TypedDict):
-    session_id: str = Field(..., description="Session ID")
-    access_token: str = Field(..., description="JWT access token")
-    csrf_token: str = Field(..., description="CSRF token")
+    session_id: str
+    access_token: str
+    csrf_token: str
 
 
 class UserRegister(BaseModel):
@@ -32,14 +40,6 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr = Field(..., description="User email address")
     password: str = Field(..., min_length=1, description="Password")
-
-
-class UserResponse(BaseModel):
-    id: str = Field(..., description="User ID")
-    first_name: str = Field(..., description="First name")
-    last_name: str = Field(..., description="Last name")
-    email: str = Field(..., description="User email address")
-    phone: str = Field(..., description="Phone number")
 
 
 class UserLoginResponse(BaseModel):
@@ -87,19 +87,6 @@ class ForgotPasswordRequest(BaseModel):
 
 class PasswordResetCooldownResponse(BaseModel):
     cooldown_seconds: int = Field(..., description="Remaining cooldown time in seconds")
-
-
-class EmailVerificationResponse(BaseModel):
-    message: str = Field(..., description="Verification result message")
-
-
-class EmailVerificationRequiredResponse(BaseModel):
-    expires_at: str | None = Field(default=None, description="Token expiration time (ISO format)")
-
-
-class PasswordResetRequiredResponse(BaseModel):
-    reset_token: str = Field(..., description="Password reset token")
-    expires_at: str = Field(..., description="Token expiration time (ISO format)")
 
 
 class ResendVerificationRequest(BaseModel):

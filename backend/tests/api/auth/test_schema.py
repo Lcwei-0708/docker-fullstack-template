@@ -8,7 +8,6 @@ from api.auth.schema import (
     LoginResult,
     LogoutRequest,
     PasswordResetCooldownResponse,
-    PasswordResetRequiredResponse,
     ResetPasswordRequest,
     SessionResult,
     TokenResponse,
@@ -197,25 +196,6 @@ class TestAuthSchema:
         errors = exc_info.value.errors()
         assert len(errors) == 1
 
-    def test_password_reset_required_response_valid(self):
-        """Test valid password reset required response data"""
-        data = {"reset_token": "test-reset-token", "expires_at": "2024-01-01T00:00:00Z"}
-
-        password_reset_response = PasswordResetRequiredResponse(**data)
-
-        assert password_reset_response.reset_token == "test-reset-token"
-        assert password_reset_response.expires_at == "2024-01-01T00:00:00Z"
-
-    def test_password_reset_required_response_missing_fields(self):
-        """Test missing required fields"""
-        data = {"reset_token": "test-reset-token"}
-
-        with pytest.raises(ValidationError) as exc_info:
-            PasswordResetRequiredResponse(**data)
-
-        errors = exc_info.value.errors()
-        assert len(errors) == 1
-
     def test_logout_request_valid(self):
         """Test valid logout request data"""
         data = {"logout_all": True}
@@ -340,33 +320,31 @@ class TestAuthSchema:
 
     def test_login_result_typing(self):
         """Test LoginResult TypedDict"""
-        user_data = {
-            "id": "test-user-id",
-            "first_name": "John",
-            "last_name": "Doe",
-            "email": "john.doe@example.com",
-            "phone": "+1234567890",
-        }
+        user = object()
 
         login_result: LoginResult = {
-            "user": user_data,
+            "user": user,
             "session_id": "test-session-id",
             "access_token": "test-access-token",
+            "csrf_token": "test-csrf-token",
         }
 
-        assert login_result["user"] == user_data
+        assert login_result["user"] is user
         assert login_result["session_id"] == "test-session-id"
         assert login_result["access_token"] == "test-access-token"
+        assert login_result["csrf_token"] == "test-csrf-token"
 
     def test_session_result_typing(self):
         """Test SessionResult TypedDict"""
         session_result: SessionResult = {
             "session_id": "test-session-id",
             "access_token": "test-access-token",
+            "csrf_token": "test-csrf-token",
         }
 
         assert session_result["session_id"] == "test-session-id"
         assert session_result["access_token"] == "test-access-token"
+        assert session_result["csrf_token"] == "test-csrf-token"
 
     def test_email_validation_edge_cases(self):
         """Test email validation edge cases"""

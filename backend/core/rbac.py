@@ -31,8 +31,7 @@ async def get_user_role_level(user_id: str, db: AsyncSession) -> int:
         level = result.scalar_one_or_none()
         return int(level) if level is not None else 0
     except Exception as e:
-        logger.error(f"Failed to get user role level: {e}")
-        return 0
+        raise ServerException(f"Failed to get user role level: {e}")
 
 
 async def get_user_role_id(user_id: str, db: AsyncSession) -> str | None:
@@ -47,8 +46,7 @@ async def get_user_role_id(user_id: str, db: AsyncSession) -> str | None:
         )
         return result.scalar_one_or_none()
     except Exception as e:
-        logger.error(f"Failed to get user role id: {e}")
-        return None
+        raise ServerException(f"Failed to get user role id: {e}")
 
 
 async def user_has_role(user_id: str, role_id: str, db: AsyncSession) -> bool:
@@ -62,8 +60,7 @@ async def user_has_role(user_id: str, role_id: str, db: AsyncSession) -> bool:
         )
         return result.scalar_one_or_none() is not None
     except Exception as e:
-        logger.error(f"Failed to check user role assignment: {e}")
-        return False
+        raise ServerException(f"Failed to check user role assignment: {e}")
 
 
 async def get_user_attributes(user_id: str, db: AsyncSession) -> dict[str, bool]:
@@ -95,8 +92,7 @@ async def get_user_attributes(user_id: str, db: AsyncSession) -> dict[str, bool]
 
         return attributes
     except Exception as e:
-        ServerException(f"Failed to get user attributes: {e}")
-        return {}
+        raise ServerException(f"Failed to get user attributes: {e}")
 
 
 async def check_user_has_super_role(user_id: str, db: AsyncSession) -> bool:
@@ -111,8 +107,7 @@ async def check_user_has_super_role(user_id: str, db: AsyncSession) -> bool:
         user_roles = [row.name for row in result]
         return settings.DEFAULT_SUPER_ADMIN_ROLE in user_roles
     except Exception as e:
-        logger.error(f"Failed to check super role: {e}")
-        return False
+        raise ServerException(f"Failed to check super role: {e}")
 
 
 def require_permission(required_attributes: list[str]):
