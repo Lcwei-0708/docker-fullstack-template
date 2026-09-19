@@ -93,7 +93,6 @@ services:
     environment:
       - TZ=${TIMEZONE}
       - DEBUG_MODE=false
-      - RATE_LIMIT_WHITELIST=${RATE_LIMIT_WHITELIST:-}
       - LOG_LEVEL=${LOG_LEVEL}
       - SSL_ENABLE=${SSL_ENABLE}
       - SECRET_KEY=${SECRET_KEY}
@@ -117,8 +116,7 @@ services:
       # Redis settings
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       # OpenTelemetry settings
-      - OTEL_ENABLE=${OTEL_ENABLE:-true}
-      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://alloy:4318}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
       # SMTP settings
       - SMTP_ENABLE=${SMTP_ENABLE}
       - SMTP_HOST=${SMTP_HOST}

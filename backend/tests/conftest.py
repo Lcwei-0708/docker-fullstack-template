@@ -1,6 +1,5 @@
 import os
 
-os.environ.setdefault("OTEL_ENABLE", "false")
 os.environ.setdefault("LOG_HTTP_BODY", "false")
 
 import asyncio

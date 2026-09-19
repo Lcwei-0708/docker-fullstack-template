@@ -46,8 +46,7 @@ class Settings(BaseSettings):
     SSL_ENABLE: bool = False
 
     # OpenTelemetry settings
-    OTEL_ENABLE: bool = False
-    OTEL_EXPORTER_OTLP_ENDPOINT: str = "http://alloy:4318"
+    OTEL_EXPORTER_OTLP_ENDPOINT: str = ""
 
     # Database settings
     DATABASE_URL: str
@@ -94,14 +93,6 @@ class Settings(BaseSettings):
     RATE_LIMIT: int = 200
     RATE_LIMIT_WINDOW_SECONDS: int = 300  # 5 minutes
     BLOCK_TIME_SECONDS: int = 600  # 10 minutes
-    RATE_LIMIT_WHITELIST: str = ""
-
-    @property
-    def rate_limit_whitelist_ips(self) -> set[str]:
-        raw = (self.RATE_LIMIT_WHITELIST or "").strip()
-        if not raw:
-            return set()
-        return {ip.strip() for ip in raw.split(",") if ip.strip()}
 
     # Registration settings
     REGISTRATION_ENABLE: bool = True

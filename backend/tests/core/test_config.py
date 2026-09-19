@@ -32,26 +32,6 @@ class TestOtelExcludedUrls:
         assert result == r"/a,/b"
 
 
-class TestRateLimitWhitelist:
-    def test_empty_whitelist(self):
-        original = settings.RATE_LIMIT_WHITELIST
-        try:
-            settings.RATE_LIMIT_WHITELIST = ""
-            assert settings.rate_limit_whitelist_ips == set()
-            settings.RATE_LIMIT_WHITELIST = "   "
-            assert settings.rate_limit_whitelist_ips == set()
-        finally:
-            settings.RATE_LIMIT_WHITELIST = original
-
-    def test_parses_comma_separated_ips(self):
-        original = settings.RATE_LIMIT_WHITELIST
-        try:
-            settings.RATE_LIMIT_WHITELIST = "1.1.1.1, 8.8.8.8,,  "
-            assert settings.rate_limit_whitelist_ips == {"1.1.1.1", "8.8.8.8"}
-        finally:
-            settings.RATE_LIMIT_WHITELIST = original
-
-
 class TestSetupLogging:
     def test_setup_logging_overrides_levels(self, tmp_path: Path):
         yaml_path = tmp_path / "logging.yaml"

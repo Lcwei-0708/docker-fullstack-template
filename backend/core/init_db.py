@@ -127,39 +127,22 @@ async def create_role_attributes():
 
 
 async def create_default_roles():
-    """Create system super-admin role and a basic user role."""
+    """Create the system super-admin role only. Other roles are created via API."""
     async with AsyncSessionLocal() as db:
         try:
-            default_roles = [
-                {
-                    "name": settings.DEFAULT_SUPER_ADMIN_ROLE,
-                    "description": "System super administrator (full access bypass)",
-                    "level": settings.DEFAULT_SUPER_ADMIN_LEVEL,
-                },
-                {
-                    "name": "user",
-                    "description": "Regular user role with basic permissions",
-                    "level": settings.DEFAULT_USER_ROLE_LEVEL,
-                },
-            ]
+            existing_role = await db.execute(
+                select(Roles).where(Roles.name == settings.DEFAULT_SUPER_ADMIN_ROLE)
+            )
+            if existing_role.scalar_one_or_none():
+                return
 
-            created_count = 0
-
-            for role_config in default_roles:
-                existing_role = await db.execute(
-                    select(Roles).where(Roles.name == role_config["name"])
+            db.add(
+                Roles(
+                    name=settings.DEFAULT_SUPER_ADMIN_ROLE,
+                    description="System super administrator (full access bypass)",
+                    level=settings.DEFAULT_SUPER_ADMIN_LEVEL,
                 )
-                if existing_role.scalar_one_or_none():
-                    continue
-
-                role = Roles(
-                    name=role_config["name"],
-                    description=role_config["description"],
-                    level=role_config["level"],
-                )
-                db.add(role)
-                created_count += 1
-
+            )
             await db.commit()
 
         except Exception as e:
