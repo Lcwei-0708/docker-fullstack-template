@@ -86,26 +86,27 @@ def setup_telemetry(app: FastAPI) -> None:
         enable_log_auto_instrumentation=False,
     )
 
-    if not settings.OTEL_ENABLE:
-        return
-
     resource = _build_resource()
     provider = TracerProvider(resource=resource)
-    exporter = OTLPSpanExporter(endpoint=_traces_endpoint(settings.OTEL_EXPORTER_OTLP_ENDPOINT))
-    provider.add_span_processor(
-        SkipSpanProcessor(BatchSpanProcessor(exporter, schedule_delay_millis=1000))
-    )
+
+    endpoint = (settings.OTEL_EXPORTER_OTLP_ENDPOINT or "").strip()
+    if endpoint:
+        exporter = OTLPSpanExporter(endpoint=_traces_endpoint(endpoint))
+        provider.add_span_processor(
+            SkipSpanProcessor(BatchSpanProcessor(exporter, schedule_delay_millis=1000))
+        )
+        logger.info("OpenTelemetry tracing enabled (OTLP: %s)", endpoint)
+    else:
+        logger.info("OpenTelemetry tracing enabled (no OTLP endpoint)")
+
     trace.set_tracer_provider(provider)
 
     FastAPIInstrumentor.instrument_app(app, excluded_urls=EXCLUDED_URLS)
     SQLAlchemyInstrumentor().instrument(engines=[async_engine.sync_engine, engine])
     RedisInstrumentor().instrument()
-    logger.info("OpenTelemetry tracing enabled")
 
 
 def shutdown_telemetry() -> None:
-    if not settings.OTEL_ENABLE:
-        return
     provider = trace.get_tracer_provider()
     shutdown = getattr(provider, "shutdown", None)
     if callable(shutdown):

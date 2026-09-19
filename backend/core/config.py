@@ -46,8 +46,7 @@ class Settings(BaseSettings):
     SSL_ENABLE: bool = False
 
     # OpenTelemetry settings
-    OTEL_ENABLE: bool = False
-    OTEL_EXPORTER_OTLP_ENDPOINT: str = "http://alloy:4318"
+    OTEL_EXPORTER_OTLP_ENDPOINT: str = ""
 
     # Database settings
     DATABASE_URL: str

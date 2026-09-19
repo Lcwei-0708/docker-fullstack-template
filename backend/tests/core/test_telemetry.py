@@ -213,30 +213,60 @@ class TestBuildResource:
 
 
 class TestSetupAndShutdownTelemetry:
-    def test_setup_returns_when_disabled(self):
+    def test_setup_exports_when_endpoint_set(self):
         test_app = FastAPI()
         with (
-            patch("core.telemetry.settings.OTEL_ENABLE", False),
+            patch("core.telemetry.settings.OTEL_EXPORTER_OTLP_ENDPOINT", "http://alloy:4318"),
             patch("core.telemetry.LoggingInstrumentor") as logging_instrumentor,
+            patch("core.telemetry.TracerProvider") as tracer_provider_cls,
+            patch("core.telemetry.OTLPSpanExporter") as otlp_exporter,
+            patch("core.telemetry.BatchSpanProcessor") as batch_processor,
+            patch("core.telemetry.SkipSpanProcessor") as skip_processor,
+            patch("core.telemetry.trace.set_tracer_provider"),
             patch("core.telemetry.FastAPIInstrumentor.instrument_app") as instrument_app,
+            patch("core.telemetry.SQLAlchemyInstrumentor") as sqlalchemy_instrumentor,
+            patch("core.telemetry.RedisInstrumentor") as redis_instrumentor,
         ):
+            provider = MagicMock()
+            tracer_provider_cls.return_value = provider
             setup_telemetry(test_app)
-        logging_instrumentor.return_value.instrument.assert_called_once()
-        instrument_app.assert_not_called()
 
-    def test_shutdown_returns_when_disabled(self):
+        logging_instrumentor.return_value.instrument.assert_called_once()
+        otlp_exporter.assert_called_once()
+        batch_processor.assert_called_once()
+        skip_processor.assert_called_once()
+        provider.add_span_processor.assert_called_once()
+        instrument_app.assert_called_once()
+        sqlalchemy_instrumentor.return_value.instrument.assert_called_once()
+        redis_instrumentor.return_value.instrument.assert_called_once()
+
+    def test_setup_skips_otlp_when_endpoint_empty(self):
+        test_app = FastAPI()
         with (
-            patch("core.telemetry.settings.OTEL_ENABLE", False),
-            patch("core.telemetry.trace.get_tracer_provider") as get_provider,
+            patch("core.telemetry.settings.OTEL_EXPORTER_OTLP_ENDPOINT", ""),
+            patch("core.telemetry.LoggingInstrumentor") as logging_instrumentor,
+            patch("core.telemetry.TracerProvider") as tracer_provider_cls,
+            patch("core.telemetry.OTLPSpanExporter") as otlp_exporter,
+            patch("core.telemetry.BatchSpanProcessor") as batch_processor,
+            patch("core.telemetry.trace.set_tracer_provider"),
+            patch("core.telemetry.FastAPIInstrumentor.instrument_app") as instrument_app,
+            patch("core.telemetry.SQLAlchemyInstrumentor") as sqlalchemy_instrumentor,
+            patch("core.telemetry.RedisInstrumentor") as redis_instrumentor,
         ):
-            shutdown_telemetry()
-        get_provider.assert_not_called()
+            provider = MagicMock()
+            tracer_provider_cls.return_value = provider
+            setup_telemetry(test_app)
+
+        logging_instrumentor.return_value.instrument.assert_called_once()
+        otlp_exporter.assert_not_called()
+        batch_processor.assert_not_called()
+        provider.add_span_processor.assert_not_called()
+        instrument_app.assert_called_once()
+        sqlalchemy_instrumentor.return_value.instrument.assert_called_once()
+        redis_instrumentor.return_value.instrument.assert_called_once()
 
     def test_shutdown_calls_provider_shutdown(self):
         provider = MagicMock()
-        with (
-            patch("core.telemetry.settings.OTEL_ENABLE", True),
-            patch("core.telemetry.trace.get_tracer_provider", return_value=provider),
-        ):
+        with patch("core.telemetry.trace.get_tracer_provider", return_value=provider):
             shutdown_telemetry()
         provider.shutdown.assert_called_once()
