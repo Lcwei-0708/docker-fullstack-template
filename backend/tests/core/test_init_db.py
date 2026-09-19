@@ -127,7 +127,7 @@ class TestCreateRoleAttributes:
 
 class TestCreateDefaultRoles:
     @pytest.mark.asyncio
-    async def test_creates_super_admin_and_user_roles(self, test_engine):
+    async def test_creates_super_admin_role_only(self, test_engine):
         factory = _session_factory(test_engine)
         with patch("core.init_db.AsyncSessionLocal", factory):
             await create_default_roles()
@@ -136,7 +136,7 @@ class TestCreateDefaultRoles:
         async with factory() as db:
             result = await db.execute(select(Roles))
             names = {role.name for role in result.scalars()}
-        assert names == {settings.DEFAULT_SUPER_ADMIN_ROLE, "user"}
+        assert names == {settings.DEFAULT_SUPER_ADMIN_ROLE}
 
     @pytest.mark.asyncio
     async def test_rolls_back_on_error(self, test_engine):
@@ -210,8 +210,14 @@ class TestCreateDefaultAdmin:
             db.add(user)
             await db.commit()
 
-            user_role = (await db.execute(select(Roles).where(Roles.name == "user"))).scalar_one()
-            db.add(RoleMapper(user_id=user.id, role_id=user_role.id))
+            placeholder_role = Roles(
+                name="placeholder",
+                description="Temporary role before super-admin assignment",
+                level=settings.DEFAULT_USER_ROLE_LEVEL,
+            )
+            db.add(placeholder_role)
+            await db.flush()
+            db.add(RoleMapper(user_id=user.id, role_id=placeholder_role.id))
             await db.commit()
 
         with patch("core.init_db.AsyncSessionLocal", factory):
