@@ -5,6 +5,10 @@
 
 This project is a ready-to-use fullstack template that leverages Docker Compose to seamlessly integrate Nginx, React, FastAPI, and MariaDB. It provides a modern, production-like environment for rapid development and deployment of web applications with a clear separation between frontend and backend services.
 
+## System Architecture
+
+![System Architecture](./docs/system-architecture.png)
+
 ## Features
 
 - ⚛️ **Frontend**: Built with React, offering a fast and modern user interface.
