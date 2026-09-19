@@ -10,27 +10,44 @@ This frontend project is built with modern web technologies to provide a fast, m
 - **ESLint**: A pluggable JavaScript linter to maintain code quality and consistency.
 - **Prettier**: An opinionated code formatter for consistent layout across the project.
 
-## Features
+## Project Structure
 
-- ⚡ Instant development startup and fast hot module replacement (HMR) with Vite
-- 🎨 Modern, fully responsive UI styled with Tailwind CSS
-- 🧩 Modular, component-based architecture using React
-- 🛡️ Code quality enforced by ESLint
-- ✨ Consistent formatting with Prettier
+```text
+frontend/
+├── public/              # Static assets (favicon, robots, sitemap)
+├── script/              # Build helpers (e.g. sitemap generation)
+├── src/
+│   ├── assets/          # Images and static media
+│   ├── components/      # UI components
+│   ├── pages/           # Route pages
+│   ├── router/          # React Router setup
+│   ├── services/        # API client / service layer
+│   ├── hooks/           # Shared React hooks
+│   ├── contexts/        # React context providers
+│   ├── i18n/            # Internationalization
+│   ├── lib/             # Shared utilities
+│   ├── config/          # Frontend config
+│   ├── main.jsx         # App entry
+│   └── index.css        # Global styles (Tailwind)
+├── vite.config.js
+├── eslint.config.js
+├── prettier.config.js
+└── package.json
+```
 
 ## Lint & format
 
 ### Standards
 
-| Item | Value |
-|------|--------|
-| Lint config | [`eslint.config.js`](./eslint.config.js) |
-| Format config | [`prettier.config.js`](./prettier.config.js) |
-| Linter | [ESLint](https://eslint.org/) 9 (flat config) |
-| Formatter | [Prettier](https://prettier.io/) 3 |
-| Line length | 100 |
-| Indent | 2 spaces |
-| Quotes | Double quotes |
+| Item          | Value                                         |
+| ------------- | --------------------------------------------- |
+| Lint config   | [`eslint.config.js`](./eslint.config.js)      |
+| Format config | [`prettier.config.js`](./prettier.config.js)  |
+| Linter        | [ESLint](https://eslint.org/) 9 (flat config) |
+| Formatter     | [Prettier](https://prettier.io/) 3            |
+| Line length   | 100                                           |
+| Indent        | 2 spaces                                      |
+| Quotes        | Double quotes                                 |
 
 ### Manual commands
 

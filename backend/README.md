@@ -17,50 +17,56 @@ This backend project is built with modern Python technologies to provide a robus
 - **Testing**: Pytest (asyncio, coverage); fully isolated environment with a dedicated test database.
   _See [Test Docs](./tests/README.md) for details._
 
-## Features
+## Structure
 
-- 🚀 High-performance async API with FastAPI
-- 🗄️ Async database integration with SQLAlchemy and Alembic
-- 🧩 Modular, scalable project structure
-- 🔒 Middleware support (CORS, custom middlewares)
-- 📝 Data validation with Pydantic
-- ⚡ Full async/await support for endpoints and database operations
-- 🧠 Redis integration for caching, rate limiting, and fast in-memory operations
-- 🐳 Easy containerization with Docker
-- ✅ Async Testing & coverage with a fully isolated test environment
+```text
+backend/
+├── api/                 # Route modules (auth, users, roles, account, …)
+├── core/                # Config, DB, Redis, security, RBAC, telemetry
+├── models/              # SQLAlchemy models
+├── middleware/          # CORS, rate limit, request logging
+├── extensions/          # Exception handlers, SMTP
+├── schedule/            # Background cleanup tasks
+├── migrations/          # Alembic migrations
+├── utils/               # Shared helpers (response, IP, email templates)
+├── tests/               # Pytest suites (see tests/README.md)
+├── main.py              # FastAPI app entry
+├── logging_config.yaml  # Logging config
+└── pyproject.toml       # Dependencies (uv)
+```
 
 ## Lint & format
 
 ### Standards
 
-| Item | Value |
-|------|--------|
-| Config | [`pyproject.toml`](./pyproject.toml) — `[tool.ruff]`, `[tool.ruff.lint]`, `[tool.ruff.format]` |
-| Formatter | [Ruff format](https://docs.astral.sh/ruff/formatter/) (Black-compatible) |
-| Line length | 100 |
-| Indent | 4 spaces; tabs are rewritten on format |
-| Quotes | Double quotes |
-| Target Python | 3.14 |
+| Item          | Value                                                                                          |
+| ------------- | ---------------------------------------------------------------------------------------------- |
+| Config        | [`pyproject.toml`](./pyproject.toml) — `[tool.ruff]`, `[tool.ruff.lint]`, `[tool.ruff.format]` |
+| Formatter     | [Ruff format](https://docs.astral.sh/ruff/formatter/) (Black-compatible)                       |
+| Line length   | 100                                                                                            |
+| Indent        | 4 spaces; tabs are rewritten on format                                                         |
+| Quotes        | Double quotes                                                                                  |
+| Target Python | 3.14                                                                                           |
 
-| Rule set | Source | Purpose |
-|----------|--------|---------|
-| `E` | pycodestyle | PEP 8 style |
-| `F` | Pyflakes | Unused imports, syntax issues |
-| `I` | isort | Import order |
-| `UP` | pyupgrade | Modern Python syntax |
-| `B` | flake8-bugbear | Common bug patterns |
+| Rule set | Source         | Purpose                       |
+| -------- | -------------- | ----------------------------- |
+| `E`      | pycodestyle    | PEP 8 style                   |
+| `F`      | Pyflakes       | Unused imports, syntax issues |
+| `I`      | isort          | Import order                  |
+| `UP`     | pyupgrade      | Modern Python syntax          |
+| `B`      | flake8-bugbear | Common bug patterns           |
 
-| Ignored | Reason |
-|---------|--------|
-| `B008` | FastAPI `Depends()` in default arguments |
-| `B904` | Exception chaining in FastAPI handlers |
-| `E712` | SQLAlchemy boolean checks; auto-fix breaks ORM queries |
+| Ignored | Reason                                                 |
+| ------- | ------------------------------------------------------ |
+| `B008`  | FastAPI `Depends()` in default arguments               |
+| `B904`  | Exception chaining in FastAPI handlers                 |
+| `E712`  | SQLAlchemy boolean checks; auto-fix breaks ORM queries |
 
-| Per-file ignored | Path | Reason |
-|------------------|------|--------|
-| `B` | `tests/**` | Relaxed bugbear rules in tests |
-| `E402` | `main.py`, `core/config.py`, `migrations/env.py` | Imports after bootstrap / env setup |
-| `E501` | `utils/email_templates.py` | Long HTML email template lines |
+| Per-file ignored | Path                                             | Reason                              |
+| ---------------- | ------------------------------------------------ | ----------------------------------- |
+| `B`              | `tests/**`                                       | Relaxed bugbear rules in tests      |
+| `E402`           | `main.py`, `core/config.py`, `migrations/env.py` | Imports after bootstrap / env setup |
+| `E501`           | `utils/email_templates.py`                       | Long HTML email template lines      |
 
 ### Manual commands
 

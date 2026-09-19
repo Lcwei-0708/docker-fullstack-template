@@ -5,28 +5,32 @@ This Nginx configuration provides a secure, high-performance reverse proxy servi
 ## Tech Stack
 
 - **Nginx**: High-performance web server and reverse proxy.
-- **OpenSSL**: SSL/TLS implementation for secure connections.
+- **TLS / HTTPS**: Certificate-based encryption via nginx (certs in `nginx/certs`).
 - **Docker**: Containerization for development and deployment.
 - **HTTP/2**: Modern protocol for improved performance.
 - **WebSocket**: Support for real-time communication.
-- **Templated Configuration**: Easily customizable Nginx configuration using environment variables and templates.
+- **Templated Configuration**: gomplate templates rendered at container start.
 
-## Features
+## Structure
 
-- 🔒 SSL/TLS encryption with modern cipher configurations
-- 🌐 HTTP/2 support for improved performance
-- 🔄 Intelligent routing for frontend and backend services
-- 🛡️ IP whitelisting for enhanced security
-- 📦 Static file serving in production mode
-- 🔌 WebSocket support for real-time features
-- 📝 Templated configuration for flexible and dynamic setup
+```text
+nginx/
+├── templates/                 # Server templates (frontend, backend, …)
+├── custom.d/                  # Generated configs from templates at start
+├── certs/                     # SSL certificate and private key
+├── logrotate/                 # Logrotate rules for nginx logs
+├── nginx.conf                 # Main nginx config (logging, whitelist geo)
+├── whitelist.conf.example     # Whitelist template (copied on first start)
+├── docker-entrypoint.sh       # Bootstrap: templates, whitelist, cron
+└── Dockerfile
+```
 
 ## Quick Setup
 
 ### 1. IP Whitelist Setup
 
 On first `docker compose up`, `whitelist.conf` is auto-created from
-`whitelist.conf.example` (not tracked by git). Edit `whitelist.conf` to add allowed IPs:
+`whitelist.conf.example`. Edit `whitelist.conf` to add allowed IPs:
 
 ```bash
 # Example entries in whitelist.conf:
@@ -42,6 +46,7 @@ change `nginx.conf` to `default 0;`.
 To enable SSL (HTTPS), you need to configure SSL settings in your `.env` file and place your SSL certificates.
 
 **Basic setup:**
+
 ```env
 SSL_ENABLE=true
 SSL_CERT_FILE=cert.pem
@@ -49,6 +54,7 @@ SSL_KEY_FILE=privkey.pem
 ```
 
 Place your certificates in the `nginx/certs` directory:
+
 ```bash
 nginx/certs/
 ├── cert.pem         # Your SSL certificate
