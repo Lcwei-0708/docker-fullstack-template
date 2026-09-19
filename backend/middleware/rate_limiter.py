@@ -19,7 +19,9 @@ BLOCK_TIME_SECONDS = settings.BLOCK_TIME_SECONDS
 class RateLimiterMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
         super().__init__(app)
-        self.whitelist_ips = settings.rate_limit_whitelist_ips
+        self.whitelist_ips: set[str] = {
+            # Add IPs here to bypass rate limiting.
+        }
         self.endpoint_rate_limits = {}
         self._configure_endpoint_limits()
 
