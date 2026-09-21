@@ -4,6 +4,7 @@ import pytest
 from fastapi import HTTPException
 
 from core.dependencies import get_db, get_sync_db
+from utils.custom_exception import AuthenticationException
 
 
 class _AsyncSessionCM:
@@ -54,6 +55,23 @@ class TestGetDb:
             with pytest.raises(RuntimeError, match="db down"):
                 await agen.athrow(RuntimeError("db down"))
             session.rollback.assert_awaited()
+
+    @pytest.mark.asyncio
+    async def test_service_exception_rolls_back_without_db_error_log(self):
+        session = AsyncMock()
+        with (
+            patch(
+                "core.dependencies.AsyncSessionLocal",
+                return_value=_AsyncSessionCM(session),
+            ),
+            patch("core.dependencies.logger") as mock_logger,
+        ):
+            agen = get_db()
+            await agen.__anext__()
+            with pytest.raises(AuthenticationException):
+                await agen.athrow(AuthenticationException("Invalid or expired session"))
+            session.rollback.assert_awaited()
+            mock_logger.error.assert_not_called()
 
 
 class TestGetSyncDb:

@@ -20,7 +20,9 @@ class BaseServiceException(Exception):
         if status_code is not None:
             self.status_code = status_code
 
-        if self.log_level == "error":
+        if self.log_level == "critical":
+            logger.critical(self.message)
+        elif self.log_level == "error":
             logger.error(self.message)
         elif self.log_level == "warning":
             logger.warning(self.message)
@@ -49,7 +51,13 @@ class AuthenticationException(BaseServiceException):
     """Authentication related exceptions"""
 
     def __init__(self, message: str = "Authentication failed", details: dict[str, Any] = None):
-        super().__init__(message=message, error_code="AUTH_ERROR", details=details, status_code=401)
+        super().__init__(
+            message=message,
+            error_code="AUTH_ERROR",
+            details=details,
+            status_code=401,
+            log_level="warning",
+        )
 
 
 class PasswordResetRequiredException(BaseServiceException):
@@ -80,7 +88,11 @@ class AuthorizationException(BaseServiceException):
 
     def __init__(self, message: str = "Permission denied", details: dict[str, Any] = None):
         super().__init__(
-            message=message, error_code="PERMISSION_ERROR", details=details, status_code=403
+            message=message,
+            error_code="PERMISSION_ERROR",
+            details=details,
+            status_code=403,
+            log_level="warning",
         )
 
 
@@ -89,7 +101,11 @@ class ValidationException(BaseServiceException):
 
     def __init__(self, message: str = "Validation failed", details: dict[str, Any] = None):
         super().__init__(
-            message=message, error_code="VALIDATION_ERROR", details=details, status_code=400
+            message=message,
+            error_code="VALIDATION_ERROR",
+            details=details,
+            status_code=400,
+            log_level="warning",
         )
 
 
@@ -112,7 +128,11 @@ class TokenException(BaseServiceException):
 
     def __init__(self, message: str = "Token error", details: dict[str, Any] = None):
         super().__init__(
-            message=message, error_code="TOKEN_ERROR", details=details, status_code=401
+            message=message,
+            error_code="TOKEN_ERROR",
+            details=details,
+            status_code=401,
+            log_level="warning",
         )
 
 
@@ -121,7 +141,11 @@ class SMTPNotConfiguredException(BaseServiceException):
 
     def __init__(self, message: str = "SMTP is not configured", details: dict[str, Any] = None):
         super().__init__(
-            message=message, error_code="SMTP_NOT_CONFIGURED", details=details, status_code=503
+            message=message,
+            error_code="SMTP_NOT_CONFIGURED",
+            details=details,
+            status_code=503,
+            log_level="warning",
         )
 
 
@@ -130,5 +154,9 @@ class RegistrationDisabledException(BaseServiceException):
 
     def __init__(self, message: str = "Registration is disabled", details: dict[str, Any] = None):
         super().__init__(
-            message=message, error_code="REGISTRATION_DISABLED", details=details, status_code=503
+            message=message,
+            error_code="REGISTRATION_DISABLED",
+            details=details,
+            status_code=503,
+            log_level="warning",
         )
