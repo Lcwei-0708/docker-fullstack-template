@@ -127,11 +127,10 @@ async def verify_session(sid: str, token: str, redis_client) -> dict[str, Any]:
         try:
             session_data = ast.literal_eval(raw)
         except ValueError, SyntaxError:
-            logger.error(f"Invalid session data: {raw}")
+            logger.error("Invalid session data for session %s", sid)
             raise ValueError("Invalid session data")
 
         if session_data.get("access_token") and session_data.get("access_token") != token:
-            logger.error(f"Token mismatch: {session_data.get('access_token')} != {token}")
             raise JWTError("Token mismatch")
         return session_data
     except JWTError as e:
@@ -139,6 +138,14 @@ async def verify_session(sid: str, token: str, redis_client) -> dict[str, Any]:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except ValueError as e:
+        if str(e) != "Invalid session data":
+            logger.warning(f"Failed to verify session: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired session",
             headers={"WWW-Authenticate": "Bearer"},
         )
     except Exception as e:
@@ -222,7 +229,7 @@ async def verify_password_reset_token(token: str = Depends(get_token)) -> dict[s
             headers={"WWW-Authenticate": "Bearer"},
         )
     except ValueError as e:
-        logger.error(f"Failed to verify password reset token: {str(e)}")
+        logger.warning(f"Failed to verify password reset token: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
@@ -268,7 +275,7 @@ async def verify_email_verification_token(token: str = Depends(get_token)) -> di
             headers={"WWW-Authenticate": "Bearer"},
         )
     except ValueError as e:
-        logger.error(f"Failed to verify email verification token: {str(e)}")
+        logger.warning(f"Failed to verify email verification token: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",

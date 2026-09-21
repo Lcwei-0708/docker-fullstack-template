@@ -71,5 +71,5 @@ async def init_db():
         await init_database()
         logger.info("Database initialization completed")
     except Exception as e:
-        logger.error(f"Database initialization failed: {str(e)}")
+        logger.critical(f"Database initialization failed: {str(e)}")
         raise

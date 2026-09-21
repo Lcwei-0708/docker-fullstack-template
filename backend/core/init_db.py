@@ -74,7 +74,7 @@ async def init_database():
             logger.info("Database initialization completed")
 
         except Exception as e:
-            logger.error(f"Database initialization failed: {str(e)}")
+            logger.critical(f"Database initialization failed: {str(e)}")
             raise
         finally:
             # Always release the advisory lock
@@ -121,7 +121,7 @@ async def create_role_attributes():
             await db.commit()
 
         except Exception as e:
-            logger.error(f"Failed to create role attributes: {str(e)}")
+            logger.critical(f"Failed to create role attributes: {str(e)}")
             await db.rollback()
             raise
 
@@ -146,7 +146,7 @@ async def create_default_roles():
             await db.commit()
 
         except Exception as e:
-            logger.error(f"Failed to create roles: {str(e)}")
+            logger.critical(f"Failed to create roles: {str(e)}")
             await db.rollback()
             raise
 
@@ -226,6 +226,6 @@ async def create_default_admin():
             logger.info("Admin account initialization completed")
 
         except Exception as e:
-            logger.error(f"Failed to create admin account: {str(e)}")
+            logger.critical(f"Failed to create admin account: {str(e)}")
             await db.rollback()
             raise
