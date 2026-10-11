@@ -19,17 +19,17 @@ jobs:
     name: Deploy Coverage Report
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    
+
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Download coverage HTML report
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: coverage-html
         path: ./coverage-report
@@ -37,7 +37,7 @@ jobs:
         run-id: ${{ github.event.workflow_run.id }}
 
     - name: Download coverage JSON report
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: coverage-json
         path: ./coverage-json
@@ -50,15 +50,15 @@ jobs:
         if [ -f ./coverage-json/coverage.json ]; then
           python3 -c "
         import json
-        
+
         # Read pytest-cov coverage.json
         with open('./coverage-json/coverage.json', 'r') as f:
             data = json.load(f)
-        
+
         # Extract coverage percentage
         totals = data.get('totals', {})
         percent_covered = totals.get('percent_covered', 0)
-        
+
         # Create shields.io compatible JSON
         shields_data = {
             'schemaVersion': 1,
@@ -68,23 +68,23 @@ jobs:
             'namedLogo': 'python',
             'logoColor': 'white'
         }
-        
+
         # Write shields.io compatible JSON
         with open('./coverage-report/coverage.json', 'w') as f:
             json.dump(shields_data, f)
-        
+
         print(f'Coverage: {percent_covered:.1f}%')
         "
         fi
 
     - name: Setup Pages
-      uses: actions/configure-pages@v5
+      uses: actions/configure-pages@v6
 
     - name: Upload to Pages
-      uses: actions/upload-pages-artifact@v3
+      uses: actions/upload-pages-artifact@v5
       with:
         path: ./coverage-report
 
     - name: Deploy to GitHub Pages
       id: deployment
-      uses: actions/deploy-pages@v4
+      uses: actions/deploy-pages@v5
