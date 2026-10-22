@@ -180,7 +180,7 @@ services:
       retries: 5
 
   phpmyadmin:
-    image: phpmyadmin/phpmyadmin:5.2.3
+    image: phpmyadmin:latest
     environment:
       - TZ=${TIMEZONE}
       - PMA_HOST=mariadb
