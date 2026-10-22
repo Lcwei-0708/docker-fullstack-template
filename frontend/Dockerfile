@@ -1,5 +1,5 @@
-# Use official Node.js 20 image as the base image
-FROM node:20
+# Use the current Node.js image. The floating tag tracks the latest security release.
+FROM node:latest
 
 # Set the working directory inside the container to /app
 WORKDIR /app
